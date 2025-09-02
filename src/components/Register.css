@@ -1,0 +1,116 @@
+/* src/components/Register.css */
+.register-section {
+  padding: 80px 0;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 70px);
+}
+
+.register-content {
+  max-width: 400px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.register-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+  border-color: #e31837;
+}
+
+.error-message {
+  color: #e31837;
+  font-size: 0.9rem;
+  text-align: center;
+  margin: 0;
+}
+
+.register-btn {
+  padding: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.form-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.form-footer a {
+  color: #e31837;
+  text-decoration: none;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .register-section {
+    padding: 60px 0;
+  }
+
+  .register-content {
+    padding: 20px;
+  }
+
+  .register-title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-content {
+    padding: 15px;
+  }
+
+  .register-title {
+    font-size: 1.5rem;
+  }
+
+  .form-input {
+    font-size: 0.9rem;
+  }
+
+  .register-btn {
+    font-size: 1rem;
+  }
+}

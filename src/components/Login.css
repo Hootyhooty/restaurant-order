@@ -1,0 +1,118 @@
+/* src/components/Login.css */
+.login-section {
+    padding: 80px 0;
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 70px);
+  }
+  
+  .login-content {
+    max-width: 400px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .login-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  
+  .form-input {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.3s ease;
+  }
+  
+  .form-input:focus {
+    border-color: #e31837;
+  }
+  
+  .error-message {
+    color: #e31837;
+    font-size: 0.9rem;
+    text-align: center;
+    margin: 0;
+  }
+  
+  .login-btn {
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .create-account-btn {
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .create-account-btn:hover {
+    background-color: #5a6268;
+  }
+  
+  @media (max-width: 768px) {
+    .login-section {
+      padding: 60px 0;
+    }
+  
+    .login-content {
+      padding: 20px;
+    }
+  
+    .login-title {
+      font-size: 1.75rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .login-content {
+      padding: 15px;
+    }
+  
+    .login-title {
+      font-size: 1.5rem;
+    }
+  
+    .form-input {
+      font-size: 0.9rem;
+    }
+  
+    .login-btn,
+    .create-account-btn {
+      font-size: 1rem;
+    }
+  }
