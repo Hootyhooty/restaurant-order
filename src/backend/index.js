@@ -12,7 +12,7 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 const app = express();
 
 // Allow frontend origins and handle preflight
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3002'];
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -30,11 +30,14 @@ app.options('*', cors());
 app.use(express.json());
 
 // Enhanced MongoDB connection logging
-mongoose.connect(process.env.MONGODB_URI, {
+// Force database name to be restaurant_db
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_db';
+mongoose.connect(mongoUri, {
+  dbName: 'restaurant_db',  // Explicitly set database name
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
-  console.log('Connected to MongoDB at', process.env.MONGODB_URI.replace(/\/\/.*@/, '//<hidden>@'));
+  console.log('Connected to MongoDB database: restaurant_db');
 }).catch((err) => {
   console.error('MongoDB connection error:', err.message);
 });

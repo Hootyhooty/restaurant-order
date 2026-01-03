@@ -1,6 +1,6 @@
-# Restaurant App
+# Restaurant Application
 
-A React application that duplicates the KFC Thailand meals page with a modern, responsive design.
+A React restaurant application with a modern, responsive design.
 
 ## Features
 
