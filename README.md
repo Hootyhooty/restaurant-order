@@ -1,4 +1,4 @@
-# KFC Thailand Meals Page Clone
+# Restaurant App
 
 A React application that duplicates the KFC Thailand meals page with a modern, responsive design.
 
@@ -24,31 +24,6 @@ A React application that duplicates the KFC Thailand meals page with a modern, r
 
 - Node.js (version 14 or higher)
 - npm or yarn
-
-### Installation
-
-1. Clone the repository or navigate to the project directory
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the Application
-
-1. Start the development server:
-   ```bash
-   npm start
-   ```
-
-2. Open your browser and navigate to `http://localhost:3000`
-
-### Building for Production
-
-To create a production build:
-
-```bash
-npm run build
-```
 
 ## Project Structure
 
@@ -86,7 +61,7 @@ public/
 ## Features Breakdown
 
 ### Header Component
-- KFC logo and branding
+- Restaurant logo and branding
 - Responsive navigation menu
 - Mobile hamburger menu
 - Login and order buttons
@@ -118,7 +93,7 @@ public/
 ## Customization
 
 ### Colors
-The application uses KFC's brand colors:
+The application uses colors:
 - Primary Red: `#e31837`
 - Dark Red: `#c41230`
 - Background: `#f8f9fa`
@@ -138,19 +113,9 @@ To add new meals, edit the `meals` array in `src/components/MealsSection.js`:
 }
 ```
 
-### Styling
-All styles are modular and can be easily customized by editing the respective CSS files.
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
 ## License
 
-This project is for educational purposes only. KFC branding and trademarks belong to their respective owners.
+This project is for educational purposes only.
 
 ## Contributing
 
