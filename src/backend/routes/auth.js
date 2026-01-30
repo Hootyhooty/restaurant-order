@@ -55,7 +55,26 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: customer._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
     console.log('Login successful, token generated for:', customer._id);
-    res.json({ token, user: { id: customer._id, username: customer.username } });
+
+    // Expose key profile fields to the frontend (Profile page)
+    res.json({
+      token,
+      user: {
+        id: customer._id,
+        username: customer.username,
+        email: customer.email,
+        phone: customer.phone,
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        photo: customer.photo,
+        email_verified: customer.email_verified,
+        phone_verified: customer.phone_verified,
+        address_line1: customer.address_line1,
+        city: customer.city,
+        state: customer.state,
+        zipcode: customer.zipcode
+      }
+    });
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(500).json({ message: 'Server error: ' + error.message });

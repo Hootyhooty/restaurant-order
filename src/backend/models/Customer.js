@@ -2,31 +2,163 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-const customerSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
-    minlength: 3,
-    maxlength: 20
+const customerSchema = new mongoose.Schema(
+  {
+    // Core identity fields (keep existing username for compatibility)
+    username: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      minlength: 3,
+      maxlength: 50
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      lowercase: true
+    },
+    alternate_email: {
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+
+    first_name: {
+      type: String,
+      trim: true,
+      maxlength: 50
+    },
+    last_name: {
+      type: String,
+      trim: true,
+      maxlength: 50
+    },
+
+    // Profile image with default
+    photo: {
+      type: String,
+      default: 'other_img/default.jpg' // maps to public/other_img/default.jpg
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true
+    },
+    display_phone: {
+      type: Boolean,
+      default: false
+    },
+
+    role: {
+      type: String,
+      enum: ['USER', 'ADMIN'],
+      default: 'USER'
+    },
+
+    password: {
+      type: String,
+      required: true,
+      minlength: 8
+    },
+    password_changed_at: {
+      type: Date
+    },
+    password_reset_token: {
+      type: String
+    },
+    password_reset_expires: {
+      type: Date
+    },
+
+    active: {
+      type: Boolean,
+      default: true
+    },
+
+    // Address fields
+    address_line1: {
+      type: String,
+      maxlength: 200
+    },
+    address_line2: {
+      type: String,
+      maxlength: 200
+    },
+    city: {
+      type: String,
+      maxlength: 100
+    },
+    state: {
+      type: String,
+      maxlength: 100
+    },
+    zipcode: {
+      type: String,
+      maxlength: 20
+    },
+    country: {
+      type: String,
+      maxlength: 100,
+      default: 'United States'
+    },
+    latitude: {
+      type: Number
+    },
+    longitude: {
+      type: Number
+    },
+
+    // Social media
+    facebook: String,
+    instagram: String,
+    twitter: String,
+    description: {
+      type: String,
+      maxlength: 500
+    },
+    profile_slug: {
+      type: String,
+      unique: true,
+      sparse: true
+    },
+
+    // Verification / reputation
+    email_verified: {
+      type: Boolean,
+      default: false
+    },
+    phone_verified: {
+      type: Boolean,
+      default: false
+    },
+
+    // Soft delete / status flags
+    deleted_at: {
+      type: Date
+    },
+    is_deleted: {
+      type: Boolean,
+      default: false
+    },
+    is_active: {
+      type: Boolean,
+      default: true
+    },
+    is_verified: {
+      type: Boolean,
+      default: false
+    }
   },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
-    lowercase: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  phone: {
-    type: String,
-    trim: true
+  {
+    timestamps: true,
+    collection: 'customers'
   }
-}, { timestamps: true, collection: 'customers' });
+);
 
 customerSchema.pre('save', async function (next) {
   if (this.isModified('password')) {

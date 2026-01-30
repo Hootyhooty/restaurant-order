@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/userRoutes');
 
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
   console.warn('Warning: MONGODB_URI or JWT_SECRET is not set. Create src/backend/.env based on src/backend/.env.example');
@@ -28,6 +29,7 @@ app.use(cors({
 }));
 app.options('*', cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Enhanced MongoDB connection logging
 // Force database name to be restaurant_db
@@ -43,6 +45,7 @@ mongoose.connect(mongoUri, {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

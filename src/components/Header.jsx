@@ -6,7 +6,7 @@ import './Header.css';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isLoggedIn, logout } = useContext(AuthContext);
+  const { isLoggedIn, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const toggleMenu = () => {
@@ -21,6 +21,15 @@ const Header = () => {
       navigate('/login', { state: { from: window.location.pathname } });
     }
   };
+
+  const profileImage =
+    user?.photo && user.photo.trim() !== ''
+      ? user.photo.startsWith('http')
+        ? user.photo
+        : user.photo === 'other_img/default.jpg' || user.photo === 'default.jpg'
+        ? '/other_img/default.jpg'
+        : `http://localhost:5000/api/users/uploads/${user.photo}`
+      : '/other_img/default.jpg';
 
   return (
     <header className="header">
@@ -53,6 +62,19 @@ const Header = () => {
             </ul>
           </nav>
           <div className="header-actions">
+            {isLoggedIn && (
+              <button
+                type="button"
+                className="header-profile-btn"
+                onClick={() => navigate('/profile')}
+              >
+                <img
+                  src={profileImage}
+                  alt={user?.username || 'Profile'}
+                  className="header-profile-avatar"
+                />
+              </button>
+            )}
             <button
               className="btn btn-secondary"
               onClick={handleAuthAction}

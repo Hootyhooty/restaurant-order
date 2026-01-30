@@ -1,0 +1,389 @@
+// Map Location Picker
+// -------------------------
+let locationMap = null;
+let selectedMarker = null;
+let selectedCoordinates = null;
+let currentFormType = null; // 'edit' or 'report'
+let preselectCoordinates = null; // NEW - for passing preselected lat/lon
+
+// Initialize map when modal is shown
+document.addEventListener('DOMContentLoaded', function() {
+  const locationMapModal = document.getElementById('locationMapModal');
+  if (locationMapModal) {
+    locationMapModal.addEventListener('shown.bs.modal', initializeMap);
+    locationMapModal.addEventListener('hidden.bs.modal', cleanupMap);
+  }
+  
+  // Handle location map buttons
+  const openLocationMapBtn = document.getElementById('openLocationMapBtn');
+  if (openLocationMapBtn) {
+    openLocationMapBtn.addEventListener('click', () => openLocationMap('edit'));
+  }
+  
+  const openLocationMapReportBtn = document.getElementById('openLocationMapReportBtn');
+  if (openLocationMapReportBtn) {
+    openLocationMapReportBtn.addEventListener('click', () => openLocationMap('report'));
+  }
+  
+  // Handle map modal buttons
+  const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
+  if (useCurrentLocationBtn) {
+    useCurrentLocationBtn.addEventListener('click', useCurrentLocationOnMap);
+  }
+  
+  const confirmLocationBtn = document.getElementById('confirmLocationBtn');
+  if (confirmLocationBtn) {
+    confirmLocationBtn.addEventListener('click', confirmLocation);
+  }
+  
+  // Handle search functionality
+  const searchLocationBtn = document.getElementById('searchLocationBtn');
+  const locationSearchInput = document.getElementById('locationSearchInput');
+  
+  if (searchLocationBtn) {
+    searchLocationBtn.addEventListener('click', searchLocation);
+  }
+  
+  if (locationSearchInput) {
+    locationSearchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchLocation();
+      }
+    });
+  }
+});
+
+function openLocationMap(formType, lat=null, lng=null) {
+  currentFormType = formType;
+  preselectCoordinates = (lat !== null && lng !== null)
+    ? { lat: parseFloat(lat), lng: parseFloat(lng) }
+    : null;
+  const modal = new bootstrap.Modal(document.getElementById('locationMapModal'));
+  modal.show();
+}
+
+function initializeMap() {
+  if (locationMap) return; // Already initialized
+
+  let center = [40.7128, -74.0060]; // Default to New York
+  let zoom = 13;
+  if (preselectCoordinates) {
+    center = [preselectCoordinates.lat, preselectCoordinates.lng];
+    zoom = 15;
+  }
+
+  locationMap = L.map('locationMap').setView(center, zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(locationMap);
+  // Add marker if viewing preset
+  if (preselectCoordinates) {
+    addMarker(preselectCoordinates.lat, preselectCoordinates.lng);
+    selectedCoordinates = { ...preselectCoordinates };
+    document.getElementById('confirmLocationBtn').disabled = false;
+  }
+  // Add click event to map
+  locationMap.on('click', onMapClick);
+
+  // If not preselected, try geolocation as before
+  if (!preselectCoordinates) {
+    setTimeout(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            locationMap.setView([latitude, longitude], 15);
+            addMarker(latitude, longitude);
+            selectedCoordinates = { lat: latitude, lng: longitude };
+            document.getElementById('confirmLocationBtn').disabled = false;
+          },
+          (error) => {
+            console.log('Could not get current location:', error);
+            // Keep default location
+          }
+        );
+      }
+    }, 500);
+  }
+}
+
+function onMapClick(e) {
+  const { lat, lng } = e.latlng;
+  addMarker(lat, lng);
+  selectedCoordinates = { lat, lng };
+  document.getElementById('confirmLocationBtn').disabled = false;
+}
+
+function addMarker(lat, lng) {
+  // Remove existing marker
+  if (selectedMarker) {
+    locationMap.removeLayer(selectedMarker);
+  }
+  
+  // Add new marker
+  selectedMarker = L.marker([lat, lng], {
+    draggable: true
+  }).addTo(locationMap);
+  
+  // Update coordinates when marker is dragged
+  selectedMarker.on('dragend', function(e) {
+    const newPos = e.target.getLatLng();
+    selectedCoordinates = { lat: newPos.lat, lng: newPos.lng };
+  });
+}
+
+function useCurrentLocationOnMap() {
+  if (!navigator.geolocation) {
+    showToast("Geolocation is not supported by this browser.", "error");
+    return;
+  }
+  
+  const btn = document.getElementById('useCurrentLocationBtn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Getting Location...';
+  btn.disabled = true;
+  
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      // Center map on current location with proper zoom
+      locationMap.setView([latitude, longitude], 15);
+      addMarker(latitude, longitude);
+      selectedCoordinates = { lat: latitude, lng: longitude };
+      document.getElementById('confirmLocationBtn').disabled = false;
+      showToast("Location found!", "success");
+      
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    },
+    (error) => {
+      console.error('Geolocation error:', error);
+      showToast("Could not get your location. Please click on the map instead.", "error");
+      
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  );
+}
+
+async function confirmLocation() {
+  if (!selectedCoordinates) {
+    showToast("Please select a location on the map first.", "error");
+    return;
+  }
+  
+  const btn = document.getElementById('confirmLocationBtn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Getting Address...';
+  btn.disabled = true;
+  
+  try {
+    // Reverse geocode the selected coordinates
+    const address = await reverseGeocodeFromCoords(selectedCoordinates.lat, selectedCoordinates.lng);
+    
+    // Fill the appropriate form based on current form type
+    if (currentFormType === 'edit') {
+      fillEditProfileFields(address);
+    } else if (currentFormType === 'report') {
+      fillReportFormFields(address);
+    }
+    
+    showToast("Address filled successfully!", "success");
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('locationMapModal'));
+    modal.hide();
+    
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    showToast("Could not get address for selected location. Please try again.", "error");
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function reverseGeocodeFromCoords(lat, lng) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'LostAndFound-App/1.0'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error("Reverse geocoding failed");
+    }
+    
+    const data = await response.json();
+    return parseAddressData(data);
+  } catch (error) {
+    console.error("Reverse geocoding error:", error);
+    throw error;
+  }
+}
+
+function parseAddressData(data) {
+  const address = data.address || {};
+  
+  return {
+    address_line1: [
+      address.house_number,
+      address.road
+    ].filter(Boolean).join(" "),
+    address_line2: address.suburb || "",
+    city: address.city || address.town || address.village || "",
+    state: address.state || "",
+    zipcode: address.postcode || "",
+    country: address.country || "",
+    // For report form
+    address: [
+      address.house_number,
+      address.road
+    ].filter(Boolean).join(" "),
+    city_town: address.city || address.town || address.village || "",
+    state_province: address.state || ""
+  };
+}
+
+function fillEditProfileFields(address) {
+  const fields = {
+    'address_line1': address.address_line1,
+    'address_line2': address.address_line2,
+    'city': address.city,
+    'state': address.state,
+    'zipcode': address.zipcode
+  };
+  
+  Object.entries(fields).forEach(([fieldId, value]) => {
+    const field = document.getElementById(fieldId);
+    if (field && value) {
+      field.value = value;
+    }
+  });
+  
+  // Handle country dropdown
+  const countrySelect = document.getElementById("country");
+  if (countrySelect && address.country) {
+    const countryOptions = Array.from(countrySelect.options);
+    const matchingOption = countryOptions.find(option => 
+      option.value.toLowerCase().includes(address.country.toLowerCase()) ||
+      address.country.toLowerCase().includes(option.value.toLowerCase())
+    );
+    
+    if (matchingOption) {
+      countrySelect.value = matchingOption.value;
+    } else if (address.country) {
+      countrySelect.value = "Other";
+    }
+  }
+}
+
+function fillReportFormFields(address) {
+  const fields = {
+    'address': address.address,
+    'city_town': address.city_town,
+    'state_province': address.state_province,
+    'zipcode': address.zipcode,
+    'country': address.country
+  };
+
+  Object.entries(fields).forEach(([fieldId, value]) => {
+    const field = document.getElementById(fieldId);
+    if (field && value) {
+      field.value = value;
+    }
+  });
+  // Set latitude/longitude if selectedCoordinates present
+  if (window.selectedCoordinates) {
+    const latField = document.getElementById('latitude');
+    const lngField = document.getElementById('longitude');
+    if (latField && lngField) {
+      latField.value = window.selectedCoordinates.lat;
+      lngField.value = window.selectedCoordinates.lng;
+    }
+  }
+}
+
+async function searchLocation() {
+  const searchInput = document.getElementById('locationSearchInput');
+  const searchBtn = document.getElementById('searchLocationBtn');
+  
+  if (!searchInput || !searchInput.value.trim()) {
+    showToast("Please enter a location to search for.", "error");
+    return;
+  }
+  
+  const originalText = searchBtn.innerHTML;
+  searchBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+  searchBtn.disabled = true;
+  
+  try {
+    const query = searchInput.value.trim();
+    const results = await geocodeLocation(query);
+    
+    if (results && results.length > 0) {
+      const result = results[0]; // Use first result
+      const lat = parseFloat(result.lat);
+      const lng = parseFloat(result.lon);
+      
+      // Center map on search result with proper zoom
+      locationMap.setView([lat, lng], 15);
+      addMarker(lat, lng);
+      selectedCoordinates = { lat, lng };
+      document.getElementById('confirmLocationBtn').disabled = false;
+      
+      showToast(`Found: ${result.display_name}`, "success");
+    } else {
+      showToast("No locations found. Please try a different search term.", "error");
+    }
+  } catch (error) {
+    console.error("Search error:", error);
+    showToast("Search failed. Please try again.", "error");
+  } finally {
+    searchBtn.innerHTML = originalText;
+    searchBtn.disabled = false;
+  }
+}
+
+async function geocodeLocation(query) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'LostAndFound-App/1.0'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error("Geocoding failed");
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    throw error;
+  }
+}
+
+function cleanupMap() {
+  if (locationMap) {
+    locationMap.remove();
+    locationMap = null;
+  }
+  selectedMarker = null;
+  selectedCoordinates = null;
+  document.getElementById('confirmLocationBtn').disabled = true;
+  
+  // Clear search input
+  const searchInput = document.getElementById('locationSearchInput');
+  if (searchInput) {
+    searchInput.value = '';
+  }
+}

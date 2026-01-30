@@ -10,7 +10,7 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const { register } = useContext(AuthContext);
+  const { register, login } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,8 +39,14 @@ const Register = () => {
     const result = await register(username, email, password, phone);
     console.log('Registration result:', result);
     if (result.success) {
-      const from = location.state?.from || '/login';
-      navigate(from, { replace: true });
+      // Auto-login after successful registration, then go to profile page
+      const loginResult = await login(username, password);
+      if (loginResult.success) {
+        navigate('/profile', { replace: true });
+      } else {
+        const from = location.state?.from || '/login';
+        navigate(from, { replace: true });
+      }
     } else {
       setError(result.message || 'Registration failed. Please try again.');
     }

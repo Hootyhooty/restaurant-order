@@ -53,6 +53,23 @@
   align-items: center;
 }
 
+.header-profile-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.header-profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e31837;
+}
+
 .mobile-menu-btn {
   display: none;
   background: none;
