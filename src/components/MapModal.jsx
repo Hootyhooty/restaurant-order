@@ -12,32 +12,40 @@ const MapModal = ({ onClose, onConfirm, initialLat = null, initialLng = null }) 
 
   useEffect(() => {
     // Wait for DOM element to be ready
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.log('MapModal: mapRef not ready yet');
+      return;
+    }
+
+    console.log('MapModal: Starting to load Leaflet...');
 
     // Load Leaflet CSS and JS dynamically
     const loadLeaflet = async () => {
       if (window.L) {
+        console.log('MapModal: Leaflet already loaded, initializing map...');
         // Small delay to ensure DOM is ready
         setTimeout(() => initializeMap(), 100);
         return;
       }
 
+      console.log('MapModal: Loading Leaflet from CDN...');
+
       // Load CSS
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-      link.crossOrigin = '';
       document.head.appendChild(link);
 
       // Load JS
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.integrity = 'sha256-20nQCchB9co0qjJsoR7dF9i+2ZHH4mYTyn93ZJTZfk=';
-      script.crossOrigin = '';
       script.onload = () => {
+        console.log('MapModal: Leaflet loaded successfully, initializing map...');
         // Small delay to ensure DOM is ready
         setTimeout(() => initializeMap(), 100);
+      };
+      script.onerror = (error) => {
+        console.error('MapModal: Failed to load Leaflet script:', error);
       };
       document.body.appendChild(script);
     };
@@ -55,6 +63,12 @@ const MapModal = ({ onClose, onConfirm, initialLat = null, initialLng = null }) 
   }, []);
 
   const initializeMap = () => {
+    console.log('MapModal: initializeMap called', {
+      hasLeaflet: !!window.L,
+      hasMapInstance: !!mapInstanceRef.current,
+      hasMapRef: !!mapRef.current
+    });
+
     if (!window.L || mapInstanceRef.current || !mapRef.current) return;
 
     // Ensure map container has dimensions
@@ -63,6 +77,11 @@ const MapModal = ({ onClose, onConfirm, initialLat = null, initialLng = null }) 
       setTimeout(() => initializeMap(), 200);
       return;
     }
+
+    console.log('MapModal: Creating map with container dimensions:', {
+      width: mapRef.current.offsetWidth,
+      height: mapRef.current.offsetHeight
+    });
 
     let center = [40.7128, -74.0060]; // Default to New York
     let zoom = 13;
@@ -85,61 +104,74 @@ const MapModal = ({ onClose, onConfirm, initialLat = null, initialLng = null }) 
 
       mapInstanceRef.current = map;
       
+      console.log('MapModal: Map created successfully');
+
       // Invalidate size after a short delay to ensure proper rendering
       setTimeout(() => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.invalidateSize();
+          console.log('MapModal: Map size invalidated');
         }
       }, 100);
+
+      // Add click event to map
+      map.on('click', (e) => {
+        console.log('MapModal: Map clicked at', e.latlng);
+        const { lat, lng } = e.latlng;
+        addMarker(lat, lng);
+        setSelectedCoords({ lat, lng });
+      });
+
+      // Add marker if initial coordinates provided
+      if (initialLat && initialLng) {
+        addMarker(parseFloat(initialLat), parseFloat(initialLng));
+        setSelectedCoords({ lat: parseFloat(initialLat), lng: parseFloat(initialLng) });
+      } else {
+        // Try geolocation
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              mapInstanceRef.current.setView([latitude, longitude], 15);
+              addMarker(latitude, longitude);
+              setSelectedCoords({ lat: latitude, lng: longitude });
+            },
+            (error) => {
+              console.log('Could not get current location:', error);
+            }
+          );
+        }
+      }
     } catch (error) {
       console.error('Error initializing map:', error);
     }
-
-    // Add marker if initial coordinates provided
-    if (initialLat && initialLng) {
-      addMarker(parseFloat(initialLat), parseFloat(initialLng));
-      setSelectedCoords({ lat: parseFloat(initialLat), lng: parseFloat(initialLng) });
-    } else {
-      // Try geolocation
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            map.setView([latitude, longitude], 15);
-            addMarker(latitude, longitude);
-            setSelectedCoords({ lat: latitude, lng: longitude });
-          },
-          (error) => {
-            console.log('Could not get current location:', error);
-          }
-        );
-      }
-    }
-
-    // Add click event
-    map.on('click', (e) => {
-      const { lat, lng } = e.latlng;
-      addMarker(lat, lng);
-      setSelectedCoords({ lat, lng });
-    });
   };
 
   const addMarker = (lat, lng) => {
-    if (!mapInstanceRef.current) return;
+    console.log('MapModal: addMarker called with', { lat, lng });
+    
+    if (!mapInstanceRef.current) {
+      console.error('MapModal: Cannot add marker - map instance not available');
+      return;
+    }
 
     // Remove existing marker
     if (markerRef.current) {
       mapInstanceRef.current.removeLayer(markerRef.current);
+      console.log('MapModal: Removed previous marker');
     }
 
     // Add new marker
     markerRef.current = window.L.marker([lat, lng], {
       draggable: true
     }).addTo(mapInstanceRef.current);
+    
+    console.log('MapModal: New marker added at', { lat, lng });
 
     // Update coordinates when marker is dragged
     markerRef.current.on('dragend', (e) => {
       const newPos = e.target.getLatLng();
+      console.log('MapModal: Marker dragged to', newPos);
       setSelectedCoords({ lat: newPos.lat, lng: newPos.lng });
     });
   };

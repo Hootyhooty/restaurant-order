@@ -145,6 +145,26 @@
   box-shadow: 0 4px 15px rgba(227, 24, 55, 0.3);
 }
 
+.review-btn {
+  display: block;
+  text-align: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #333;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.review-btn:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+  color: #e31837;
+}
+
 .login-prompt {
   font-size: 14px;
   color: #e31837;

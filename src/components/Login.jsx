@@ -17,7 +17,13 @@ const Login = () => {
     const result = await login(username, password);
     if (result.success) {
       const from = location.state?.from || '/menu';
-      navigate(from);
+      
+      // Redirect admins to admin dashboard
+      if (result.user && result.user.role === 'ADMIN') {
+        navigate('/admin');
+      } else {
+        navigate(from);
+      }
     } else {
       setError(result.message);
     }

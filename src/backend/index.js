@@ -5,6 +5,7 @@ const cors = require('cors');
 require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
   console.warn('Warning: MONGODB_URI or JWT_SECRET is not set. Create src/backend/.env based on src/backend/.env.example');
@@ -46,6 +47,7 @@ mongoose.connect(mongoUri, {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

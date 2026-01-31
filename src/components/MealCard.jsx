@@ -20,6 +20,8 @@ const MealCard = ({ meal }) => {
     alert(`Added ${meal.name} (${quantity} items) to cart!`);
   };
 
+  const reviewSlug = meal.name.replace(/\s+/g, '_');
+
   return (
     <div className="meal-card">
       {meal.isPopular && (
@@ -59,6 +61,12 @@ const MealCard = ({ meal }) => {
               >
                 Add to Cart
               </button>
+              <Link
+                to={`/review/${reviewSlug}`}
+                className="review-btn"
+              >
+                Review
+              </Link>
             </>
           ) : (
             <Link

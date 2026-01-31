@@ -67,6 +67,7 @@ router.post('/login', async (req, res) => {
         first_name: customer.first_name,
         last_name: customer.last_name,
         photo: customer.photo,
+        role: customer.role,
         email_verified: customer.email_verified,
         phone_verified: customer.phone_verified,
         address_line1: customer.address_line1,
