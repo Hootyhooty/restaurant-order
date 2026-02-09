@@ -8,17 +8,17 @@ A complete admin dashboard has been implemented, adapted from your Python/Flask 
 ### 1. Backend Changes
 
 #### **Database Model** (Already had role field)
-- `src/backend/models/Customer.js`
+- `backend/models/Customer.js`
   - Role field already exists: `USER` or `ADMIN`
   - Active status field for enabling/disabling accounts
 
-#### **Middleware**
-- `src/backend/middleware/auth.js`
-  - `rolesRequired('ADMIN')` middleware already exists
-  - Checks JWT token and verifies user role
+#### **Auth / Middleware**
+- `backend/controllers/authController.js`
+  - `register` and `login` handlers
+  - `authMiddleware` and `rolesRequired('ADMIN')` middleware
 
 #### **Admin Controller** (NEW)
-- `src/backend/controllers/adminController.js`
+- `backend/controllers/adminController.js`
   - `getUsers()` - List all users with pagination
   - `toggleUserActive()` - Enable/disable user accounts
   - `deleteUser()` - Delete users
@@ -27,7 +27,7 @@ A complete admin dashboard has been implemented, adapted from your Python/Flask 
   - `getDashboardStats()` - Get statistics (total users, active users, admins, menu items)
 
 #### **Admin Routes** (NEW)
-- `src/backend/routes/adminRoutes.js`
+- `backend/routes/adminRoutes.js`
   - `GET /api/admin/stats` - Dashboard statistics
   - `GET /api/admin/users` - List users
   - `POST /api/admin/users` - Create user
@@ -38,7 +38,7 @@ A complete admin dashboard has been implemented, adapted from your Python/Flask 
 All admin routes are protected by `rolesRequired('ADMIN')` middleware.
 
 #### **Auth Route Updates**
-- `src/backend/routes/auth.js`
+- `backend/routes/auth.js`
   - Updated login response to include `role` field so frontend knows if user is admin
 
 ### 2. Frontend Changes
@@ -89,7 +89,7 @@ db.customers.updateOne(
 
 **Option 2: Using Mongoose/Node.js script**
 ```javascript
-const Customer = require('./src/backend/models/Customer');
+const Customer = require('./backend/models/Customer');
 const mongoose = require('mongoose');
 
 mongoose.connect('mongodb://localhost:27017/restaurant_db');
@@ -112,7 +112,7 @@ Customer.findOneAndUpdate(
 
 1. Make sure your backend is running:
    ```bash
-   cd src/backend
+   cd backend
    npm start
    ```
 
@@ -170,14 +170,14 @@ The implementation follows your previous Python/Flask pattern but adapted for Re
 ## Files Created/Modified
 
 **Created:**
-- `src/backend/controllers/adminController.js`
-- `src/backend/routes/adminRoutes.js`
+- `backend/controllers/adminController.js`
+- `backend/routes/adminRoutes.js`
 - `src/components/AdminDashboard.jsx`
 - `src/components/AdminDashboard.css`
 
 **Modified:**
-- `src/backend/index.js` - Added admin routes
-- `src/backend/routes/auth.js` - Include role in login response
+- `backend/index.js` - Added admin routes
+- `backend/routes/auth.js` - Include role in login response
 - `src/components/Login.jsx` - Redirect admins to /admin
 - `src/context/AuthContext.jsx` - Return user data from login
 - `src/App.jsx` - Added /admin route

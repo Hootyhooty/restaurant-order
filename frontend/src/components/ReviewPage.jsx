@@ -1,17 +1,48 @@
 // Standalone menu item page with review section (per sketch)
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { getMealBySlug, categories } from '../data/meals';
 import './ReviewPage.css';
 
 const ReviewPage = () => {
   const { menuSlug } = useParams();
   const navigate = useNavigate();
-  const meal = getMealBySlug(menuSlug);
+  const [meal, setMeal] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [reviewText, setReviewText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { isLoggedIn } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchMeal = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch(`http://localhost:5000/api/meals/${menuSlug}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error('Menu item not found.');
+          }
+          throw new Error('Failed to load menu item.');
+        }
+
+        const data = await res.json();
+        setMeal(data.item || null);
+        setCategories(data.categories || []);
+      } catch (err) {
+        console.error('ReviewPage meal fetch error:', err);
+        setError(err.message || 'Error loading menu item.');
+        setMeal(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeal();
+  }, [menuSlug]);
 
   // Placeholder comments until backend exists
   const [comments] = useState([
@@ -42,11 +73,22 @@ const ReviewPage = () => {
     setReviewText('');
   };
 
-  if (!meal) {
+  if (loading) {
     return (
       <section className="review-page">
         <div className="container">
-          <p className="review-not-found">Menu item not found.</p>
+          <p className="review-not-found">Loading menu item...</p>
+          <Link to="/menu" className="review-back-link">Back to Menu</Link>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || !meal) {
+    return (
+      <section className="review-page">
+        <div className="container">
+          <p className="review-not-found">{error || 'Menu item not found.'}</p>
           <Link to="/menu" className="review-back-link">Back to Menu</Link>
         </div>
       </section>

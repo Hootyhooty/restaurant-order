@@ -1,7 +1,7 @@
 // Admin routes - protected by admin role middleware
 const express = require('express');
 const router = express.Router();
-const { rolesRequired } = require('../middleware/auth');
+const { rolesRequired } = require('../controllers/authController');
 const {
   getUsers,
   toggleUserActive,

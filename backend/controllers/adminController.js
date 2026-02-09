@@ -1,6 +1,6 @@
 // Admin controller - manages users, menu items (meals), and reviews
 const Customer = require('../models/Customer');
-const { meals } = require('../../data/meals');
+const { meals } = require('../data/meals');
 
 // Get all users (admin only)
 const getUsers = async (req, res) => {

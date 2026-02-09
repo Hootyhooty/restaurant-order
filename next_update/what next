@@ -1,7 +1,13 @@
-- Map still doesnt work
 - add cart and wiring manu to its funtion
 - change login to based on email or username
 - change format for registartion req name and location.
-- redirect to menu page after login 
-- add stand alone page for each menu and review section
-- 
+
+- fix admin page
+
+
+Implement later
+- **Email System**: Send emails to users from admin panel
+- **Logs Viewer**: View application logs (INFO, WARNING, ERROR)
+- **Reviews Management**: Toggle public/private status, delete reviews
+- **Orders Management**: View and manage customer orders
+- **Sales Logs**: Track and view sales transactions
