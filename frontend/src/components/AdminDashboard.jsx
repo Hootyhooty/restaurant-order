@@ -202,23 +202,35 @@ const AdminDashboard = () => {
     <section className="admin-dashboard">
       <div className="container-fluid">
         <div className="row">
-          {/* Sidebar */}
-          <div className="col-12 col-md-3 col-lg-2 mb-3 mb-md-0">
-            <div className="admin-sidebar">
+          {/* Top Bar: navigation + stats + logout */}
+          <div className="col-12">
+            <div className="admin-topbar">
               <button
-                className={`list-group-item list-group-item-action ${activeSection === 'users' ? 'active' : ''}`}
+                className={`admin-topbar-link ${activeSection === 'users' ? 'active' : ''}`}
                 onClick={() => loadSection('users')}
               >
                 Users
               </button>
+              <span className="admin-topbar-separator">|</span>
               <button
-                className={`list-group-item list-group-item-action ${activeSection === 'menu' ? 'active' : ''}`}
+                className={`admin-topbar-link ${activeSection === 'menu' ? 'active' : ''}`}
                 onClick={() => loadSection('menu')}
               >
-                Menu Items
+                Menu
               </button>
+              {stats && (
+                <>
+                  <span className="admin-topbar-separator">|</span>
+                  <span className="admin-topbar-stat">Total Users: {stats.totalUsers}</span>
+                  <span className="admin-topbar-separator">|</span>
+                  <span className="admin-topbar-stat">Active Users: {stats.activeUsers}</span>
+                  <span className="admin-topbar-separator">|</span>
+                  <span className="admin-topbar-stat">Menu Items: {stats.totalMenuItems}</span>
+                </>
+              )}
+              <span className="admin-topbar-separator">|</span>
               <button
-                className="list-group-item list-group-item-action text-danger"
+                className="admin-topbar-link admin-topbar-logout"
                 onClick={() => {
                   logout();
                   navigate('/');
@@ -230,7 +242,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Main Content */}
-          <div className="col-12 col-md-9 col-lg-10">
+          <div className="col-12">
             {/* Admin Info */}
             {user && (
               <div className="admin-info mb-4">
@@ -242,36 +254,6 @@ const AdminDashboard = () => {
                     <div><strong>Username:</strong> {user.username}</div>
                     <div><strong>Email:</strong> {user.email}</div>
                     <div><span className="badge bg-danger">ADMIN</span></div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Stats Cards */}
-            {stats && (
-              <div className="row mb-4">
-                <div className="col-md-3">
-                  <div className="stats-card">
-                    <h5>Total Users</h5>
-                    <p className="stats-number">{stats.totalUsers}</p>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="stats-card">
-                    <h5>Active Users</h5>
-                    <p className="stats-number">{stats.activeUsers}</p>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="stats-card">
-                    <h5>Admin Users</h5>
-                    <p className="stats-number">{stats.adminUsers}</p>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="stats-card">
-                    <h5>Menu Items</h5>
-                    <p className="stats-number">{stats.totalMenuItems}</p>
                   </div>
                 </div>
               </div>

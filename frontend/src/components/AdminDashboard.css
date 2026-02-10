@@ -5,6 +5,54 @@
   min-height: 100vh;
 }
 
+.admin-topbar {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.admin-topbar-link {
+  border: none;
+  background: transparent;
+  color: #e31837;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-topbar-link.active,
+.admin-topbar-link:hover {
+  background-color: #e31837;
+  color: #ffffff;
+}
+
+.admin-topbar-logout {
+  color: #dc3545;
+}
+
+.admin-topbar-logout:hover {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.admin-topbar-separator {
+  color: #999999;
+}
+
+.admin-topbar-stat {
+  color: #333333;
+  font-weight: 500;
+}
+
 .admin-sidebar {
   background-color: white;
   border-radius: 12px;
@@ -118,6 +166,8 @@
 .admin-table {
   background-color: rgba(255, 255, 255, 0.9);
   margin-bottom: 0;
+  width: 100%;
+  table-layout: auto;
 }
 
 .admin-table thead {
