@@ -134,6 +134,20 @@ const getMenuItems = async (req, res) => {
   }
 };
 
+// Delete menu item (admin only - DB meals only)
+const deleteMenuItem = async (req, res) => {
+  try {
+    const meal = await Meal.findByIdAndDelete(req.params.menuItemId);
+    if (!meal) {
+      return res.status(404).json({ success: false, message: 'Menu item not found' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete menu item error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Create menu item (admin only)
 const createMenuItem = async (req, res) => {
   try {
@@ -198,5 +212,6 @@ module.exports = {
   createUser,
   getMenuItems,
   createMenuItem,
+  deleteMenuItem,
   getDashboardStats
 };

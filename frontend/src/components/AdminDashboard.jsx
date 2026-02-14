@@ -29,7 +29,7 @@ const AdminDashboard = () => {
   });
   const [addMenuSubmitting, setAddMenuSubmitting] = useState(false);
   const [addMenuImageError, setAddMenuImageError] = useState(false);
-  const imageInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     // Check if user is admin
@@ -141,6 +141,28 @@ const AdminDashboard = () => {
     if (field === 'image') setAddMenuImageError(false);
   };
 
+  const handleImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => handleAddMenuFormChange('image', reader.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const isDbMenuId = (id) => /^[a-f0-9]{24}$/i.test(String(id));
+
+  const handleDeleteMenuItem = async (menuId) => {
+    if (!window.confirm('Delete this menu item?')) return;
+    try {
+      await fetchJSON(`/api/admin/menu-items/${menuId}`, { method: 'DELETE' });
+      loadSection('menu');
+      loadDashboardStats();
+    } catch (error) {
+      alert(`Failed to delete menu item: ${error.message}`);
+    }
+  };
+
   const handleAddMenuSubmit = async (e) => {
     e.preventDefault();
     if (!addMenuForm.name?.trim() || addMenuForm.price === '' || !addMenuForm.category) {
@@ -226,7 +248,7 @@ const AdminDashboard = () => {
 
     return (
       <div className="table-responsive">
-        <table className="table table-bordered table-hover admin-table">
+        <table className="table table-bordered table-hover admin-table admin-menu-table">
           <thead className="table-dark">
             <tr>
               <th>Image</th>
@@ -234,7 +256,8 @@ const AdminDashboard = () => {
               <th>Description</th>
               <th>Price</th>
               <th>Category</th>
-              <th>Popular</th>
+              <th className="admin-menu-center">Popular</th>
+              <th className="admin-menu-center">Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -247,7 +270,19 @@ const AdminDashboard = () => {
                 <td>{m.description}</td>
                 <td>฿{m.price}</td>
                 <td>{m.category}</td>
-                <td>{m.isPopular ? 'Yes' : 'No'}</td>
+                <td className="admin-menu-center">{m.isPopular ? 'Yes' : 'No'}</td>
+                <td className="admin-menu-center">
+                  {isDbMenuId(m.id) ? (
+                    <button
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => handleDeleteMenuItem(m.id)}
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -359,12 +394,19 @@ const AdminDashboard = () => {
               <button type="button" className="admin-modal-close" onClick={closeAddMenuModal} aria-label="Close">&times;</button>
             </div>
             <form onSubmit={handleAddMenuSubmit} className="admin-modal-body">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageFileSelect}
+              />
               <div
                 className="admin-add-menu-image-area"
-                onClick={() => imageInputRef.current?.focus()}
+                onClick={() => fileInputRef.current?.click()}
                 role="button"
                 tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && imageInputRef.current?.focus()}
+                onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
               >
                 {addMenuForm.image && !addMenuImageError ? (
                   <img
@@ -373,17 +415,9 @@ const AdminDashboard = () => {
                     onError={() => setAddMenuImageError(true)}
                   />
                 ) : (
-                  <span>Click to add image URL</span>
+                  <span>Click to choose image</span>
                 )}
               </div>
-              <input
-                ref={imageInputRef}
-                type="url"
-                className="admin-add-menu-image-url"
-                placeholder="Image URL"
-                value={addMenuForm.image}
-                onChange={e => handleAddMenuFormChange('image', e.target.value)}
-              />
               <div className="admin-add-menu-field">
                 <label>Name:</label>
                 <input

@@ -187,6 +187,18 @@
   vertical-align: middle;
 }
 
+.admin-menu-table.admin-table th,
+.admin-menu-table.admin-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-menu-table.admin-table th.admin-menu-center,
+.admin-menu-table.admin-table td.admin-menu-center {
+  text-align: center;
+  vertical-align: middle;
+}
+
 .badge {
   padding: 6px 12px;
   font-size: 12px;
