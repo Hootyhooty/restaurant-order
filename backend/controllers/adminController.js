@@ -113,7 +113,8 @@ const appendMealToFile = (meal) => {
   const escape = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const entry = `  },\n  {\n    id: ${newId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '/food_img/${meal.imageFilename}',\n    category: '${meal.category}',\n  },\n];`;
   let content = fs.readFileSync(mealsDataPath, 'utf8');
-  content = content.replace(/  \},\r?\n\];\s*$/, entry);
+  // Match "  },\n];" - don't use $ as there's more content (function getMealBySlug...) after
+  content = content.replace(/  \},\s*\r?\n\];/, entry);
   fs.writeFileSync(mealsDataPath, content);
   return newId;
 };
