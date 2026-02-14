@@ -220,6 +220,152 @@
   color: #0c5460;
 }
 
+/* Add Menu Modal */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 20px;
+}
+
+.admin-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 440px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.admin-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-modal-header h5 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.admin-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.admin-modal-close:hover {
+  color: #333;
+  background: #f0f0f0;
+}
+
+.admin-modal-body {
+  padding: 20px;
+}
+
+.admin-add-menu-image-area {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  max-height: 180px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: #f8f9fa;
+  margin-bottom: 10px;
+}
+
+.admin-add-menu-image-area:hover {
+  border-color: #e31837;
+  background: #fff5f6;
+}
+
+.admin-add-menu-image-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-add-menu-image-area span {
+  color: #888;
+  font-size: 14px;
+}
+
+.admin-add-menu-image-url {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-add-menu-image-url:focus {
+  outline: none;
+  border-color: #e31837;
+  box-shadow: 0 0 0 2px rgba(227, 24, 55, 0.2);
+}
+
+.admin-add-menu-field {
+  margin-bottom: 16px;
+}
+
+.admin-add-menu-field label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.admin-add-menu-field input,
+.admin-add-menu-field textarea,
+.admin-add-menu-field select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.admin-add-menu-field input:focus,
+.admin-add-menu-field textarea:focus,
+.admin-add-menu-field select:focus {
+  outline: none;
+  border-color: #e31837;
+}
+
+.admin-add-menu-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.admin-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
 @media (max-width: 768px) {
   .admin-dashboard {
     padding: 40px 0;

@@ -8,6 +8,7 @@ const {
   deleteUser,
   createUser,
   getMenuItems,
+  createMenuItem,
   getDashboardStats
 } = require('../controllers/adminController');
 
@@ -18,5 +19,6 @@ router.post('/users', rolesRequired('ADMIN'), createUser);
 router.post('/users/:userId/toggle', rolesRequired('ADMIN'), toggleUserActive);
 router.delete('/users/:userId', rolesRequired('ADMIN'), deleteUser);
 router.get('/menu-items', rolesRequired('ADMIN'), getMenuItems);
+router.post('/menu-items', rolesRequired('ADMIN'), createMenuItem);
 
 module.exports = router;

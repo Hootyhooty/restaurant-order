@@ -14,8 +14,11 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 
 const app = express();
 
-// Allow frontend origins and handle preflight
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3002'];
+// Allow frontend origins and handle preflight (localhost + 127.0.0.1)
+const allowedOrigins = [
+  'http://localhost:5000', 'http://localhost:3000', 'http://localhost:3001','http://localhost:3002',
+  'http://127.0.0.1:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001','http://127.0.0.1:3002'
+];
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);

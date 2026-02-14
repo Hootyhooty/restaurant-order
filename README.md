@@ -6,7 +6,7 @@ A React restaurant application with a modern, responsive design.
 
 - **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
 - **Interactive Menu**: Category filtering and meal selection
-- **Modern UI**: Clean, professional design with KFC branding
+- **Modern UI**: Clean, professional design
 - **Quantity Controls**: Add/remove items with quantity controls
 - **Shopping Cart**: Add items to cart functionality
 - **Thai Language Support**: Full Thai language interface

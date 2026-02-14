@@ -1,13 +1,25 @@
 // src/backend/controllers/mealController.js
 // Public menu (meals) API handlers for the frontend
 
+const Meal = require('../models/Meal');
 const { meals, categories, getMealBySlug } = require('../data/meals');
 
 // GET /api/meals
-const getMeals = (req, res) => {
+const getMeals = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit, 10) || meals.length;
-    const items = meals.slice(0, limit);
+    const limit = parseInt(req.query.limit, 10) || 500;
+    const staticItems = meals.slice(0, limit);
+    const dbMeals = await Meal.find().sort({ createdAt: -1 }).limit(limit);
+    const dbItems = dbMeals.map(m => ({
+      id: m._id.toString(),
+      name: m.name,
+      description: m.description || '',
+      price: m.price,
+      image: m.image || '',
+      category: m.category,
+      isPopular: m.isPopular || false
+    }));
+    const items = [...staticItems, ...dbItems];
 
     res.json({
       success: true,
@@ -21,11 +33,25 @@ const getMeals = (req, res) => {
 };
 
 // GET /api/meals/:slug
-const getOneMeal = (req, res) => {
+const getOneMeal = async (req, res) => {
   try {
     const { slug } = req.params;
-    const meal = getMealBySlug(slug);
-
+    let meal = getMealBySlug(slug);
+    if (!meal) {
+      const nameFromSlug = (slug || '').replace(/_/g, ' ');
+      const dbMeal = await Meal.findOne({ name: nameFromSlug });
+      if (dbMeal) {
+        meal = {
+          id: dbMeal._id.toString(),
+          name: dbMeal.name,
+          description: dbMeal.description || '',
+          price: dbMeal.price,
+          image: dbMeal.image || '',
+          category: dbMeal.category,
+          isPopular: dbMeal.isPopular || false
+        };
+      }
+    }
     if (!meal) {
       return res
         .status(404)

@@ -4,6 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './AdminDashboard.css';
 
+const MENU_CATEGORIES = [
+  { id: 'rice', name: 'Rice' },
+  { id: 'sandwich', name: 'Sandwich' },
+  { id: 'sides', name: 'Sides' },
+  { id: 'drinks', name: 'Drinks' },
+  { id: 'desserts', name: 'Desserts' },
+];
+
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -11,6 +19,17 @@ const AdminDashboard = () => {
   const [sectionData, setSectionData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
+  const [showAddMenuModal, setShowAddMenuModal] = useState(false);
+  const [addMenuForm, setAddMenuForm] = useState({
+    image: '',
+    name: '',
+    description: '',
+    price: '',
+    category: ''
+  });
+  const [addMenuSubmitting, setAddMenuSubmitting] = useState(false);
+  const [addMenuImageError, setAddMenuImageError] = useState(false);
+  const imageInputRef = useRef(null);
 
   useEffect(() => {
     // Check if user is admin
@@ -104,6 +123,49 @@ const AdminDashboard = () => {
       loadSection('users');
     } catch (error) {
       alert(`Failed to create user: ${error.message}`);
+    }
+  };
+
+  const openAddMenuModal = () => {
+    setAddMenuForm({ image: '', name: '', description: '', price: '', category: '' });
+    setAddMenuImageError(false);
+    setShowAddMenuModal(true);
+  };
+
+  const closeAddMenuModal = () => {
+    setShowAddMenuModal(false);
+  };
+
+  const handleAddMenuFormChange = (field, value) => {
+    setAddMenuForm(prev => ({ ...prev, [field]: value }));
+    if (field === 'image') setAddMenuImageError(false);
+  };
+
+  const handleAddMenuSubmit = async (e) => {
+    e.preventDefault();
+    if (!addMenuForm.name?.trim() || addMenuForm.price === '' || !addMenuForm.category) {
+      alert('Name, price, and category are required.');
+      return;
+    }
+    setAddMenuSubmitting(true);
+    try {
+      await fetchJSON('/api/admin/menu-items', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: addMenuForm.name.trim(),
+          description: addMenuForm.description.trim(),
+          price: Number(addMenuForm.price),
+          image: addMenuForm.image.trim(),
+          category: addMenuForm.category
+        })
+      });
+      loadSection('menu');
+      loadDashboardStats();
+      closeAddMenuModal();
+    } catch (error) {
+      alert(`Failed to add menu item: ${error.message}`);
+    } finally {
+      setAddMenuSubmitting(false);
     }
   };
 
@@ -267,6 +329,11 @@ const AdminDashboard = () => {
                   Add User
                 </button>
               )}
+              {activeSection === 'menu' && (
+                <button className="btn btn-primary" onClick={openAddMenuModal}>
+                  Add Menu
+                </button>
+              )}
             </div>
 
             {/* Section Body */}
@@ -282,6 +349,95 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Menu Modal */}
+      {showAddMenuModal && (
+        <div className="admin-modal-overlay" onClick={closeAddMenuModal}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h5>Add Menu Item</h5>
+              <button type="button" className="admin-modal-close" onClick={closeAddMenuModal} aria-label="Close">&times;</button>
+            </div>
+            <form onSubmit={handleAddMenuSubmit} className="admin-modal-body">
+              <div
+                className="admin-add-menu-image-area"
+                onClick={() => imageInputRef.current?.focus()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && imageInputRef.current?.focus()}
+              >
+                {addMenuForm.image && !addMenuImageError ? (
+                  <img
+                    src={addMenuForm.image}
+                    alt="Preview"
+                    onError={() => setAddMenuImageError(true)}
+                  />
+                ) : (
+                  <span>Click to add image URL</span>
+                )}
+              </div>
+              <input
+                ref={imageInputRef}
+                type="url"
+                className="admin-add-menu-image-url"
+                placeholder="Image URL"
+                value={addMenuForm.image}
+                onChange={e => handleAddMenuFormChange('image', e.target.value)}
+              />
+              <div className="admin-add-menu-field">
+                <label>Name:</label>
+                <input
+                  type="text"
+                  value={addMenuForm.name}
+                  onChange={e => handleAddMenuFormChange('name', e.target.value)}
+                  placeholder="Menu item name"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Description:</label>
+                <textarea
+                  value={addMenuForm.description}
+                  onChange={e => handleAddMenuFormChange('description', e.target.value)}
+                  placeholder="Description"
+                  rows={3}
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Price:</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={addMenuForm.price}
+                  onChange={e => handleAddMenuFormChange('price', e.target.value)}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Category:</label>
+                <select
+                  value={addMenuForm.category}
+                  onChange={e => handleAddMenuFormChange('category', e.target.value)}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {MENU_CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="admin-modal-footer">
+                <button type="button" className="btn btn-outline-secondary" onClick={closeAddMenuModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={addMenuSubmitting}>
+                  {addMenuSubmitting ? 'Adding...' : 'Add Menu Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
