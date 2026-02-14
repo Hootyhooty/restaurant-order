@@ -1,25 +1,19 @@
 // src/backend/controllers/mealController.js
 // Public menu (meals) API handlers for the frontend
 
-const Meal = require('../models/Meal');
-const { meals, categories, getMealBySlug } = require('../data/meals');
+const { categories } = require('../data/meals');
+const { getMealsData, getMealBySlug } = require('../utils/mealsData');
 
 // GET /api/meals
 const getMeals = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 500;
-    const staticItems = meals.slice(0, limit);
-    const dbMeals = await Meal.find().sort({ createdAt: -1 }).limit(limit);
-    const dbItems = dbMeals.map(m => ({
-      id: m._id.toString(),
-      name: m.name,
-      description: m.description || '',
-      price: m.price,
-      image: m.image || '',
-      category: m.category,
-      isPopular: m.isPopular || false
+    const meals = getMealsData();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const items = meals.slice(0, limit).map(m => ({
+      ...m,
+      image: m.image && m.image.startsWith('/') ? baseUrl + m.image : (m.image || '')
     }));
-    const items = [...staticItems, ...dbItems];
 
     res.json({
       success: true,
@@ -36,31 +30,23 @@ const getMeals = async (req, res) => {
 const getOneMeal = async (req, res) => {
   try {
     const { slug } = req.params;
-    let meal = getMealBySlug(slug);
-    if (!meal) {
-      const nameFromSlug = (slug || '').replace(/_/g, ' ');
-      const dbMeal = await Meal.findOne({ name: nameFromSlug });
-      if (dbMeal) {
-        meal = {
-          id: dbMeal._id.toString(),
-          name: dbMeal.name,
-          description: dbMeal.description || '',
-          price: dbMeal.price,
-          image: dbMeal.image || '',
-          category: dbMeal.category,
-          isPopular: dbMeal.isPopular || false
-        };
-      }
-    }
+    const meals = getMealsData();
+    const meal = getMealBySlug(meals, slug);
     if (!meal) {
       return res
         .status(404)
         .json({ success: false, message: 'Meal not found' });
     }
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const item = {
+      ...meal,
+      image: meal.image && meal.image.startsWith('/') ? baseUrl + meal.image : (meal.image || '')
+    };
+
     res.json({
       success: true,
-      item: meal,
+      item,
       categories,
     });
   } catch (error) {

@@ -1,4 +1,5 @@
 // src/backend/routes/userRoutes.js
+const path = require('path');
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -11,8 +12,14 @@ const {
   deactivateAccount
 } = require('../controllers/userController');
 
-// Configure multer for memory storage (we'll store in MongoDB GridFS)
-const storage = multer.memoryStorage();
+const displayDir = path.join(__dirname, '..', 'public', 'display');
+const displayStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, displayDir),
+  filename: (req, file, cb) => {
+    const ext = (file.originalname.match(/\.\w+$/) || ['.jpg'])[0];
+    cb(null, `user_${Date.now()}${ext}`);
+  }
+});
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
@@ -23,7 +30,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: storage,
+  storage: displayStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: fileFilter
 });

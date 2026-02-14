@@ -1,9 +1,11 @@
 // src/backend/controllers/userController.js
+const path = require('path');
+const fs = require('fs');
 const Customer = require('../models/Customer');
 const Image = require('../models/Image');
 const AppError = require('../utils/appError');
 
-// Upload image to MongoDB (normal Binary storage in 'img' collection)
+// Upload image to public/display (disk storage)
 exports.uploadImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -13,47 +15,14 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
-    // Check file size (MongoDB document limit is 16MB)
-    if (req.file.size > 16 * 1024 * 1024) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Image too large. Maximum size is 16MB.'
-      });
-    }
-
-    // Generate unique filename with timestamp to avoid conflicts
-    const timestamp = Date.now();
-    const originalName = req.file.originalname;
-    const ext = originalName.split('.').pop();
-    const baseName = originalName.replace(`.${ext}`, '').replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `${baseName}_${timestamp}.${ext}`;
-    const contentType = req.file.mimetype;
-
-    // Check if file already exists and delete it
-    const existingFile = await Image.findOne({ filename });
-    if (existingFile) {
-      await Image.deleteOne({ filename });
-    }
-
-    // Create new image document in 'img' collection
-    const imageDoc = new Image({
-      filename: filename,
-      contentType: contentType,
-      data: req.file.buffer, // Store Binary data directly
-      size: req.file.size
-    });
-
-    await imageDoc.save();
-
-    console.log(`✅ Image uploaded to 'img' collection: ${filename} (ID: ${imageDoc._id}, Size: ${req.file.size} bytes)`);
+    const filename = req.file.filename;
 
     return res.status(201).json({
       status: 'success',
       message: 'Image uploaded successfully',
       data: {
         filename: filename,
-        id: imageDoc._id.toString(),
-        url: `/api/users/uploads/${filename}`
+        url: `/display/${filename}`
       }
     });
   } catch (error) {
@@ -65,27 +34,27 @@ exports.uploadImage = async (req, res) => {
   }
 };
 
-// Get image from MongoDB (normal Binary storage in 'img' collection)
+// Get image - serve from public/display, or fallback to MongoDB (backward compat)
 exports.getImage = async (req, res) => {
   try {
     const filename = req.params.filename;
 
-    // Try to find the file in 'img' collection
-    let imageDoc = await Image.findOne({ filename });
-    
-    if (!imageDoc) {
-      // If not found, try to serve default.jpg
-      imageDoc = await Image.findOne({ filename: 'default.jpg' });
-      if (!imageDoc) {
-        return res.status(404).json({ message: 'Image not found' });
-      }
+    // Try disk first (public/display)
+    const displayPath = path.join(__dirname, '..', 'public', 'display', filename);
+    if (fs.existsSync(displayPath)) {
+      return res.sendFile(displayPath);
     }
 
-    // Set content type and send image buffer directly
-    res.set('Content-Type', imageDoc.contentType || 'image/jpeg');
-    res.set('Content-Length', imageDoc.size);
-    res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    res.send(imageDoc.data);
+    // Fallback: MongoDB (legacy uploads)
+    const imageDoc = await Image.findOne({ filename }) || await Image.findOne({ filename: 'default.jpg' });
+    if (imageDoc) {
+      res.set('Content-Type', imageDoc.contentType || 'image/jpeg');
+      res.set('Content-Length', imageDoc.size);
+      res.set('Cache-Control', 'public, max-age=31536000');
+      return res.send(imageDoc.data);
+    }
+
+    return res.status(404).json({ message: 'Image not found' });
   } catch (error) {
     console.error('Error retrieving image:', error);
     if (!res.headersSent) {

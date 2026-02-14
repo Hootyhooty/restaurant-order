@@ -21,7 +21,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [addMenuForm, setAddMenuForm] = useState({
-    image: '',
+    imageFile: null,
+    imagePreview: '',
     name: '',
     description: '',
     price: '',
@@ -127,7 +128,7 @@ const AdminDashboard = () => {
   };
 
   const openAddMenuModal = () => {
-    setAddMenuForm({ image: '', name: '', description: '', price: '', category: '' });
+    setAddMenuForm({ imageFile: null, imagePreview: '', name: '', description: '', price: '', category: '' });
     setAddMenuImageError(false);
     setShowAddMenuModal(true);
   };
@@ -138,24 +139,26 @@ const AdminDashboard = () => {
 
   const handleAddMenuFormChange = (field, value) => {
     setAddMenuForm(prev => ({ ...prev, [field]: value }));
-    if (field === 'image') setAddMenuImageError(false);
+    if (field === 'imagePreview') setAddMenuImageError(false);
   };
 
   const handleImageFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => handleAddMenuFormChange('image', reader.result);
-    reader.readAsDataURL(file);
+    setAddMenuForm(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: URL.createObjectURL(file),
+      image: ''
+    }));
+    setAddMenuImageError(false);
     e.target.value = '';
   };
 
-  const isDbMenuId = (id) => /^[a-f0-9]{24}$/i.test(String(id));
-
-  const handleDeleteMenuItem = async (menuId) => {
+  const handleDeleteMenuItem = async (mongoId) => {
     if (!window.confirm('Delete this menu item?')) return;
     try {
-      await fetchJSON(`/api/admin/menu-items/${menuId}`, { method: 'DELETE' });
+      await fetchJSON(`/api/admin/menu-items/${mongoId}`, { method: 'DELETE' });
       loadSection('menu');
       loadDashboardStats();
     } catch (error) {
@@ -169,18 +172,29 @@ const AdminDashboard = () => {
       alert('Name, price, and category are required.');
       return;
     }
+    if (!addMenuForm.imageFile) {
+      alert('Please select an image for the menu item.');
+      return;
+    }
     setAddMenuSubmitting(true);
     try {
-      await fetchJSON('/api/admin/menu-items', {
+      const formData = new FormData();
+      formData.append('image', addMenuForm.imageFile);
+      formData.append('name', addMenuForm.name.trim());
+      formData.append('description', addMenuForm.description.trim());
+      formData.append('price', String(addMenuForm.price));
+      formData.append('category', addMenuForm.category);
+
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/admin/menu-items', {
         method: 'POST',
-        body: JSON.stringify({
-          name: addMenuForm.name.trim(),
-          description: addMenuForm.description.trim(),
-          price: Number(addMenuForm.price),
-          image: addMenuForm.image.trim(),
-          category: addMenuForm.category
-        })
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
       loadSection('menu');
       loadDashboardStats();
       closeAddMenuModal();
@@ -272,11 +286,11 @@ const AdminDashboard = () => {
                 <td>{m.category}</td>
                 <td className="admin-menu-center">{m.isPopular ? 'Yes' : 'No'}</td>
                 <td className="admin-menu-center">
-                  {isDbMenuId(m.id) ? (
+                  {m.mongoId ? (
                     <button
                       type="button"
                       className="btn btn-outline-danger btn-sm admin-menu-delete-btn"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(m.id); }}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(m.mongoId); }}
                     >
                       Delete
                     </button>
@@ -409,9 +423,9 @@ const AdminDashboard = () => {
                 tabIndex={0}
                 onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
               >
-                {addMenuForm.image && !addMenuImageError ? (
+                {addMenuForm.imagePreview && !addMenuImageError ? (
                   <img
-                    src={addMenuForm.image}
+                    src={addMenuForm.imagePreview}
                     alt="Preview"
                     onError={() => setAddMenuImageError(true)}
                   />

@@ -1,5 +1,11 @@
 // backend/index.js
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
+
+[path.join(__dirname, 'public', 'food_img'), path.join(__dirname, 'public', 'display')].forEach((dir) => {
+  try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
+});
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
@@ -49,6 +55,8 @@ mongoose.connect(mongoUri, {
   console.error('MongoDB connection error:', err.message);
 });
 
+app.use('/food_img', express.static(path.join(__dirname, 'public', 'food_img')));
+app.use('/display', express.static(path.join(__dirname, 'public', 'display')));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
