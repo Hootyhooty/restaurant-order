@@ -1,5 +1,5 @@
 // Admin Dashboard - adapted from Python/Flask version to React
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './AdminDashboard.css';
