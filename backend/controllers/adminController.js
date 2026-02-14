@@ -150,7 +150,7 @@ const getMenuItems = async (req, res) => {
   }
 };
 
-// Delete menu item (admin only - removes from DB, meals.js, and deletes image)
+// Delete menu item (admin only - removes from DB, meals.js, and deletes image file)
 const deleteMenuItem = async (req, res) => {
   try {
     const meal = await Meal.findById(req.params.menuItemId);
@@ -160,9 +160,12 @@ const deleteMenuItem = async (req, res) => {
     const meals = getMealsData();
     const fileMeal = meals.find(m => m.id === meal.mealFileId);
     if (fileMeal && fileMeal.image) {
-      const filename = fileMeal.image.replace(/^\/food_img\//, '').replace(/^food_img\//, '');
+      // Extract filename from various path formats: /food_img/xxx.jpg, food_img/xxx.jpg, backend/public/food_img/xxx.jpg
+      const filename = fileMeal.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
       const filePath = path.join(__dirname, '..', 'public', 'food_img', filename);
-      try { fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
     if (meal.mealFileId != null) {
       removeMealFromFile(meal.mealFileId);
