@@ -274,8 +274,9 @@ const AdminDashboard = () => {
                 <td className="admin-menu-center">
                   {isDbMenuId(m.id) ? (
                     <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => handleDeleteMenuItem(m.id)}
+                      type="button"
+                      className="btn btn-outline-danger btn-sm admin-menu-delete-btn"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteMenuItem(m.id); }}
                     >
                       Delete
                     </button>

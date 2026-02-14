@@ -199,6 +199,11 @@
   vertical-align: middle;
 }
 
+.admin-menu-delete-btn {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .badge {
   padding: 6px 12px;
   font-size: 12px;
