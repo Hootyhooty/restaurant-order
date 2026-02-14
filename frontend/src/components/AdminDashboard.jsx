@@ -20,6 +20,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
+  const [showEditMenuModal, setShowEditMenuModal] = useState(false);
   const [addMenuForm, setAddMenuForm] = useState({
     imageFile: null,
     imagePreview: '',
@@ -28,9 +29,21 @@ const AdminDashboard = () => {
     price: '',
     category: ''
   });
+  const [editMenuForm, setEditMenuForm] = useState({
+    imageFile: null,
+    imagePreview: '',
+    name: '',
+    description: '',
+    price: '',
+    category: ''
+  });
+  const [editingMenuItem, setEditingMenuItem] = useState(null);
   const [addMenuSubmitting, setAddMenuSubmitting] = useState(false);
+  const [editMenuSubmitting, setEditMenuSubmitting] = useState(false);
   const [addMenuImageError, setAddMenuImageError] = useState(false);
+  const [editMenuImageError, setEditMenuImageError] = useState(false);
   const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
 
   useEffect(() => {
     // Check if user is admin
@@ -137,6 +150,43 @@ const AdminDashboard = () => {
     setShowAddMenuModal(false);
   };
 
+  const openEditMenuModal = (m) => {
+    setEditingMenuItem(m);
+    setEditMenuForm({
+      imageFile: null,
+      imagePreview: m.image || '',
+      name: m.name || '',
+      description: m.description || '',
+      price: m.price ?? '',
+      category: m.category || ''
+    });
+    setEditMenuImageError(false);
+    setShowEditMenuModal(true);
+  };
+
+  const closeEditMenuModal = () => {
+    setShowEditMenuModal(false);
+    setEditingMenuItem(null);
+  };
+
+  const handleEditMenuFormChange = (field, value) => {
+    setEditMenuForm(prev => ({ ...prev, [field]: value }));
+    if (field === 'imagePreview') setEditMenuImageError(false);
+  };
+
+  const handleEditImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    setEditMenuForm(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: URL.createObjectURL(file),
+      image: ''
+    }));
+    setEditMenuImageError(false);
+    e.target.value = '';
+  };
+
   const handleAddMenuFormChange = (field, value) => {
     setAddMenuForm(prev => ({ ...prev, [field]: value }));
     if (field === 'imagePreview') setAddMenuImageError(false);
@@ -202,6 +252,42 @@ const AdminDashboard = () => {
       alert(`Failed to add menu item: ${error.message}`);
     } finally {
       setAddMenuSubmitting(false);
+    }
+  };
+
+  const handleEditMenuSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingMenuItem?.mongoId) return;
+    if (!editMenuForm.name?.trim() || editMenuForm.price === '' || !editMenuForm.category) {
+      alert('Name, price, and category are required.');
+      return;
+    }
+    setEditMenuSubmitting(true);
+    try {
+      const formData = new FormData();
+      if (editMenuForm.imageFile) formData.append('image', editMenuForm.imageFile);
+      formData.append('name', editMenuForm.name.trim());
+      formData.append('description', editMenuForm.description.trim());
+      formData.append('price', String(editMenuForm.price));
+      formData.append('category', editMenuForm.category);
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/menu-items/${editingMenuItem.mongoId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      loadSection('menu');
+      loadDashboardStats();
+      closeEditMenuModal();
+    } catch (error) {
+      alert(`Failed to update menu item: ${error.message}`);
+    } finally {
+      setEditMenuSubmitting(false);
     }
   };
 
@@ -271,6 +357,7 @@ const AdminDashboard = () => {
               <th>Price</th>
               <th>Category</th>
               <th className="admin-menu-center">Popular</th>
+              <th className="admin-menu-center">Edit</th>
               <th className="admin-menu-center">Delete</th>
             </tr>
           </thead>
@@ -285,6 +372,19 @@ const AdminDashboard = () => {
                 <td>฿{m.price}</td>
                 <td>{m.category}</td>
                 <td className="admin-menu-center">{m.isPopular ? 'Yes' : 'No'}</td>
+                <td className="admin-menu-center">
+                  {m.mongoId ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm admin-menu-edit-btn"
+                      onClick={(e) => { e.stopPropagation(); openEditMenuModal(m); }}
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
                 <td className="admin-menu-center">
                   {m.mongoId ? (
                     <button
@@ -481,6 +581,94 @@ const AdminDashboard = () => {
                 <button type="button" className="btn btn-outline-secondary" onClick={closeAddMenuModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={addMenuSubmitting}>
                   {addMenuSubmitting ? 'Adding...' : 'Add Menu Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Menu Modal */}
+      {showEditMenuModal && editingMenuItem && (
+        <div className="admin-modal-overlay" onClick={closeEditMenuModal}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h5>Edit Menu Item</h5>
+              <button type="button" className="admin-modal-close" onClick={closeEditMenuModal} aria-label="Close">&times;</button>
+            </div>
+            <form onSubmit={handleEditMenuSubmit} className="admin-modal-body">
+              <input
+                ref={editFileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleEditImageFileSelect}
+              />
+              <div
+                className="admin-add-menu-image-area"
+                onClick={() => editFileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && editFileInputRef.current?.click()}
+              >
+                {editMenuForm.imagePreview && !editMenuImageError ? (
+                  <img
+                    src={editMenuForm.imagePreview}
+                    alt="Preview"
+                    onError={() => setEditMenuImageError(true)}
+                  />
+                ) : (
+                  <span>Click to change image</span>
+                )}
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Name:</label>
+                <input
+                  type="text"
+                  value={editMenuForm.name}
+                  onChange={e => handleEditMenuFormChange('name', e.target.value)}
+                  placeholder="Menu item name"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Description:</label>
+                <textarea
+                  value={editMenuForm.description}
+                  onChange={e => handleEditMenuFormChange('description', e.target.value)}
+                  placeholder="Description"
+                  rows={3}
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Price:</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={editMenuForm.price}
+                  onChange={e => handleEditMenuFormChange('price', e.target.value)}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Category:</label>
+                <select
+                  value={editMenuForm.category}
+                  onChange={e => handleEditMenuFormChange('category', e.target.value)}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {MENU_CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="admin-modal-footer">
+                <button type="button" className="btn btn-outline-secondary" onClick={closeEditMenuModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={editMenuSubmitting}>
+                  {editMenuSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

@@ -199,7 +199,8 @@
   vertical-align: middle;
 }
 
-.admin-menu-delete-btn {
+.admin-menu-delete-btn,
+.admin-menu-edit-btn {
   cursor: pointer;
   pointer-events: auto;
 }

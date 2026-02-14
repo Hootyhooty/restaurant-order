@@ -126,6 +126,15 @@ const removeMealFromFile = (mealFileId) => {
   fs.writeFileSync(mealsDataPath, content);
 };
 
+const updateMealInFile = (mealFileId, meal) => {
+  const escape = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const newBlock = `  {\n    id: ${mealFileId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '/food_img/${meal.imageFilename}',\n    category: '${meal.category}',\n  },\n`;
+  let content = fs.readFileSync(mealsDataPath, 'utf8');
+  const blockRegex = new RegExp(`  \\{\\s*id:\\s*${mealFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
+  content = content.replace(blockRegex, newBlock);
+  fs.writeFileSync(mealsDataPath, content);
+};
+
 // Get menu items (from data/meals.js) - attach mongoId for admin-added items (for delete)
 const getMenuItems = async (req, res) => {
   try {
@@ -174,6 +183,66 @@ const deleteMenuItem = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Delete menu item error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update menu item (admin only) - updates DB and meals.js
+const updateMenuItem = async (req, res) => {
+  try {
+    const meal = await Meal.findById(req.params.menuItemId);
+    if (!meal) {
+      return res.status(404).json({ success: false, message: 'Menu item not found' });
+    }
+    const { name, description, price, category } = req.body;
+    if (!name || price === undefined || price === null || !category) {
+      return res.status(400).json({ success: false, message: 'Name, price, and category are required' });
+    }
+    const meals = getMealsData();
+    const fileMeal = meals.find(m => m.id === meal.mealFileId);
+    if (!fileMeal) {
+      return res.status(404).json({ success: false, message: 'Menu item not found in meals file' });
+    }
+    let imageFilename = null;
+    if (req.file) {
+      imageFilename = req.file.filename;
+      if (fileMeal.image) {
+        const oldFilename = fileMeal.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
+        const oldPath = path.join(__dirname, '..', 'public', 'food_img', oldFilename);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+    } else if (fileMeal.image) {
+      imageFilename = fileMeal.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
+    } else {
+      return res.status(400).json({ success: false, message: 'Image is required' });
+    }
+    updateMealInFile(meal.mealFileId, {
+      name: name.trim(),
+      description: (description || '').trim(),
+      price: Number(price),
+      category: category.trim(),
+      imageFilename
+    });
+    meal.name = name.trim();
+    meal.description = (description || '').trim();
+    meal.price = Number(price);
+    meal.category = category.trim();
+    await meal.save();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.json({
+      success: true,
+      item: {
+        id: meal.mealFileId,
+        name: meal.name,
+        description: meal.description,
+        price: meal.price,
+        image: `${baseUrl}/food_img/${imageFilename}`,
+        category: meal.category,
+        isPopular: meal.isPopular
+      }
+    });
+  } catch (error) {
+    console.error('Update menu item error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -255,6 +324,7 @@ module.exports = {
   createUser,
   getMenuItems,
   createMenuItem,
+  updateMenuItem,
   deleteMenuItem,
   getDashboardStats
 };
