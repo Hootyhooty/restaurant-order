@@ -46,11 +46,16 @@ export const CartProvider = ({ children }) => {
     [items]
   );
 
+  const clearCart = useCallback(() => {
+    setItems([]);
+  }, []);
+
   const value = {
     items,
     addToCart,
     removeFromCart,
     updateQuantity,
+    clearCart,
     getTotalCount,
     getTotalPrice,
   };

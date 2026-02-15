@@ -14,7 +14,7 @@ const Header = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const cartRef = useRef(null);
   const { isLoggedIn, user, logout } = useContext(AuthContext);
-  const { items, updateQuantity, removeFromCart, getTotalCount, getTotalPrice } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, getTotalCount, getTotalPrice } = useCart();
   const navigate = useNavigate();
 
   const toggleMenu = () => {
@@ -37,6 +37,7 @@ const Header = () => {
 
   const handleAuthAction = () => {
     if (isLoggedIn) {
+      clearCart();
       logout();
       navigate('/');
     } else {
@@ -159,6 +160,22 @@ const Header = () => {
                         </ul>
                         <div className="header-cart-total">
                           Total: <strong>฿{getTotalPrice().toLocaleString()}</strong>
+                        </div>
+                        <div className="header-cart-buttons">
+                          <button
+                            type="button"
+                            className="header-cart-clear-btn"
+                            onClick={() => { clearCart(); setCartOpen(false); }}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            type="button"
+                            className="header-cart-buy-btn"
+                            onClick={() => { /* payment later */ setCartOpen(false); }}
+                          >
+                            Buy
+                          </button>
                         </div>
                       </>
                     )}
