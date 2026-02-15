@@ -6,6 +6,8 @@ import MapModal from './MapModal';
 import axios from 'axios';
 import './EditProfile.css';
 
+const DEFAULT_AVATAR = 'http://localhost:5000/display/default.jpg';
+
 const EditProfile = () => {
   const { isLoggedIn, user, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -177,9 +179,9 @@ const EditProfile = () => {
       ? form.photo.startsWith('http')
         ? form.photo
         : form.photo === 'other_img/default.jpg' || form.photo === 'default.jpg'
-        ? '/other_img/default.jpg'
+        ? DEFAULT_AVATAR
         : `http://localhost:5000/api/users/uploads/${form.photo}`
-      : '/other_img/default.jpg';
+      : DEFAULT_AVATAR;
 
   return (
     <section className="edit-profile-section">

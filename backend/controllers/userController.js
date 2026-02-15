@@ -71,6 +71,7 @@ exports.getMe = async (req, res) => {
       id: user._id.toString(),
       username: user.username,
       email: user.email,
+      role: user.role || 'USER',
       alternate_email: user.alternate_email,
       first_name: user.first_name,
       last_name: user.last_name,

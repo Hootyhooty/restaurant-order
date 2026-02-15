@@ -10,10 +10,23 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      console.log('Found token in localStorage, setting logged in state');
-      setIsLoggedIn(true);
-    }
+    if (!token) return;
+    const restoreUser = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/users/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data?.user) {
+          setUser(response.data.user);
+          setIsLoggedIn(true);
+        }
+      } catch (err) {
+        localStorage.removeItem('token');
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+    };
+    restoreUser();
   }, []);
 
   const register = async (username, email, password, phone) => {

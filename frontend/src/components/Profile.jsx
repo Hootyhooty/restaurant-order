@@ -4,10 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Profile.css';
 
+const API_BASE = 'http://localhost:5000';
+const DEFAULT_AVATAR = `${API_BASE}/display/default.jpg`;
+
 const Profile = () => {
   const { isLoggedIn, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('history'); // history | messages | promotion | social
+  const [profileImgError, setProfileImgError] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -15,18 +19,22 @@ const Profile = () => {
     }
   }, [isLoggedIn, navigate]);
 
+  useEffect(() => {
+    setProfileImgError(false);
+  }, [user?.photo]);
+
   if (!isLoggedIn) {
     return null;
   }
 
   const profileImage =
-    user?.photo && user.photo.trim() !== ''
-      ? user.photo.startsWith('http')
+    !user?.photo || user.photo.trim() === '' || profileImgError
+      ? DEFAULT_AVATAR
+      : user.photo.startsWith('http')
         ? user.photo
         : user.photo === 'other_img/default.jpg' || user.photo === 'default.jpg'
-        ? '/other_img/default.jpg'
-        : `http://localhost:5000/api/users/uploads/${user.photo}`
-      : '/other_img/default.jpg';
+        ? DEFAULT_AVATAR
+        : `${API_BASE}/api/users/uploads/${user.photo}`;
 
   const reputationIsGreen = user?.email_verified && user?.phone_verified;
 
@@ -39,6 +47,7 @@ const Profile = () => {
               src={profileImage}
               alt={user?.username || 'User'}
               className="profile-avatar"
+              onError={() => setProfileImgError(true)}
             />
             <div className="profile-header-info">
               <h2 className="profile-username">

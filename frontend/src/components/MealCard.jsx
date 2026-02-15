@@ -2,22 +2,21 @@
 import { useState, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import './MealCard.css';
 
 const MealCard = ({ meal }) => {
   const [quantity, setQuantity] = useState(1);
   const { isLoggedIn } = useContext(AuthContext);
+  const { addToCart } = useCart();
   const location = useLocation();
 
   const handleQuantityChange = (newQuantity) => {
-    if (newQuantity >= 1) {
-      setQuantity(newQuantity);
-    }
+    if (newQuantity >= 1) setQuantity(newQuantity);
   };
 
   const handleAddToCart = () => {
-    console.log(`Added ${quantity} ${meal.name} to cart`);
-    alert(`Added ${meal.name} (${quantity} items) to cart!`);
+    addToCart(meal, quantity);
   };
 
   const reviewSlug = meal.name.replace(/\s+/g, '_');
@@ -61,21 +60,23 @@ const MealCard = ({ meal }) => {
               >
                 Add to Cart
               </button>
-              <Link
-                to={`/review/${reviewSlug}`}
-                className="review-btn"
-              >
+              <Link to={`/review/${reviewSlug}`} className="review-btn">
                 Review
               </Link>
             </>
           ) : (
-            <Link
-              to="/login"
-              state={{ from: location.pathname }}
-              className="login-prompt"
-            >
-              Please log in to add items to cart
-            </Link>
+            <>
+              <Link
+                to="/login"
+                state={{ from: location.pathname }}
+                className="login-btn meal-card-login-btn"
+              >
+                Login
+              </Link>
+              <Link to={`/review/${reviewSlug}`} className="review-btn">
+                Review
+              </Link>
+            </>
           )}
         </div>
       </div>

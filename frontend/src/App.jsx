@@ -1,6 +1,7 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import './App.css';
 import Header from './components/Header';
 import Home from './components/Home';
@@ -16,9 +17,10 @@ import Footer from './components/Footer';
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Header />
+      <CartProvider>
+        <Router>
+          <div className="App">
+            <Header />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
@@ -30,8 +32,9 @@ function App() {
             <Route path="/review/:menuSlug" element={<ReviewPage />} />
           </Routes>
           <Footer />
-        </div>
-      </Router>
+          </div>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }

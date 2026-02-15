@@ -460,7 +460,7 @@ const AdminDashboard = () => {
               <div className="admin-info mb-4">
                 <div className="d-flex align-items-center">
                   <div className="admin-avatar">
-                    <img src={user.photo || '/other_img/default.jpg'} alt="Admin" />
+                    <img src={user.photo || 'http://localhost:5000/display/default.jpg'} alt="Admin" />
                   </div>
                   <div>
                     <div><strong>Username:</strong> {user.username}</div>
