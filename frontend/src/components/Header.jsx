@@ -3,10 +3,8 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
 import './Header.css';
-
-const API_BASE = 'http://localhost:5000';
-const DEFAULT_AVATAR = `${API_BASE}/display/default.jpg`;
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

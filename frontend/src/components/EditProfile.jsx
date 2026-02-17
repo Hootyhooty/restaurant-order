@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import MapModal from './MapModal';
 import axios from 'axios';
+import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
 import './EditProfile.css';
-
-const DEFAULT_AVATAR = 'http://localhost:5000/display/default.jpg';
 
 const EditProfile = () => {
   const { isLoggedIn, user, updateUser } = useContext(AuthContext);
@@ -84,16 +83,12 @@ const EditProfile = () => {
         return;
       }
 
-      const response = await axios.put(
-        'http://localhost:5000/api/users/profile',
-        form,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
+      const response = await axios.put(`${API_BASE}/api/users/profile`, form, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
-      );
+      });
 
       if (response.data.success) {
         // Update AuthContext with new user data
@@ -129,7 +124,7 @@ const EditProfile = () => {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/users/upload-image-to-allimgs',
+        `${API_BASE}/api/users/upload-image-to-allimgs`,
         formData,
         {
           headers: {
@@ -180,7 +175,7 @@ const EditProfile = () => {
         ? form.photo
         : form.photo === 'other_img/default.jpg' || form.photo === 'default.jpg'
         ? DEFAULT_AVATAR
-        : `http://localhost:5000/api/users/uploads/${form.photo}`
+        : `${API_BASE}/api/users/uploads/${form.photo}`
       : DEFAULT_AVATAR;
 
   return (

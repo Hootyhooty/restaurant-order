@@ -2,10 +2,8 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
 import './Profile.css';
-
-const API_BASE = 'http://localhost:5000';
-const DEFAULT_AVATAR = `${API_BASE}/display/default.jpg`;
 
 const Profile = () => {
   const { isLoggedIn, user } = useContext(AuthContext);

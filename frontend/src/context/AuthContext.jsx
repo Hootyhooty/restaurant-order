@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../apiConfig';
 
 export const AuthContext = createContext();
 
@@ -13,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     if (!token) return;
     const restoreUser = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/users/me', {
+        const response = await axios.get(`${API_BASE}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.data?.user) {
@@ -31,15 +32,19 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password, phone) => {
     try {
-      console.log('Sending registration request to:', 'http://localhost:5000/api/auth/register');
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
-        username,
-        email,
-        password,
-        phone
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('Sending registration request to:', `${API_BASE}/api/auth/register`);
+      const response = await axios.post(
+        `${API_BASE}/api/auth/register`,
+        {
+          username,
+          email,
+          password,
+          phone
+        },
+        {
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
       console.log('Registration response:', response.data);
       return { success: true, message: response.data.message };
     } catch (error) {
@@ -50,13 +55,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      console.log('Sending login request to:', 'http://localhost:5000/api/auth/login');
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        username,
-        password
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('Sending login request to:', `${API_BASE}/api/auth/login`);
+      const response = await axios.post(
+        `${API_BASE}/api/auth/login`,
+        {
+          username,
+          password
+        },
+        {
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
       console.log('Login response:', response.data);
       localStorage.setItem('token', response.data.token);
       setIsLoggedIn(true);

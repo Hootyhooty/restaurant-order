@@ -20,24 +20,46 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 
 const app = express();
 
-// Allow frontend origins and handle preflight (localhost + 127.0.0.1)
-const allowedOrigins = [
-  'http://localhost:5000', 'http://localhost:3000', 'http://localhost:3001','http://localhost:3002',
-  'http://127.0.0.1:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001','http://127.0.0.1:3002'
+// Allow frontend origins and handle preflight (localhost + deployed frontends)
+const localOrigins = [
+  'http://localhost:5000', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002',
+  'http://127.0.0.1:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'
 ];
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 204
-}));
+
+// Optionally allow extra origins via FRONTEND_ORIGIN env (comma separated)
+const extraOrigins = (process.env.FRONTEND_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...localOrigins, ...extraOrigins];
+
+const corsOptions =
+  process.env.NODE_ENV === 'production'
+    ? {
+        origin: function (origin, callback) {
+          // In production, require the origin to be explicitly allowed
+          if (!origin) return callback(null, true);
+          if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+          return callback(new Error('Not allowed by CORS'));
+        },
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        optionsSuccessStatus: 204
+      }
+    : {
+        // In development, allow all origins for convenience
+        origin: true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        optionsSuccessStatus: 204
+      };
+
+app.use(cors(corsOptions));
 app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

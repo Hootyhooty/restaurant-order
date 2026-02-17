@@ -141,6 +141,14 @@ const meals = [
     image: '/food_img/Frozen-Whipped-Lemonade.jpg',
     category: 'drinks',
   },
+  {
+    id: 17,
+    name: 'Chicken Bacon Ranch',
+    description: 'Featuring a favorite combination of flavors, our Chicken Bacon Ranch with Sweet Potatoes is High in protein and fiber, this dish is both nutritious and delicious.',
+    price: 89,
+    image: '/food_img/menu_1771062917406.jpg',
+    category: 'sides',
+  },
 ];
 
 function getMealBySlug(slug) {

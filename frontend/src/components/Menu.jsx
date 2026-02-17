@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import './MealsSection.css';
 import MealCard from './MealCard';
+import { API_BASE } from '../apiConfig';
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -17,7 +18,7 @@ const Menu = () => {
         setLoading(true);
         setError(null);
 
-        const res = await fetch('http://localhost:5000/api/meals');
+        const res = await fetch(`${API_BASE}/api/meals`);
         if (!res.ok) {
           throw new Error('Failed to load menu');
         }

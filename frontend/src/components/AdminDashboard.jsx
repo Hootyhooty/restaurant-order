@@ -2,6 +2,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
 import './AdminDashboard.css';
 
 const MENU_CATEGORIES = [
@@ -57,7 +58,7 @@ const AdminDashboard = () => {
 
   const fetchJSON = async (url, options = {}) => {
     const token = localStorage.getItem('token');
-    const res = await fetch(`http://localhost:5000${url}`, {
+    const res = await fetch(`${API_BASE}${url}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -236,7 +237,7 @@ const AdminDashboard = () => {
       formData.append('category', addMenuForm.category);
 
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/admin/menu-items', {
+      const res = await fetch(`${API_BASE}/api/admin/menu-items`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -272,7 +273,7 @@ const AdminDashboard = () => {
       formData.append('category', editMenuForm.category);
 
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/admin/menu-items/${editingMenuItem.mongoId}`, {
+      const res = await fetch(`${API_BASE}/api/admin/menu-items/${editingMenuItem.mongoId}`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -460,7 +461,7 @@ const AdminDashboard = () => {
               <div className="admin-info mb-4">
                 <div className="d-flex align-items-center">
                   <div className="admin-avatar">
-                    <img src={user.photo || 'http://localhost:5000/display/default.jpg'} alt="Admin" />
+                    <img src={user.photo || DEFAULT_AVATAR} alt="Admin" />
                   </div>
                   <div>
                     <div><strong>Username:</strong> {user.username}</div>

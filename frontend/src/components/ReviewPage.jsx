@@ -2,6 +2,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_BASE } from '../apiConfig';
 import './ReviewPage.css';
 
 const ReviewPage = () => {
@@ -21,7 +22,7 @@ const ReviewPage = () => {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`http://localhost:5000/api/meals/${menuSlug}`);
+        const res = await fetch(`${API_BASE}/api/meals/${menuSlug}`);
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error('Menu item not found.');
