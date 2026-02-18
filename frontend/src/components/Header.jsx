@@ -14,6 +14,7 @@ const Header = () => {
   const { isLoggedIn, user, logout } = useContext(AuthContext);
   const { items, updateQuantity, removeFromCart, clearCart, getTotalCount, getTotalPrice } = useCart();
   const navigate = useNavigate();
+  const [isPaying, setIsPaying] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -40,6 +41,50 @@ const Header = () => {
       navigate('/');
     } else {
       navigate('/login', { state: { from: window.location.pathname } });
+    }
+  };
+
+  const handleBuy = async () => {
+    try {
+      if (!isLoggedIn) {
+        navigate('/login', { state: { from: window.location.pathname } });
+        return;
+      }
+      if (items.length === 0) {
+        alert('Your cart is empty.');
+        return;
+      }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login', { state: { from: window.location.pathname } });
+        return;
+      }
+
+      setIsPaying(true);
+      const payload = {
+        items: items.map(({ meal, quantity }) => ({ id: meal.id, quantity })),
+      };
+
+      const res = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.message || `Failed to start payment (HTTP ${res.status})`);
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Payment start error:', err);
+      alert(err.message || 'Failed to start payment.');
+      setIsPaying(false);
     }
   };
 
@@ -170,9 +215,10 @@ const Header = () => {
                           <button
                             type="button"
                             className="header-cart-buy-btn"
-                            onClick={() => { /* payment later */ setCartOpen(false); }}
+                            onClick={() => { setCartOpen(false); handleBuy(); }}
+                            disabled={isPaying}
                           >
-                            Buy
+                            {isPaying ? 'Redirecting…' : 'Buy'}
                           </button>
                         </div>
                       </>

@@ -13,6 +13,8 @@ import EditProfile from './components/EditProfile';
 import ReviewPage from './components/ReviewPage';
 import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentCancel from './components/PaymentCancel';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/review/:menuSlug" element={<ReviewPage />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/cancel" element={<PaymentCancel />} />
           </Routes>
           <Footer />
           </div>

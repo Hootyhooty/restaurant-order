@@ -13,6 +13,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const mealsRoutes = require('./routes/meals');
+const stripeRoutes = require('./routes/stripe');
+const { webhookHandler } = require('./controllers/stripeController');
 
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
   console.warn('Warning: MONGODB_URI or JWT_SECRET is not set. Create backend/.env based on backend/.env.example');
@@ -62,6 +64,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors());
+
+// Stripe webhook must be registered before JSON body parsing
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), webhookHandler);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -84,6 +89,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/meals', mealsRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
