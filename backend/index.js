@@ -34,30 +34,31 @@ const extraOrigins = (process.env.FRONTEND_ORIGIN || '')
 
 const allowedOrigins = [...localOrigins, ...extraOrigins];
 
-const corsOptions =
-  process.env.NODE_ENV === 'production'
-    ? {
-        origin: function (origin, callback) {
-          // In production, require the origin to be explicitly allowed
-          if (!origin) return callback(null, true);
-          if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-          }
-          return callback(new Error('Not allowed by CORS'));
-        },
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        optionsSuccessStatus: 204
+// CORS configuration - allow all origins if FRONTEND_ORIGIN is not set (for easier deployment)
+// Otherwise, only allow explicitly listed origins
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // If FRONTEND_ORIGIN is set, only allow those origins
+    if (extraOrigins.length > 0) {
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-    : {
-        // In development, allow all origins for convenience
-        origin: true,
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        optionsSuccessStatus: 204
-      };
+      console.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+      return callback(new Error('Not allowed by CORS'));
+    }
+    
+    // If FRONTEND_ORIGIN is not set, allow all origins (for easier initial deployment)
+    // You should set FRONTEND_ORIGIN in production for security
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204
+};
 
 app.use(cors(corsOptions));
 app.options('*', cors());

@@ -7,7 +7,7 @@
 .hero-background {
   position: relative;
   height: 100%;
-  background: url('/food_img/gettyimages.jpg') center center/cover no-repeat;
+  background: url('backend/public/food_img/gettyimages.jpg') center center/cover no-repeat;
   display: flex;
   align-items: center;
 }
