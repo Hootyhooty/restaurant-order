@@ -79,6 +79,7 @@ const Header = () => {
         throw new Error(data?.message || `Failed to start payment (HTTP ${res.status})`);
       }
 
+      setCartOpen(false);
       // Redirect to Stripe Checkout
       window.location.href = data.url;
     } catch (err) {
@@ -215,8 +216,8 @@ const Header = () => {
                           <button
                             type="button"
                             className="header-cart-buy-btn"
-                            onClick={() => { setCartOpen(false); handleBuy(); }}
-                            disabled={isPaying}
+                            onClick={handleBuy}
+                            disabled={isPaying || items.length === 0}
                           >
                             {isPaying ? 'Redirecting…' : 'Buy'}
                           </button>
