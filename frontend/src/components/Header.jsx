@@ -34,6 +34,17 @@ const Header = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [cartOpen]);
 
+  // If user goes to Stripe and returns via Back (bfcache), reset "redirecting" state
+  useEffect(() => {
+    const resetPaying = () => setIsPaying(false);
+    window.addEventListener('pageshow', resetPaying);
+    window.addEventListener('focus', resetPaying);
+    return () => {
+      window.removeEventListener('pageshow', resetPaying);
+      window.removeEventListener('focus', resetPaying);
+    };
+  }, []);
+
   const handleAuthAction = () => {
     if (isLoggedIn) {
       clearCart();
