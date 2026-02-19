@@ -563,7 +563,7 @@ const AdminDashboard = () => {
           <div className="alert alert-info">Select a menu item to view its reviews.</div>
         ) : (
           <div className="table-responsive">
-            <table className="table table-bordered table-hover admin-table">
+            <table className="table table-bordered table-hover admin-table admin-reviews-table">
               <thead className="table-dark">
                 <tr>
                   <th>Username</th>

@@ -187,6 +187,41 @@
   vertical-align: middle;
 }
 
+/* Center align all cells for admin tables where desired */
+.admin-table th,
+.admin-table td {
+  text-align: center;
+}
+
+.admin-reviews-table.admin-table th,
+.admin-reviews-table.admin-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Column widths for reviews table */
+.admin-reviews-table.admin-table th:nth-child(2),
+.admin-reviews-table.admin-table td:nth-child(2) {
+  width: 40%;
+}
+
+.admin-reviews-table.admin-table th:nth-child(3),
+.admin-reviews-table.admin-table td:nth-child(3) {
+  width: 6rem; /* Rating */
+}
+
+.admin-reviews-table.admin-table th:nth-child(4),
+.admin-reviews-table.admin-table td:nth-child(4),
+.admin-reviews-table.admin-table th:nth-child(5),
+.admin-reviews-table.admin-table td:nth-child(5) {
+  width: 9rem; /* Created At / Updated At */
+}
+
+.admin-reviews-table.admin-table th:nth-child(6),
+.admin-reviews-table.admin-table td:nth-child(6) {
+  width: 6rem; /* Action ~ button size */
+}
+
 .admin-menu-table.admin-table th,
 .admin-menu-table.admin-table td {
   text-align: center;
