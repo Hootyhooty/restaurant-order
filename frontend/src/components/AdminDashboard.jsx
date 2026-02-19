@@ -61,6 +61,12 @@ const AdminDashboard = () => {
     loadSection('users');
   }, [user, navigate]);
 
+  const scrollToTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const fetchJSON = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_BASE}${url}`, {
@@ -87,7 +93,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const loadSection = async (section) => {
+  const loadSection = async (section, options = {}) => {
+    const { initialMealId } = options;
     setActiveSection(section);
     setLoading(true);
     setQuery('');
@@ -105,8 +112,13 @@ const AdminDashboard = () => {
       } else if (section === 'reviews') {
         const menus = await fetchJSON('/api/admin/review-menus');
         setReviewMenus(menus.items || []);
-        setSelectedMealId('');
         setSectionData([]);
+        if (initialMealId != null) {
+          setSelectedMealId(String(initialMealId));
+          await loadReviews({ mealId: initialMealId, q: '', nextPage: 1 });
+        } else {
+          setSelectedMealId('');
+        }
       } else if (section === 'transactions') {
         const data = await fetchJSON('/api/admin/transactions?page=1&limit=20');
         setSectionData(data.items || []);
@@ -118,6 +130,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+    scrollToTop();
   };
 
   const loadReviews = async ({ mealId = selectedMealId, q = query, nextPage = page } = {}) => {
@@ -138,6 +151,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+    scrollToTop();
   };
 
   const loadTransactions = async ({ q = query, nextPage = page } = {}) => {
@@ -157,6 +171,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+    scrollToTop();
   };
 
   const handleDeleteReview = async (reviewId) => {
@@ -283,6 +298,10 @@ const AdminDashboard = () => {
     } catch (error) {
       alert(`Failed to delete menu item: ${error.message}`);
     }
+  };
+
+  const handleOpenReviewsForMenu = async (menuItem) => {
+    await loadSection('reviews', { initialMealId: menuItem.id });
   };
 
   const handleAddMenuSubmit = async (e) => {
@@ -425,6 +444,7 @@ const AdminDashboard = () => {
               <th>Description</th>
               <th>Price</th>
               <th>Category</th>
+              <th className="admin-menu-center">Review</th>
               <th className="admin-menu-center">Popular</th>
               <th className="admin-menu-center">Edit</th>
               <th className="admin-menu-center">Delete</th>
@@ -440,6 +460,15 @@ const AdminDashboard = () => {
                 <td>{m.description}</td>
                 <td>฿{m.price}</td>
                 <td>{m.category}</td>
+                    <td className="admin-menu-center">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => handleOpenReviewsForMenu(m)}
+                      >
+                        Review
+                      </button>
+                    </td>
                 <td className="admin-menu-center">{m.isPopular ? 'Yes' : 'No'}</td>
                 <td className="admin-menu-center">
                   {m.mongoId ? (
@@ -699,13 +728,6 @@ const AdminDashboard = () => {
                 onClick={() => loadSection('menu')}
               >
                 Menu
-              </button>
-              <span className="admin-topbar-separator">|</span>
-              <button
-                className={`admin-topbar-link ${activeSection === 'reviews' ? 'active' : ''}`}
-                onClick={() => loadSection('reviews')}
-              >
-                Reviews
               </button>
               <span className="admin-topbar-separator">|</span>
               <button
