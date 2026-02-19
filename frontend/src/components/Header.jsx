@@ -1,4 +1,4 @@
-// src/components/Header.jsx
+  // src/components/Header.jsx
 import { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';

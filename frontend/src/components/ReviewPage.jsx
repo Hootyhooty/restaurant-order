@@ -12,6 +12,8 @@ const ReviewPage = () => {
   const [categories, setCategories] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [reviewText, setReviewText] = useState('');
+  const [rating, setRating] = useState(5);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { isLoggedIn } = useContext(AuthContext);
@@ -33,6 +35,13 @@ const ReviewPage = () => {
         const data = await res.json();
         setMeal(data.item || null);
         setCategories(data.categories || []);
+
+        // Load reviews once meal is known
+        if (data.item?.id != null) {
+          const reviewsRes = await fetch(`${API_BASE}/api/reviews?mealId=${encodeURIComponent(data.item.id)}&limit=50`);
+          const reviewsData = await reviewsRes.json().catch(() => ({}));
+          if (reviewsRes.ok) setComments(reviewsData.items || []);
+        }
       } catch (err) {
         console.error('ReviewPage meal fetch error:', err);
         setError(err.message || 'Error loading menu item.');
@@ -44,12 +53,6 @@ const ReviewPage = () => {
 
     fetchMeal();
   }, [menuSlug]);
-
-  // Placeholder comments until backend exists
-  const [comments] = useState([
-    { id: 1, text: 'Great dish! Would order again.', author: 'User1' },
-    { id: 2, text: 'Loved the flavor and portion size.', author: 'User2' },
-  ]);
 
   const handleQuantityChange = (delta) => {
     setQuantity((q) => Math.max(1, q + delta));
@@ -63,15 +66,44 @@ const ReviewPage = () => {
     alert(`Added ${meal.name} (${quantity} items) to cart!`);
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!reviewText.trim()) return;
     if (!isLoggedIn) {
       navigate('/login', { state: { from: `/review/${menuSlug}` } });
       return;
     }
-    alert('Review submitted! (Backend wiring coming later)');
-    setReviewText('');
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login', { state: { from: `/review/${menuSlug}` } });
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          mealId: meal.id,
+          review: reviewText.trim(),
+          rating,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+      setReviewText('');
+      setRating(5);
+      // Refresh list
+      const reviewsRes = await fetch(`${API_BASE}/api/reviews?mealId=${encodeURIComponent(meal.id)}&limit=50`);
+      const reviewsData = await reviewsRes.json().catch(() => ({}));
+      if (reviewsRes.ok) setComments(reviewsData.items || []);
+      alert('Review submitted!');
+    } catch (err) {
+      console.error('Submit review error:', err);
+      alert(err.message || 'Failed to submit review.');
+    }
   };
 
   if (loading) {
@@ -154,8 +186,8 @@ const ReviewPage = () => {
               <div className="review-comments">
                 {comments.slice(0, 2).map((c) => (
                   <div key={c.id} className="review-comment-card">
-                    <p className="review-comment-text">{c.text}</p>
-                    <span className="review-comment-author">— {c.author}</span>
+                    <p className="review-comment-text">{c.review}</p>
+                    <span className="review-comment-author">— {c.username || 'User'} ({c.rating}/5)</span>
                   </div>
                 ))}
               </div>
@@ -163,6 +195,14 @@ const ReviewPage = () => {
                 more
               </Link>
               <div className="review-write">
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Rating</label>
+                  <select value={rating} onChange={(e) => setRating(Number(e.target.value))}>
+                    {[5,4,3,2,1].map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
                 <textarea
                   className="review-write-area"
                   placeholder="Write your review..."

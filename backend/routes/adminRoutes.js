@@ -13,7 +13,11 @@ const {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
-  getDashboardStats
+  getDashboardStats,
+  getReviewMenus,
+  getReviews,
+  deleteReview,
+  getTransactions
 } = require('../controllers/adminController');
 
 const foodImgDir = path.join(__dirname, '..', 'public', 'food_img');
@@ -43,5 +47,13 @@ router.get('/menu-items', rolesRequired('ADMIN'), getMenuItems);
 router.post('/menu-items', rolesRequired('ADMIN'), uploadMenuImage.single('image'), createMenuItem);
 router.put('/menu-items/:menuItemId', rolesRequired('ADMIN'), uploadMenuImage.single('image'), updateMenuItem);
 router.delete('/menu-items/:menuItemId', rolesRequired('ADMIN'), deleteMenuItem);
+
+// Reviews
+router.get('/review-menus', rolesRequired('ADMIN'), getReviewMenus);
+router.get('/reviews', rolesRequired('ADMIN'), getReviews);
+router.delete('/reviews/:reviewId', rolesRequired('ADMIN'), deleteReview);
+
+// Transactions
+router.get('/transactions', rolesRequired('ADMIN'), getTransactions);
 
 module.exports = router;

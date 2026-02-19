@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const Customer = require('../models/Customer');
 const Meal = require('../models/Meal');
+const Review = require('../models/Review');
+const Transaction = require('../models/Transaction');
 const mealsDataPath = path.join(__dirname, '..', 'data', 'meals.js');
 const { getMealsData } = require('../utils/mealsData');
 
@@ -317,6 +319,155 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// Reviews: list menus with review counts (admin only)
+// GET /api/admin/review-menus
+const getReviewMenus = async (req, res) => {
+  try {
+    const meals = getMealsData();
+    const counts = await Review.aggregate([
+      { $group: { _id: '$mealId', count: { $sum: 1 }, avgRating: { $avg: '$rating' } } },
+    ]);
+    const byMealId = new Map(counts.map((c) => [Number(c._id), { count: c.count, avgRating: c.avgRating }]));
+
+    const items = meals.map((m) => {
+      const stats = byMealId.get(Number(m.id)) || { count: 0, avgRating: null };
+      return {
+        mealId: Number(m.id),
+        name: m.name,
+        category: m.category,
+        reviewCount: stats.count,
+        avgRating: stats.avgRating ? Number(stats.avgRating.toFixed(2)) : null,
+      };
+    });
+
+    // Sort by most reviewed first, then name
+    items.sort((a, b) => (b.reviewCount - a.reviewCount) || a.name.localeCompare(b.name));
+    res.json({ success: true, items });
+  } catch (error) {
+    console.error('Get review menus error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Reviews: list reviews (optionally filtered by mealId) with pagination/search
+// GET /api/admin/reviews?mealId=1&page=1&limit=20&q=...
+const getReviews = async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const mealId = req.query.mealId != null && req.query.mealId !== '' ? Number(req.query.mealId) : null;
+    const q = (req.query.q || '').trim();
+
+    const filter = {};
+    if (Number.isFinite(mealId)) filter.mealId = mealId;
+
+    if (q) {
+      const maybeRating = Number(q);
+      const or = [
+        { username: { $regex: q, $options: 'i' } },
+        { review: { $regex: q, $options: 'i' } },
+      ];
+      if (Number.isFinite(maybeRating)) or.push({ rating: maybeRating });
+      filter.$or = or;
+    }
+
+    const total = await Review.countDocuments(filter);
+    const items = await Review.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      items: items.map((r) => ({
+        id: r._id.toString(),
+        mealId: r.mealId,
+        mealName: r.mealName || '',
+        username: r.username || '',
+        review: r.review,
+        rating: r.rating,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Get reviews error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /api/admin/reviews/:reviewId
+const deleteReview = async (req, res) => {
+  try {
+    const r = await Review.findByIdAndDelete(req.params.reviewId);
+    if (!r) return res.status(404).json({ success: false, message: 'Review not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete review error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Transactions: list with pagination/search
+// GET /api/admin/transactions?page=1&limit=20&q=...
+const getTransactions = async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const q = (req.query.q || '').trim();
+
+    const filter = {};
+    if (q) {
+      const or = [
+        { customerEmail: { $regex: q, $options: 'i' } },
+        { stripePaymentIntentId: { $regex: q, $options: 'i' } },
+        { status: { $regex: q, $options: 'i' } },
+      ];
+
+      const maybeAmount = Number(q);
+      if (Number.isFinite(maybeAmount)) or.push({ amountTotal: maybeAmount });
+
+      // Allow exact ObjectId search for order id
+      if (/^[a-fA-F0-9]{24}$/.test(q)) {
+        or.push({ _id: q });
+      }
+
+      filter.$or = or;
+    }
+
+    const total = await Transaction.countDocuments(filter);
+    const items = await Transaction.find(filter)
+      .sort({ _id: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      items: items.map((t) => ({
+        id: t._id.toString(),
+        customerEmail: t.customerEmail || '',
+        amountTotal: t.amountTotal,
+        currency: t.currency || 'thb',
+        paymentIntentId: t.stripePaymentIntentId || '',
+        status: t.status,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getUsers,
   toggleUserActive,
@@ -326,5 +477,9 @@ module.exports = {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
-  getDashboardStats
+  getDashboardStats,
+  getReviewMenus,
+  getReviews,
+  deleteReview,
+  getTransactions,
 };
