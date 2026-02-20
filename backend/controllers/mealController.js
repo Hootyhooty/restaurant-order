@@ -3,6 +3,7 @@
 
 const { categories } = require('../data/meals');
 const { getMealsData, getMealBySlug } = require('../utils/mealsData');
+const { getMealRatingSummary } = require('../utils/reviewStats');
 
 // GET /api/meals
 const getMeals = async (req, res) => {
@@ -39,9 +40,13 @@ const getOneMeal = async (req, res) => {
     }
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const ratingSummary = await getMealRatingSummary(meal.id);
     const item = {
       ...meal,
-      image: meal.image && meal.image.startsWith('/') ? baseUrl + meal.image : (meal.image || '')
+      image: meal.image && meal.image.startsWith('/') ? baseUrl + meal.image : (meal.image || ''),
+      totalRating: ratingSummary.totalRating,
+      reviewCount: ratingSummary.reviewCount,
+      averageRating: ratingSummary.averageRating,
     };
 
     res.json({

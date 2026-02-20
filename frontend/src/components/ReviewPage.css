@@ -78,6 +78,7 @@
   padding: 32px;
   margin-bottom: 32px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
 .review-image-wrap {
@@ -100,6 +101,17 @@
   font-weight: 700;
   color: #333;
   margin-bottom: 12px;
+}
+
+.review-menu-rating {
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.review-stars {
+  color: #ffc107;
+  margin-right: 6px;
 }
 
 .review-description {

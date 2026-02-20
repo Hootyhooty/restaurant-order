@@ -1,0 +1,31 @@
+Admin FeaturesAdmin page  
+    Admin profile  
+     -Add a button that redirects to the admin page.  
+     -Place this button before the "Edit Profile" button.  
+     -Make it visible only to admin users.
+     -All users with the admin role should always have Reputation status: Green.
+
+    Admin page
+     -Admin profile picture (PFP) in admin page still doesn't work.
+     -Users tab (in admin page)  Make each user's name clickable → redirects to that user's profile page.
+     -Menus tab (in admin page)  Make each menu name clickable → redirects to the corresponding menu page.
+
+User Profile Features
+    History tab in user profile:
+      Display the following columns:  
+        -Activity → shows "Order" or "Review"  
+        -ID (or suggest a better name, e.g. "Reference", "ORN", "Link") → shows Order Reference Number (ORN) for orders, or a link to the review  
+        -Menus → shows menu name(s) that the user order; make them clickable and redirect to the menu page  For reviews, show only the menu that was reviewed
+        -Amount  
+        -Status  
+        -Created At
+
+    Profile page when visited by a guest (not the account owner):  
+        -DO NOT SHOW THE USER ID!!
+        -Phone number and email should be hidden by default.  
+            -Only display them if the profile owner has explicitly chosen to show them (via edit profile settings).
+        -Show the user's review history (do not show their order history).  
+        -Replace the "Edit Profile" button with a "Send Message" button.
+
+
+

@@ -19,6 +19,7 @@ const listReviews = async (req, res) => {
       success: true,
       items: items.map((r) => ({
         id: r._id,
+        userId: r.userId,
         username: r.username || '',
         review: r.review,
         rating: r.rating,
@@ -56,14 +57,24 @@ const createReview = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid mealId' });
     }
 
-    const r = await Review.create({
-      mealId,
-      mealName: meal.name,
-      userId: user._id.toString(),
-      username: user.username || '',
-      review: reviewText,
-      rating,
-    });
+    const userId = user._id.toString();
+    let r = await Review.findOne({ mealId, userId });
+    if (r) {
+      r.review = reviewText;
+      r.rating = rating;
+      r.mealName = meal.name;
+      r.username = user.username || r.username;
+      await r.save();
+    } else {
+      r = await Review.create({
+        mealId,
+        mealName: meal.name,
+        userId,
+        username: user.username || '',
+        review: reviewText,
+        rating,
+      });
+    }
 
     res.status(201).json({
       success: true,

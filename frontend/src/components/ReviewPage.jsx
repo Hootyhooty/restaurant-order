@@ -2,6 +2,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { API_BASE } from '../apiConfig';
 import './ReviewPage.css';
 
@@ -16,7 +17,8 @@ const ReviewPage = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { isLoggedIn } = useContext(AuthContext);
+  const { isLoggedIn, user: authUser } = useContext(AuthContext);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchMeal = async () => {
@@ -63,8 +65,20 @@ const ReviewPage = () => {
       navigate('/login', { state: { from: `/review/${menuSlug}` } });
       return;
     }
+    addToCart(meal, quantity);
     alert(`Added ${meal.name} (${quantity} items) to cart!`);
   };
+
+  const myReview = authUser
+    ? comments.find((c) => c.userId === authUser.id)
+    : null;
+
+  useEffect(() => {
+    if (myReview) {
+      setReviewText(myReview.review || '');
+      setRating(myReview.rating || 5);
+    }
+  }, [myReview && myReview.id]);
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -128,6 +142,19 @@ const ReviewPage = () => {
     );
   }
 
+  const renderStars = (value) => {
+    if (!value) return null;
+    const full = Math.floor(value);
+    const hasHalf = value - full >= 0.5;
+    const stars = [];
+    for (let i = 0; i < 5; i++) {
+      if (i < full) stars.push('★');
+      else if (i === full && hasHalf) stars.push('☆');
+      else stars.push('☆');
+    }
+    return <span className="review-stars">{stars.join('')}</span>;
+  };
+
   return (
     <section className="review-page">
       <div className="container">
@@ -153,6 +180,14 @@ const ReviewPage = () => {
                 <img src={meal.image} alt={meal.name} />
               </div>
               <h1 className="review-menu-name">{meal.name}</h1>
+              {typeof meal.averageRating === 'number' && meal.reviewCount > 0 && (
+                <p className="review-menu-rating">
+                  {renderStars(meal.averageRating)}{' '}
+                  <span className="review-menu-rating-text">
+                    {meal.averageRating.toFixed(1)}/5 ({meal.reviewCount} reviews)
+                  </span>
+                </p>
+              )}
               <p className="review-description">{meal.description}</p>
               <div className="review-quantity">
                 <button
@@ -187,7 +222,17 @@ const ReviewPage = () => {
                 {comments.slice(0, 2).map((c) => (
                   <div key={c.id} className="review-comment-card">
                     <p className="review-comment-text">{c.review}</p>
-                    <span className="review-comment-author">— {c.username || 'User'} ({c.rating}/5)</span>
+                    <span className="review-comment-author">
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 me-1"
+                        onClick={() => navigate(`/profile/${c.userId}`)}
+                      >
+                        {c.username || 'User'}
+                      </button>
+                      {' '}
+                      {renderStars(c.rating)} {c.rating}/5
+                    </span>
                   </div>
                 ))}
               </div>
@@ -215,7 +260,7 @@ const ReviewPage = () => {
                   className="review-submit-btn"
                   onClick={handleSubmitReview}
                 >
-                  Submit
+                  {myReview ? 'Edit' : 'Submit'}
                 </button>
               </div>
             </div>
