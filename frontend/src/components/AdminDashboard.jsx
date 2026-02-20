@@ -400,7 +400,15 @@ const AdminDashboard = () => {
           <tbody>
             {sectionData.map(u => (
               <tr key={u.id}>
-                <td>{u.username || '-'}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-link p-0"
+                    onClick={() => navigate(`/profile/${u.id}`)}
+                  >
+                    {u.username || '-'}
+                  </button>
+                </td>
                 <td>{u.email || '-'}</td>
                 <td>{u.phone || '-'}</td>
                 <td><span className={`badge ${u.role === 'ADMIN' ? 'bg-danger' : 'bg-secondary'}`}>{u.role}</span></td>
@@ -456,7 +464,18 @@ const AdminDashboard = () => {
                 <td>
                   <img src={m.image} alt={m.name} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
                 </td>
-                <td>{m.name}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-link p-0"
+                    onClick={() => {
+                      const slug = m.name.replace(/\s+/g, '_');
+                      navigate(`/review/${slug}`);
+                    }}
+                  >
+                    {m.name}
+                  </button>
+                </td>
                 <td>{m.description}</td>
                 <td>฿{m.price}</td>
                 <td>{m.category}</td>
@@ -766,7 +785,16 @@ const AdminDashboard = () => {
               <div className="admin-info mb-4">
                 <div className="d-flex align-items-center">
                   <div className="admin-avatar">
-                    <img src={user.photo || DEFAULT_AVATAR} alt="Admin" />
+                    <img
+                      src={
+                        !user.photo || user.photo.trim() === '' || user.photo === 'other_img/default.jpg' || user.photo === 'default.jpg'
+                          ? DEFAULT_AVATAR
+                          : user.photo.startsWith('http')
+                          ? user.photo
+                          : `${API_BASE}/api/users/uploads/${user.photo}`
+                      }
+                      alt="Admin"
+                    />
                   </div>
                   <div>
                     <div><strong>Username:</strong> {user.username}</div>

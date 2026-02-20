@@ -9,7 +9,10 @@ const {
   getImage,
   getMe,
   updateProfile,
-  deactivateAccount
+  deactivateAccount,
+  getHistory,
+  getPublicHistory,
+  getPublicProfile,
 } = require('../controllers/userController');
 
 const displayDir = path.join(__dirname, '..', 'public', 'display');
@@ -41,5 +44,8 @@ router.get('/uploads/:filename', getImage);
 router.get('/me', authMiddleware, getMe);
 router.put('/profile', authMiddleware, updateProfile);
 router.post('/deactivate', authMiddleware, deactivateAccount);
+router.get('/history', authMiddleware, getHistory);
+router.get('/:userId/history', getPublicHistory);
+router.get('/public/:userId', getPublicProfile);
 
 module.exports = router;

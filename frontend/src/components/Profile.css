@@ -134,6 +134,12 @@
   margin-bottom: 8px;
 }
 
+.profile-history-table th,
+.profile-history-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
 @media (max-width: 576px) {
   .profile-card {
     padding: 16px;

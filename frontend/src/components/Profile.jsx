@@ -1,40 +1,87 @@
 // src/components/Profile.jsx
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
 import './Profile.css';
 
 const Profile = () => {
-  const { isLoggedIn, user } = useContext(AuthContext);
+  const { isLoggedIn, user: authUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { userId: routeUserId } = useParams();
   const [activeTab, setActiveTab] = useState('history'); // history | messages | promotion | social
   const [profileImgError, setProfileImgError] = useState(false);
+  const [profileUser, setProfileUser] = useState(null);
+  const [historyItems, setHistoryItems] = useState([]);
+
+  const isOwnProfile = !routeUserId || (authUser && authUser.id === routeUserId);
 
   useEffect(() => {
+    if (!isOwnProfile && !routeUserId) return;
+    if (!isOwnProfile && routeUserId) {
+      // Public profile view
+      const loadPublic = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/users/public/${routeUserId}`);
+          const data = await res.json();
+          if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to load profile');
+          setProfileUser(data.user);
+
+          const histRes = await fetch(`${API_BASE}/api/users/${routeUserId}/history`);
+          const histData = await histRes.json().catch(() => ({}));
+          if (histRes.ok && histData?.items) setHistoryItems(histData.items);
+        } catch (err) {
+          console.error('Load public profile error:', err);
+        }
+      };
+      loadPublic();
+      return;
+    }
+
+    // Own profile
     if (!isLoggedIn) {
       navigate('/login', { state: { from: '/profile' } });
+      return;
     }
-  }, [isLoggedIn, navigate]);
+    if (authUser) {
+      setProfileUser(authUser);
+    }
+
+    const loadHistory = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/users/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.items) setHistoryItems(data.items);
+      } catch (err) {
+        console.error('Load history error:', err);
+      }
+    };
+    loadHistory();
+  }, [isLoggedIn, authUser, routeUserId, isOwnProfile, navigate]);
 
   useEffect(() => {
     setProfileImgError(false);
-  }, [user?.photo]);
+  }, [profileUser?.photo]);
 
-  if (!isLoggedIn) {
+  if (!profileUser) {
     return null;
   }
 
   const profileImage =
-    !user?.photo || user.photo.trim() === '' || profileImgError
+    !profileUser?.photo || profileUser.photo.trim() === '' || profileImgError
       ? DEFAULT_AVATAR
-      : user.photo.startsWith('http')
-        ? user.photo
-        : user.photo === 'other_img/default.jpg' || user.photo === 'default.jpg'
+      : profileUser.photo.startsWith('http')
+        ? profileUser.photo
+        : profileUser.photo === 'other_img/default.jpg' || profileUser.photo === 'default.jpg'
         ? DEFAULT_AVATAR
-        : `${API_BASE}/api/users/uploads/${user.photo}`;
+        : `${API_BASE}/api/users/uploads/${profileUser.photo}`;
 
-  const reputationIsGreen = user?.email_verified && user?.phone_verified;
+  const reputationIsGreen =
+    profileUser?.role === 'ADMIN' || (profileUser?.email_verified && profileUser?.phone_verified);
 
   return (
     <section className="profile-section">
@@ -43,17 +90,19 @@ const Profile = () => {
           <div className="profile-header">
             <img
               src={profileImage}
-              alt={user?.username || 'User'}
+              alt={profileUser?.username || 'User'}
               className="profile-avatar"
               onError={() => setProfileImgError(true)}
             />
             <div className="profile-header-info">
               <h2 className="profile-username">
-                {user?.username || 'New User'}
+                {profileUser?.username || 'New User'}
               </h2>
-              <p className="profile-user-id">
-                User ID: <span>{user?.id || 'N/A'}</span>
-              </p>
+              {isOwnProfile && (
+                <p className="profile-user-id">
+                  User ID: <span>{profileUser?.id || 'N/A'}</span>
+                </p>
+              )}
               <p className="profile-reputation">
                 Reputation Status:{' '}
                 <span
@@ -73,17 +122,17 @@ const Profile = () => {
                 Username and Address &amp; Zipcode
               </h3>
               <p className="profile-name">
-                {(user?.first_name || '') + ' ' + (user?.last_name || '')}
+                {(profileUser?.first_name || '') + ' ' + (profileUser?.last_name || '')}
               </p>
               <p className="profile-text">
-                {user?.address_line1 || ''}
-                {user?.address_line1 && <br />}
-                {(user?.city || user?.state || user?.zipcode) && (
+                {profileUser?.address_line1 || ''}
+                {profileUser?.address_line1 && <br />}
+                {(profileUser?.city || profileUser?.state || profileUser?.zipcode) && (
                   <>
-                    {user?.city || ''}{' '}
-                    {user?.state && user?.city ? ', ' : user?.state || ''}
-                    {user?.zipcode && (user?.city || user?.state) ? ', ' : ''}
-                    {user?.zipcode || ''}
+                    {profileUser?.city || ''}{' '}
+                    {profileUser?.state && profileUser?.city ? ', ' : profileUser?.state || ''}
+                    {profileUser?.zipcode && (profileUser?.city || profileUser?.state) ? ', ' : ''}
+                    {profileUser?.zipcode || ''}
                   </>
                 )}
               </p>
@@ -92,25 +141,51 @@ const Profile = () => {
             <div className="profile-column">
               <h3 className="profile-label">Email and Phone</h3>
               <p className="profile-text">
-                <strong>Email:</strong> {user?.email || 'Not set'}
+                <strong>Email:</strong>{' '}
+                {isOwnProfile ? (profileUser?.email || 'Not set') : 'Hidden'}
               </p>
               <p className="profile-text">
                 <strong>Phone:</strong>{' '}
-                {user?.display_phone === false
-                  ? 'Hidden'
-                  : user?.phone || 'Not set'}
+                {isOwnProfile
+                  ? profileUser?.display_phone === false
+                    ? 'Hidden'
+                    : profileUser?.phone || 'Not set'
+                  : profileUser?.display_phone
+                  ? profileUser?.phone || 'Not set'
+                  : 'Hidden'}
               </p>
             </div>
           </div>
 
           <div className="profile-edit-row">
-            <button
-              type="button"
-              className="btn btn-secondary profile-edit-btn"
-              onClick={() => navigate('/profile/edit')}
-            >
-              Edit Profile
-            </button>
+            {isOwnProfile ? (
+              <>
+                {authUser?.role === 'ADMIN' && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary profile-edit-btn"
+                    onClick={() => navigate('/admin')}
+                  >
+                    Admin Page
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-secondary profile-edit-btn"
+                  onClick={() => navigate('/profile/edit')}
+                >
+                  Edit Profile
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-secondary profile-edit-btn"
+                onClick={() => alert('Messaging is not implemented yet.')}
+              >
+                Send Message
+              </button>
+            )}
           </div>
 
           {/* Tabs */}
@@ -148,11 +223,77 @@ const Profile = () => {
           <div className="profile-tab-content">
             {activeTab === 'history' && (
               <div>
-                <h3 className="profile-tab-title">Order / visit history</h3>
-                <p className="profile-text">
-                  History content coming soon. Here you can show previous orders,
-                  reservations, or visits.
-                </p>
+                <h3 className="profile-tab-title">History</h3>
+                {historyItems.length === 0 ? (
+                  <p className="profile-text">No history yet.</p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-hover profile-history-table">
+                      <thead>
+                        <tr>
+                          <th>Activity</th>
+                          <th>Reference</th>
+                          <th>Menus</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Created At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historyItems
+                          .filter((item) => (isOwnProfile ? true : item.type === 'review'))
+                          .map((item, idx) => (
+                            <tr key={`${item.type}-${item.reference}-${idx}`}>
+                              <td>{item.type === 'order' ? 'Order' : 'Review'}</td>
+                              <td>
+                                {item.type === 'order' ? (
+                                  item.reference
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="btn btn-link p-0"
+                                    onClick={() => {
+                                      const firstMenu = (item.menus && item.menus[0]) || '';
+                                      const slug = firstMenu.replace(/\s+/g, '_');
+                                      navigate(`/review/${slug}`);
+                                    }}
+                                  >
+                                    View
+                                  </button>
+                                )}
+                              </td>
+                              <td>
+                                {(item.menus || []).map((name) => {
+                                  const slug = name.replace(/\s+/g, '_');
+                                  return (
+                                    <button
+                                      key={name}
+                                      type="button"
+                                      className="btn btn-link p-0 me-2"
+                                      onClick={() => navigate(`/review/${slug}`)}
+                                    >
+                                      {name}
+                                    </button>
+                                  );
+                                })}
+                              </td>
+                              <td>
+                                {item.type === 'order' && item.amount != null
+                                  ? `฿${item.amount.toLocaleString()}`
+                                  : '—'}
+                              </td>
+                              <td>{item.status || (item.type === 'review' ? '—' : '')}</td>
+                              <td>
+                                {item.createdAt
+                                  ? new Date(item.createdAt).toLocaleString()
+                                  : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
             {activeTab === 'messages' && (

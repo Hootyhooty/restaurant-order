@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const Customer = require('../models/Customer');
 const Image = require('../models/Image');
+const Transaction = require('../models/Transaction');
+const Review = require('../models/Review');
 const AppError = require('../utils/appError');
 
 // Upload image to public/display (disk storage)
@@ -94,6 +96,104 @@ exports.getMe = async (req, res) => {
     return res.json({ success: true, user: userData });
   } catch (error) {
     console.error('Error getting user:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Helper: build unified history items
+const buildHistoryItems = (transactions, reviews, { includeOrders }) => {
+  const items = [];
+
+  if (includeOrders) {
+    (transactions || []).forEach((t) => {
+      const menus = (t.items || []).map((i) => i.name);
+      items.push({
+        type: 'order',
+        reference: t.orderId || t._id,
+        menus,
+        amount: t.amountTotal,
+        status: t.status,
+        createdAt: t.createdAt,
+      });
+    });
+  }
+
+  (reviews || []).forEach((r) => {
+    items.push({
+      type: 'review',
+      reference: r._id,
+      menus: [r.mealName || ''],
+      amount: null,
+      status: '—',
+      createdAt: r.createdAt,
+    });
+  });
+
+  items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  return items;
+};
+
+// GET /api/users/history (auth) - full history for owner (orders + reviews)
+exports.getHistory = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    const [transactions, reviews] = await Promise.all([
+      Transaction.find({ userId: userIdStr }).sort({ createdAt: -1 }).lean(),
+      Review.find({ userId: userIdStr }).sort({ createdAt: -1 }).lean(),
+    ]);
+
+    const items = buildHistoryItems(transactions, reviews, { includeOrders: true });
+    return res.json({ success: true, items });
+  } catch (error) {
+    console.error('Error getting history:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/users/:userId/history - public view (reviews only)
+exports.getPublicHistory = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const reviews = await Review.find({ userId }).sort({ createdAt: -1 }).lean();
+    const items = buildHistoryItems([], reviews, { includeOrders: false });
+    return res.json({ success: true, items });
+  } catch (error) {
+    console.error('Error getting public history:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/users/public/:userId - public profile (safe fields only)
+exports.getPublicProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await Customer.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const userData = {
+      id: user._id,
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      photo: user.photo || 'default.jpg',
+      address_line1: user.address_line1,
+      address_line2: user.address_line2,
+      city: user.city,
+      state: user.state,
+      zipcode: user.zipcode,
+      country: user.country,
+      email_verified: user.email_verified,
+      phone_verified: user.phone_verified,
+      display_phone: user.display_phone,
+    };
+
+    return res.json({ success: true, user: userData });
+  } catch (error) {
+    console.error('Error getting public profile:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
