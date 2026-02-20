@@ -68,7 +68,7 @@ exports.getMe = async (req, res) => {
   try {
     const user = req.user;
     const userData = {
-      id: user._id.toString(),
+      id: user._id,
       username: user.username,
       email: user.email,
       role: user.role || 'USER',
@@ -124,7 +124,7 @@ exports.updateProfile = async (req, res) => {
 
     // Return updated user data
     const userData = {
-      id: user._id.toString(),
+      id: user._id,
       username: user.username,
       email: user.email,
       alternate_email: user.alternate_email,

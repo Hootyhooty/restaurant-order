@@ -18,7 +18,7 @@ const getUsers = async (req, res) => {
       .limit(limit);
 
     const serialized = users.map(u => ({
-      id: u._id.toString(),
+      id: u._id,
       username: u.username,
       email: u.email,
       phone: u.phone,
@@ -96,7 +96,7 @@ const createUser = async (req, res) => {
     res.status(201).json({
       success: true,
       user: {
-        id: customer._id.toString(),
+        id: customer._id,
         username: customer.username,
         email: customer.email,
         role: customer.role
@@ -384,7 +384,7 @@ const getReviews = async (req, res) => {
       limit,
       total,
       items: items.map((r) => ({
-        id: r._id.toString(),
+        id: r._id,
         mealId: r.mealId,
         mealName: r.mealName || '',
         username: r.username || '',
@@ -431,9 +431,13 @@ const getTransactions = async (req, res) => {
       const maybeAmount = Number(q);
       if (Number.isFinite(maybeAmount)) or.push({ amountTotal: maybeAmount });
 
-      // Allow exact ObjectId search for order id
-      if (/^[a-fA-F0-9]{24}$/.test(q)) {
+      // Allow UUID search for transaction id
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(q)) {
         or.push({ _id: q });
+      }
+      // Allow order ID search (ORD-yyyy-nnnnn)
+      if (/^ORD-\d{4}-\d{5}$/i.test(q)) {
+        or.push({ orderId: q.toUpperCase() });
       }
 
       filter.$or = or;
@@ -441,7 +445,7 @@ const getTransactions = async (req, res) => {
 
     const total = await Transaction.countDocuments(filter);
     const items = await Transaction.find(filter)
-      .sort({ _id: -1 })
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
@@ -452,7 +456,8 @@ const getTransactions = async (req, res) => {
       limit,
       total,
       items: items.map((t) => ({
-        id: t._id.toString(),
+        id: t._id,
+        orderId: t.orderId || '',
         customerEmail: t.customerEmail || '',
         amountTotal: t.amountTotal,
         currency: t.currency || 'thb',

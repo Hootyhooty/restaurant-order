@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { generateUUID } = require('../utils/uuid');
+const { generateOrderId } = require('../utils/orderId');
 
 const transactionItemSchema = new mongoose.Schema(
   {
@@ -12,7 +14,12 @@ const transactionItemSchema = new mongoose.Schema(
 
 const transactionSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    _id: {
+      type: String,
+      default: generateUUID,
+    },
+    orderId: { type: String, unique: true, index: true }, // ORD-yyyy-nnnnn format
+    userId: { type: String, ref: 'Customer', required: true },
 
     status: {
       type: String,
@@ -36,6 +43,17 @@ const transactionSchema = new mongoose.Schema(
     collection: 'transaction', // force exact collection name requested
   }
 );
+
+// Generate orderId before saving
+transactionSchema.pre('save', async function (next) {
+  if (!this._id) {
+    this._id = generateUUID();
+  }
+  if (!this.orderId) {
+    this.orderId = await generateOrderId();
+  }
+  next();
+});
 
 module.exports = mongoose.model('Transaction', transactionSchema);
 

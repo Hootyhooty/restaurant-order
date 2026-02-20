@@ -18,7 +18,7 @@ const listReviews = async (req, res) => {
     res.json({
       success: true,
       items: items.map((r) => ({
-        id: r._id.toString(),
+        id: r._id,
         username: r.username || '',
         review: r.review,
         rating: r.rating,
@@ -59,7 +59,7 @@ const createReview = async (req, res) => {
     const r = await Review.create({
       mealId,
       mealName: meal.name,
-      userId: user._id,
+      userId: user._id.toString(),
       username: user.username || '',
       review: reviewText,
       rating,
@@ -68,7 +68,7 @@ const createReview = async (req, res) => {
     res.status(201).json({
       success: true,
       item: {
-        id: r._id.toString(),
+        id: r._id,
         mealId: r.mealId,
         mealName: r.mealName,
         username: r.username,

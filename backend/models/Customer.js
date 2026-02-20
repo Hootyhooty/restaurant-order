@@ -1,9 +1,14 @@
 // src/backend/models/Customer.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const { generateUUID } = require('../utils/uuid');
 
 const customerSchema = new mongoose.Schema(
   {
+    _id: {
+      type: String,
+      default: generateUUID,
+    },
     // Core identity fields (keep existing username for compatibility)
     username: {
       type: String,
@@ -161,6 +166,10 @@ const customerSchema = new mongoose.Schema(
 );
 
 customerSchema.pre('save', async function (next) {
+  // Generate UUID if _id is not set
+  if (!this._id) {
+    this._id = generateUUID();
+  }
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 10);
   }

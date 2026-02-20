@@ -634,7 +634,7 @@ const AdminDashboard = () => {
             <label className="form-label"><strong>Search</strong></label>
             <input
               className="form-control"
-              placeholder="Order ID, email, amount, paymentIntentId, status…"
+              placeholder="Order ID (ORD-yyyy-nnnnn), email, amount, paymentIntentId, status…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -665,7 +665,7 @@ const AdminDashboard = () => {
               ) : (
                 sectionData.map((t) => (
                   <tr key={t.id}>
-                    <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>{t.id}</td>
+                    <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>{t.orderId || t.id}</td>
                     <td>{t.customerEmail || '-'}</td>
                     <td>{t.amountTotal} {String(t.currency || '').toUpperCase()}</td>
                     <td style={{ maxWidth: 240, wordBreak: 'break-all' }}>{t.paymentIntentId || '-'}</td>
