@@ -134,6 +134,11 @@
   margin-bottom: 8px;
 }
 
+.profile-history-table {
+  width: 100%;
+  margin: 0 auto;
+}
+
 .profile-history-table th,
 .profile-history-table td {
   text-align: center;

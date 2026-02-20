@@ -15,6 +15,7 @@ import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Router>
           <div className="App">
             <Header />
+            <ScrollToTop />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />

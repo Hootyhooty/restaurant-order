@@ -117,44 +117,53 @@ const Profile = () => {
           </div>
 
           <div className="profile-details">
-            <div className="profile-column">
-              <h3 className="profile-label">
-                Username and Address &amp; Zipcode
-              </h3>
-              <p className="profile-name">
-                {(profileUser?.first_name || '') + ' ' + (profileUser?.last_name || '')}
-              </p>
-              <p className="profile-text">
-                {profileUser?.address_line1 || ''}
-                {profileUser?.address_line1 && <br />}
-                {(profileUser?.city || profileUser?.state || profileUser?.zipcode) && (
-                  <>
-                    {profileUser?.city || ''}{' '}
-                    {profileUser?.state && profileUser?.city ? ', ' : profileUser?.state || ''}
-                    {profileUser?.zipcode && (profileUser?.city || profileUser?.state) ? ', ' : ''}
-                    {profileUser?.zipcode || ''}
-                  </>
-                )}
-              </p>
-            </div>
+            {!isOwnProfile ? (
+              <>
+                <div className="profile-column">
+                  <h3 className="profile-label">Username</h3>
+                  <p className="profile-name">
+                    {(profileUser?.first_name || '') + ' ' + (profileUser?.last_name || '')}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="profile-column">
+                  <h3 className="profile-label">
+                    Username and Address &amp; Zipcode
+                  </h3>
+                  <p className="profile-name">
+                    {(profileUser?.first_name || '') + ' ' + (profileUser?.last_name || '')}
+                  </p>
+                  <p className="profile-text">
+                    {profileUser?.address_line1 || ''}
+                    {profileUser?.address_line1 && <br />}
+                    {(profileUser?.city || profileUser?.state || profileUser?.zipcode) && (
+                      <>
+                        {profileUser?.city || ''}{' '}
+                        {profileUser?.state && profileUser?.city ? ', ' : profileUser?.state || ''}
+                        {profileUser?.zipcode && (profileUser?.city || profileUser?.state) ? ', ' : ''}
+                        {profileUser?.zipcode || ''}
+                      </>
+                    )}
+                  </p>
+                </div>
 
-            <div className="profile-column">
-              <h3 className="profile-label">Email and Phone</h3>
-              <p className="profile-text">
-                <strong>Email:</strong>{' '}
-                {isOwnProfile ? (profileUser?.email || 'Not set') : 'Hidden'}
-              </p>
-              <p className="profile-text">
-                <strong>Phone:</strong>{' '}
-                {isOwnProfile
-                  ? profileUser?.display_phone === false
-                    ? 'Hidden'
-                    : profileUser?.phone || 'Not set'
-                  : profileUser?.display_phone
-                  ? profileUser?.phone || 'Not set'
-                  : 'Hidden'}
-              </p>
-            </div>
+                <div className="profile-column">
+                  <h3 className="profile-label">Email and Phone</h3>
+                  <p className="profile-text">
+                    <strong>Email:</strong>{' '}
+                    {profileUser?.email || 'Not set'}
+                  </p>
+                  <p className="profile-text">
+                    <strong>Phone:</strong>{' '}
+                    {profileUser?.display_phone === false
+                      ? 'Hidden'
+                      : profileUser?.phone || 'Not set'}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="profile-edit-row">
@@ -197,20 +206,24 @@ const Profile = () => {
             >
               History
             </button>
-            <button
-              type="button"
-              className={`profile-tab ${activeTab === 'messages' ? 'active' : ''}`}
-              onClick={() => setActiveTab('messages')}
-            >
-              Messages
-            </button>
-            <button
-              type="button"
-              className={`profile-tab ${activeTab === 'promotion' ? 'active' : ''}`}
-              onClick={() => setActiveTab('promotion')}
-            >
-              Promotion
-            </button>
+            {isOwnProfile && (
+              <>
+                <button
+                  type="button"
+                  className={`profile-tab ${activeTab === 'messages' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('messages')}
+                >
+                  Messages
+                </button>
+                <button
+                  type="button"
+                  className={`profile-tab ${activeTab === 'promotion' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('promotion')}
+                >
+                  Promotion
+                </button>
+              </>
+            )}
             <button
               type="button"
               className={`profile-tab ${activeTab === 'social' ? 'active' : ''}`}
