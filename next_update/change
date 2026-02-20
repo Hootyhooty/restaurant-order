@@ -1,35 +1,12 @@
-All page 
-    - everytime the user loading any page or refresh, always scroll to the top.
+- implement internal send message function
+- implement social function
+    - show the user social app link
+- work on promotion section
+- work on store section
+- implement about us
+- implement contact
+- change "order now" to "Booking now" for dine in
 
-where did you store img that the user change?
-It was supposed to store in public/display and read from there from now.
-
-visiting other user profile as guest
-    - DO NOT SHOW THE USER ADDRESS
-    - only show: History and Social media tab
-    - Also align the table element in the center and expand to fill the blank
-
-Menu review page 
-    - quantities adjust and "Add to Cart" button should be centric-alignment
-
-
-Global (All Pages)
-    -On every page load or refresh, automatically scroll to the top of the page.
-
-Image Storage (Profile Picture / User Images)
-    -Where are user-uploaded images (e.g., profile picture changes) currently being stored?  
-    -They should be saved in the public/display folder (or /public/display/).  
-    -From now on, serve/read all such images from that directory. (explain if there is an issue since I already deploy this site)
-
-Visiting Another User’s Profile (as a Guest / Non-Owner)
-    -Do NOT show the user’s address at all.
-    -Only display the following tabs/sections:  
-        -History tab  
-        -Social Media tab
-    -For the table(s) in these sections:  
-        -Center-align the entire table element.  
-        -Make the table expand to fill available horizontal space.
-
-Menu Review Page
-    -The quantity adjuster (e.g., +/- buttons or input) and the “Add to Cart” button should be center-aligned together.
-
+Admin page
+    - add adding sourvenir products in admin page
+    - add create promotion function

@@ -1,12 +1,14 @@
+- always move to the top when change page
 - change login to based on email or username
 - change format for registartion req name and location.
-- add transaction and revenue table in admin dashboard
-- add review funtion 
 - make statistic collector
 - integrate with firebase to store img 
 - using redist insted of mongodb
 - using protregse instead of mongodb 
 - trying aws integration
+
+- tomorrow let do firebase and move all img to its database
+
 
 Implement later
 - **Email System**: Send emails to users from admin panel
