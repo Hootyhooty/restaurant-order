@@ -88,6 +88,32 @@ const getMyMessages = async (req, res) => {
   }
 };
 
+// DELETE /api/messages/:id - delete a message (auth required, recipient only)
+const deleteMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id.toString();
+
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
+
+    if (message.recipientId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    await Message.findByIdAndDelete(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to delete message',
+    });
+  }
+};
+
 // PATCH /api/messages/:id/read - mark message as read (auth required)
 const markAsRead = async (req, res) => {
   try {
@@ -120,4 +146,5 @@ module.exports = {
   sendMessage,
   getMyMessages,
   markAsRead,
+  deleteMessage,
 };

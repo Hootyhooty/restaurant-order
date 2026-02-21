@@ -15,6 +15,7 @@ const Profile = () => {
   const [historyItems, setHistoryItems] = useState([]);
   const [messages, setMessages] = useState([]);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [composeRecipient, setComposeRecipient] = useState(null);
   const [sendSubject, setSendSubject] = useState('');
   const [sendBody, setSendBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -87,14 +88,45 @@ const Profile = () => {
       navigate('/login', { state: { from: `/profile/${routeUserId}` } });
       return;
     }
+    setComposeRecipient(profileUser);
     setSendSubject('');
     setSendBody('');
     setShowSendModal(true);
   };
 
+  const handleReply = (msg) => {
+    setComposeRecipient({
+      id: msg.senderId,
+      username: msg.senderName,
+    });
+    setSendSubject(msg.subject.startsWith('Re: ') ? msg.subject : `Re: ${msg.subject}`);
+    setSendBody('');
+    setShowSendModal(true);
+  };
+
+  const handleDeleteMessage = async (msgId, e) => {
+    e?.stopPropagation?.();
+    if (!window.confirm('Delete this message?')) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/messages/${msgId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || 'Failed to delete');
+      }
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+    } catch (err) {
+      alert(err.message || 'Failed to delete message.');
+    }
+  };
+
   const submitMessage = async (e) => {
     e.preventDefault();
-    if (!profileUser?.id || !sendSubject.trim() || !sendBody.trim()) return;
+    if (!composeRecipient?.id || !sendSubject.trim() || !sendBody.trim()) return;
     setSending(true);
     try {
       const token = localStorage.getItem('token');
@@ -105,7 +137,7 @@ const Profile = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          recipientId: profileUser.id,
+          recipientId: composeRecipient.id,
           subject: sendSubject.trim(),
           body: sendBody.trim(),
         }),
@@ -113,6 +145,7 @@ const Profile = () => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Failed to send message');
       setShowSendModal(false);
+      setComposeRecipient(null);
       setSendSubject('');
       setSendBody('');
     } catch (err) {
@@ -399,16 +432,39 @@ const Profile = () => {
                         className={`profile-message-card ${msg.read ? 'read' : 'unread'}`}
                         onClick={() => !msg.read && markMessageRead(msg.id)}
                       >
-                        <div className="profile-message-header">
-                          <strong>{msg.senderName}</strong>
-                          <span className="profile-message-date">
-                            {msg.createdAt
-                              ? new Date(msg.createdAt).toLocaleString()
-                              : '—'}
-                          </span>
+                        <div className="profile-message-format">
+                          <div className="profile-message-row">
+                            <span className="profile-message-label">From:</span>
+                            <span>{msg.senderName}</span>
+                          </div>
+                          <div className="profile-message-row">
+                            <span className="profile-message-label">Title:</span>
+                            <span>{msg.subject}</span>
+                          </div>
+                          <div className="profile-message-row">
+                            <span className="profile-message-label">Message:</span>
+                            <span className="profile-message-body">{msg.body}</span>
+                          </div>
                         </div>
-                        <div className="profile-message-subject">{msg.subject}</div>
-                        <div className="profile-message-body">{msg.body}</div>
+                        <div className="profile-message-actions">
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReply(msg);
+                            }}
+                          >
+                            Reply
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={(e) => handleDeleteMessage(msg.id, e)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -436,10 +492,10 @@ const Profile = () => {
         </div>
       </div>
 
-      {showSendModal && (
-        <div className="modal-overlay" onClick={() => !sending && setShowSendModal(false)}>
+      {showSendModal && composeRecipient && (
+        <div className="modal-overlay" onClick={() => !sending && (setShowSendModal(false), setComposeRecipient(null))}>
           <div className="modal-content profile-send-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Send Message to {profileUser?.username || 'User'}</h3>
+            <h3>Send Message to {composeRecipient?.username || 'User'}</h3>
             <form onSubmit={submitMessage}>
               <div className="form-group">
                 <label htmlFor="msg-subject">Subject</label>
@@ -469,7 +525,7 @@ const Profile = () => {
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
-                  onClick={() => !sending && setShowSendModal(false)}
+                  onClick={() => !sending && (setShowSendModal(false), setComposeRecipient(null))}
                   disabled={sending}
                 >
                   Cancel

@@ -1,12 +1,9 @@
-- implement internal send message function
-- implement social function
-    - show the user social app link
-- work on promotion section
-- work on store section
-- implement about us
-- implement contact
-- change "order now" to "Booking now" for dine in
-
-Admin page
-    - add adding sourvenir products in admin page
-    - add create promotion function
+sending message function
+   - add a "reply" button below the message but still inside the box in message tab 
+   - add a "delete" button next to the "reply" button
+   - also add the message format when inside the message tab
+        - From: 
+          Title:
+          Message:
+          [Reply] [Delete]
+  

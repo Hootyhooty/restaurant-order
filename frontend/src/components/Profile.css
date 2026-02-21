@@ -165,27 +165,29 @@
   border-color: #b8daff;
 }
 
-.profile-message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.profile-message-format {
+  margin-bottom: 12px;
+}
+
+.profile-message-row {
   margin-bottom: 6px;
 }
 
-.profile-message-date {
-  font-size: 0.85rem;
-  color: #6c757d;
-}
-
-.profile-message-subject {
+.profile-message-row .profile-message-label {
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-right: 6px;
 }
 
 .profile-message-body {
   font-size: 0.95rem;
   color: #495057;
   white-space: pre-wrap;
+}
+
+.profile-message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 /* Send Message Modal */
