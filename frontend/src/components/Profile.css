@@ -145,6 +145,107 @@
   vertical-align: middle;
 }
 
+/* Messages */
+.profile-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-message-card {
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+.profile-message-card.unread {
+  background: #e8f4fd;
+  border-color: #b8daff;
+}
+
+.profile-message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.profile-message-date {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.profile-message-subject {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.profile-message-body {
+  font-size: 0.95rem;
+  color: #495057;
+  white-space: pre-wrap;
+}
+
+/* Send Message Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 20px;
+}
+
+.profile-send-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 480px;
+  width: 100%;
+  padding: 24px;
+}
+
+.profile-send-modal h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.25rem;
+}
+
+.profile-send-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.profile-send-modal .form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.profile-send-modal .form-group input,
+.profile-send-modal .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.profile-send-modal .form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 @media (max-width: 576px) {
   .profile-card {
     padding: 16px;

@@ -48,6 +48,10 @@ const AdminDashboard = () => {
   const [editMenuSubmitting, setEditMenuSubmitting] = useState(false);
   const [addMenuImageError, setAddMenuImageError] = useState(false);
   const [editMenuImageError, setEditMenuImageError] = useState(false);
+  const [sendMessageTarget, setSendMessageTarget] = useState(null);
+  const [sendMessageSubject, setSendMessageSubject] = useState('');
+  const [sendMessageBody, setSendMessageBody] = useState('');
+  const [sendMessageSubmitting, setSendMessageSubmitting] = useState(false);
   const fileInputRef = useRef(null);
   const editFileInputRef = useRef(null);
 
@@ -304,6 +308,29 @@ const AdminDashboard = () => {
     await loadSection('reviews', { initialMealId: menuItem.id });
   };
 
+  const handleSendMessageSubmit = async (e) => {
+    e.preventDefault();
+    if (!sendMessageTarget?.id || !sendMessageSubject?.trim() || !sendMessageBody?.trim()) return;
+    setSendMessageSubmitting(true);
+    try {
+      await fetchJSON('/api/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipientId: sendMessageTarget.id,
+          subject: sendMessageSubject.trim(),
+          body: sendMessageBody.trim(),
+        }),
+      });
+      setSendMessageTarget(null);
+      setSendMessageSubject('');
+      setSendMessageBody('');
+    } catch (error) {
+      alert(`Failed to send message: ${error.message}`);
+    } finally {
+      setSendMessageSubmitting(false);
+    }
+  };
+
   const handleAddMenuSubmit = async (e) => {
     e.preventDefault();
     if (!addMenuForm.name?.trim() || addMenuForm.price === '' || !addMenuForm.category) {
@@ -420,6 +447,16 @@ const AdminDashboard = () => {
                       onClick={() => handleToggleUserActive(u.id)}
                     >
                       {u.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => {
+                        setSendMessageTarget(u);
+                        setSendMessageSubject('');
+                        setSendMessageBody('');
+                      }}
+                    >
+                      Send Message
                     </button>
                     <button
                       className="btn btn-outline-danger"
@@ -1015,6 +1052,48 @@ const AdminDashboard = () => {
                 <button type="button" className="btn btn-outline-secondary" onClick={closeEditMenuModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={editMenuSubmitting}>
                   {editMenuSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Message Modal */}
+      {sendMessageTarget && (
+        <div className="admin-modal-overlay" onClick={() => !sendMessageSubmitting && setSendMessageTarget(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h5>Send Message to {sendMessageTarget.username || 'User'}</h5>
+              <button type="button" className="admin-modal-close" onClick={() => !sendMessageSubmitting && setSendMessageTarget(null)} aria-label="Close">&times;</button>
+            </div>
+            <form onSubmit={handleSendMessageSubmit} className="admin-modal-body">
+              <div className="admin-add-menu-field">
+                <label>Subject:</label>
+                <input
+                  type="text"
+                  value={sendMessageSubject}
+                  onChange={e => setSendMessageSubject(e.target.value)}
+                  placeholder="Message subject"
+                  required
+                  maxLength={200}
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Message:</label>
+                <textarea
+                  value={sendMessageBody}
+                  onChange={e => setSendMessageBody(e.target.value)}
+                  placeholder="Write your message..."
+                  rows={5}
+                  required
+                  maxLength={5000}
+                />
+              </div>
+              <div className="admin-modal-footer">
+                <button type="button" className="btn btn-outline-secondary" onClick={() => !sendMessageSubmitting && setSendMessageTarget(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={sendMessageSubmitting}>
+                  {sendMessageSubmitting ? 'Sending...' : 'Send Message'}
                 </button>
               </div>
             </form>

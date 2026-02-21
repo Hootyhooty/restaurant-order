@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const mealsRoutes = require('./routes/meals');
 const stripeRoutes = require('./routes/stripe');
 const reviewRoutes = require('./routes/reviews');
+const messageRoutes = require('./routes/messages');
 const { webhookHandler } = require('./controllers/stripeController');
 
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
@@ -92,6 +93,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/messages', messageRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

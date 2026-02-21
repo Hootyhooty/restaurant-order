@@ -13,6 +13,11 @@ const Profile = () => {
   const [profileImgError, setProfileImgError] = useState(false);
   const [profileUser, setProfileUser] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendSubject, setSendSubject] = useState('');
+  const [sendBody, setSendBody] = useState('');
+  const [sending, setSending] = useState(false);
 
   const isOwnProfile = !routeUserId || (authUser && authUser.id === routeUserId);
 
@@ -60,8 +65,80 @@ const Profile = () => {
         console.error('Load history error:', err);
       }
     };
+    const loadMessages = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/messages`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.items) setMessages(data.items);
+      } catch (err) {
+        console.error('Load messages error:', err);
+      }
+    };
     loadHistory();
+    loadMessages();
   }, [isLoggedIn, authUser, routeUserId, isOwnProfile, navigate]);
+
+  const handleSendMessage = () => {
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: `/profile/${routeUserId}` } });
+      return;
+    }
+    setSendSubject('');
+    setSendBody('');
+    setShowSendModal(true);
+  };
+
+  const submitMessage = async (e) => {
+    e.preventDefault();
+    if (!profileUser?.id || !sendSubject.trim() || !sendBody.trim()) return;
+    setSending(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/api/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          recipientId: profileUser.id,
+          subject: sendSubject.trim(),
+          body: sendBody.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || 'Failed to send message');
+      setShowSendModal(false);
+      setSendSubject('');
+      setSendBody('');
+    } catch (err) {
+      alert(err.message || 'Failed to send message.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const markMessageRead = async (msgId) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/messages/${msgId}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, read: true } : m))
+        );
+      }
+    } catch (err) {
+      console.error('Mark read error:', err);
+    }
+  };
 
   useEffect(() => {
     setProfileImgError(false);
@@ -190,7 +267,7 @@ const Profile = () => {
               <button
                 type="button"
                 className="btn btn-secondary profile-edit-btn"
-                onClick={() => alert('Messaging is not implemented yet.')}
+                onClick={handleSendMessage}
               >
                 Send Message
               </button>
@@ -312,10 +389,30 @@ const Profile = () => {
             {activeTab === 'messages' && (
               <div>
                 <h3 className="profile-tab-title">Messages</h3>
-                <p className="profile-text">
-                  Messages content coming soon. This could include support or
-                  restaurant communication.
-                </p>
+                {messages.length === 0 ? (
+                  <p className="profile-text">No messages yet.</p>
+                ) : (
+                  <div className="profile-messages-list">
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`profile-message-card ${msg.read ? 'read' : 'unread'}`}
+                        onClick={() => !msg.read && markMessageRead(msg.id)}
+                      >
+                        <div className="profile-message-header">
+                          <strong>{msg.senderName}</strong>
+                          <span className="profile-message-date">
+                            {msg.createdAt
+                              ? new Date(msg.createdAt).toLocaleString()
+                              : '—'}
+                          </span>
+                        </div>
+                        <div className="profile-message-subject">{msg.subject}</div>
+                        <div className="profile-message-body">{msg.body}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {activeTab === 'promotion' && (
@@ -338,6 +435,53 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {showSendModal && (
+        <div className="modal-overlay" onClick={() => !sending && setShowSendModal(false)}>
+          <div className="modal-content profile-send-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Send Message to {profileUser?.username || 'User'}</h3>
+            <form onSubmit={submitMessage}>
+              <div className="form-group">
+                <label htmlFor="msg-subject">Subject</label>
+                <input
+                  id="msg-subject"
+                  type="text"
+                  value={sendSubject}
+                  onChange={(e) => setSendSubject(e.target.value)}
+                  placeholder="Message subject"
+                  required
+                  maxLength={200}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="msg-body">Message</label>
+                <textarea
+                  id="msg-body"
+                  value={sendBody}
+                  onChange={(e) => setSendBody(e.target.value)}
+                  placeholder="Write your message..."
+                  required
+                  rows={5}
+                  maxLength={5000}
+                />
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => !sending && setShowSendModal(false)}
+                  disabled={sending}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={sending}>
+                  {sending ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
