@@ -3,10 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const Customer = require('../models/Customer');
 const Meal = require('../models/Meal');
+const Souvenir = require('../models/Souvenir');
 const Review = require('../models/Review');
 const Transaction = require('../models/Transaction');
 const mealsDataPath = path.join(__dirname, '..', 'data', 'meals.js');
+const souvenirsDataPath = path.join(__dirname, '..', 'data', 'souvenirs.js');
 const { getMealsData } = require('../utils/mealsData');
+const { getSouvenirsData } = require('../utils/souvenirsData');
 
 // Get all users (admin only)
 const getUsers = async (req, res) => {
@@ -303,6 +306,7 @@ const getDashboardStats = async (req, res) => {
     const activeUsers = await Customer.countDocuments({ active: true });
     const adminUsers = await Customer.countDocuments({ role: 'ADMIN' });
     const totalMenuItems = getMealsData().length;
+    const totalSouvenirItems = getSouvenirsData().length;
 
     res.json({
       success: true,
@@ -310,7 +314,8 @@ const getDashboardStats = async (req, res) => {
         totalUsers,
         activeUsers,
         adminUsers,
-        totalMenuItems
+        totalMenuItems,
+        totalSouvenirItems
       }
     });
   } catch (error) {
@@ -473,6 +478,186 @@ const getTransactions = async (req, res) => {
   }
 };
 
+// Souvenir CRUD - same pattern as menu: data/souvenirs.js is source of truth, MongoDB links for admin ops
+const appendSouvenirToFile = (souvenir) => {
+  const souvenirs = getSouvenirsData();
+  const maxId = souvenirs.length === 0 ? 0 : Math.max(...souvenirs.map(s => s.id));
+  const newId = maxId + 1;
+  const escape = (str) => (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const newBlock = `  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+  let content = fs.readFileSync(souvenirsDataPath, 'utf8');
+  if (souvenirs.length === 0) {
+    content = content.replace(/\[\s*\]/, `[${newBlock}]`);
+  } else {
+    content = content.replace(/  \},\s*\r?\n\];/, `  },\n${newBlock}];`);
+  }
+  fs.writeFileSync(souvenirsDataPath, content);
+  return newId;
+};
+
+const removeSouvenirFromFile = (souvenirFileId) => {
+  let content = fs.readFileSync(souvenirsDataPath, 'utf8');
+  const blockRegex = new RegExp(`  \\{\\s*id:\\s*${souvenirFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
+  content = content.replace(blockRegex, '');
+  fs.writeFileSync(souvenirsDataPath, content);
+};
+
+const updateSouvenirInFile = (souvenirFileId, souvenir) => {
+  const escape = (str) => (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const newBlock = `  {\n    id: ${souvenirFileId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+  let content = fs.readFileSync(souvenirsDataPath, 'utf8');
+  const blockRegex = new RegExp(`  \\{\\s*id:\\s*${souvenirFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
+  content = content.replace(blockRegex, newBlock);
+  fs.writeFileSync(souvenirsDataPath, content);
+};
+
+const getSouvenirItems = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const souvenirs = getSouvenirsData();
+    const souvenirsWithMongo = await Souvenir.find({ souvenirFileId: { $in: souvenirs.map(s => s.id) } }).lean();
+    const mongoByFileId = Object.fromEntries(souvenirsWithMongo.map(s => [s.souvenirFileId, s._id.toString()]));
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const items = souvenirs.slice(0, limit).map(s => ({
+      id: s.id,
+      mongoId: mongoByFileId[s.id] || null,
+      name: s.name,
+      description: s.description || '',
+      price: s.price,
+      category: s.category || 'souvenir',
+      image: s.image && s.image.startsWith('/')
+        ? `${baseUrl}${s.image}`
+        : (s.image || ''),
+    }));
+    res.json({ success: true, items });
+  } catch (error) {
+    console.error('Get souvenir items error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const createSouvenirItem = async (req, res) => {
+  try {
+    const { name, description, price, category } = req.body;
+    if (!name || price === undefined || price === null) {
+      return res.status(400).json({ success: false, message: 'Name and price are required' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Image file is required' });
+    }
+    const souvenirData = {
+      name: (name || '').trim(),
+      description: (description || '').trim(),
+      price: Number(price),
+      category: (category || 'souvenir').trim(),
+      imageFilename: req.file.filename,
+    };
+    const souvenirFileId = appendSouvenirToFile(souvenirData);
+    const souvenir = new Souvenir({
+      name: souvenirData.name,
+      description: souvenirData.description,
+      price: souvenirData.price,
+      category: souvenirData.category,
+      souvenirFileId,
+    });
+    await souvenir.save();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.status(201).json({
+      success: true,
+      item: {
+        id: souvenirFileId,
+        name: souvenir.name,
+        description: souvenir.description,
+        price: souvenir.price,
+        image: `${baseUrl}/food_img/${req.file.filename}`,
+        category: souvenir.category,
+      }
+    });
+  } catch (error) {
+    console.error('Create souvenir error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateSouvenirItem = async (req, res) => {
+  try {
+    const souvenir = await Souvenir.findById(req.params.souvenirItemId);
+    if (!souvenir) {
+      return res.status(404).json({ success: false, message: 'Souvenir item not found' });
+    }
+    const { name, description, price, category } = req.body;
+    if (!name || price === undefined || price === null) {
+      return res.status(400).json({ success: false, message: 'Name and price are required' });
+    }
+    const souvenirs = getSouvenirsData();
+    const fileSouvenir = souvenirs.find(s => s.id === souvenir.souvenirFileId);
+    if (!fileSouvenir) {
+      return res.status(404).json({ success: false, message: 'Souvenir not found in souvenirs file' });
+    }
+    let imageFilename = req.file ? req.file.filename : null;
+    if (!imageFilename && fileSouvenir.image) {
+      imageFilename = fileSouvenir.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
+    }
+    if (!imageFilename) {
+      return res.status(400).json({ success: false, message: 'Image is required' });
+    }
+    if (req.file && fileSouvenir.image) {
+      const oldFilename = fileSouvenir.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
+      const oldPath = path.join(__dirname, '..', 'public', 'food_img', oldFilename);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+    updateSouvenirInFile(souvenir.souvenirFileId, {
+      name: (name || '').trim(),
+      description: (description || '').trim(),
+      price: Number(price),
+      category: (category || 'souvenir').trim(),
+      imageFilename,
+    });
+    souvenir.name = (name || '').trim();
+    souvenir.description = (description || '').trim();
+    souvenir.price = Number(price);
+    souvenir.category = (category || 'souvenir').trim();
+    await souvenir.save();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.json({
+      success: true,
+      item: {
+        id: souvenir.souvenirFileId,
+        name: souvenir.name,
+        description: souvenir.description,
+        price: souvenir.price,
+        image: `${baseUrl}/food_img/${imageFilename}`,
+        category: souvenir.category,
+      }
+    });
+  } catch (error) {
+    console.error('Update souvenir error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const deleteSouvenirItem = async (req, res) => {
+  try {
+    const souvenir = await Souvenir.findById(req.params.souvenirItemId);
+    if (!souvenir) {
+      return res.status(404).json({ success: false, message: 'Souvenir item not found' });
+    }
+    const souvenirs = getSouvenirsData();
+    const fileSouvenir = souvenirs.find(s => s.id === souvenir.souvenirFileId);
+    if (fileSouvenir && fileSouvenir.image) {
+      const filename = fileSouvenir.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
+      const filePath = path.join(__dirname, '..', 'public', 'food_img', filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+    removeSouvenirFromFile(souvenir.souvenirFileId);
+    await Souvenir.findByIdAndDelete(req.params.souvenirItemId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete souvenir error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getUsers,
   toggleUserActive,
@@ -482,6 +667,10 @@ module.exports = {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getSouvenirItems,
+  createSouvenirItem,
+  updateSouvenirItem,
+  deleteSouvenirItem,
   getDashboardStats,
   getReviewMenus,
   getReviews,

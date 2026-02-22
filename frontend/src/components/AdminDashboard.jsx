@@ -52,8 +52,33 @@ const AdminDashboard = () => {
   const [sendMessageSubject, setSendMessageSubject] = useState('');
   const [sendMessageBody, setSendMessageBody] = useState('');
   const [sendMessageSubmitting, setSendMessageSubmitting] = useState(false);
+  const [showAddSouvenirModal, setShowAddSouvenirModal] = useState(false);
+  const [showEditSouvenirModal, setShowEditSouvenirModal] = useState(false);
+  const [addSouvenirForm, setAddSouvenirForm] = useState({
+    imageFile: null,
+    imagePreview: '',
+    name: '',
+    description: '',
+    price: '',
+    category: 'souvenir'
+  });
+  const [editSouvenirForm, setEditSouvenirForm] = useState({
+    imageFile: null,
+    imagePreview: '',
+    name: '',
+    description: '',
+    price: '',
+    category: 'souvenir'
+  });
+  const [editingSouvenirItem, setEditingSouvenirItem] = useState(null);
+  const [addSouvenirSubmitting, setAddSouvenirSubmitting] = useState(false);
+  const [editSouvenirSubmitting, setEditSouvenirSubmitting] = useState(false);
+  const [addSouvenirImageError, setAddSouvenirImageError] = useState(false);
+  const [editSouvenirImageError, setEditSouvenirImageError] = useState(false);
   const fileInputRef = useRef(null);
   const editFileInputRef = useRef(null);
+  const souvenirFileInputRef = useRef(null);
+  const souvenirEditFileInputRef = useRef(null);
 
   useEffect(() => {
     // Check if user is admin
@@ -127,6 +152,10 @@ const AdminDashboard = () => {
         const data = await fetchJSON('/api/admin/transactions?page=1&limit=20');
         setSectionData(data.items || []);
         setTotal(data.total || 0);
+      } else if (section === 'souvenir') {
+        const data = await fetchJSON('/api/admin/souvenir-items?limit=100');
+        setSectionData(data.items || []);
+        setTotal(data.items?.length || 0);
       }
     } catch (error) {
       console.error(`Failed to load ${section}:`, error);
@@ -301,6 +330,153 @@ const AdminDashboard = () => {
       loadDashboardStats();
     } catch (error) {
       alert(`Failed to delete menu item: ${error.message}`);
+    }
+  };
+
+  const openAddSouvenirModal = () => {
+    setAddSouvenirForm({ imageFile: null, imagePreview: '', name: '', description: '', price: '', category: 'souvenir' });
+    setAddSouvenirImageError(false);
+    setShowAddSouvenirModal(true);
+  };
+
+  const closeAddSouvenirModal = () => setShowAddSouvenirModal(false);
+
+  const openEditSouvenirModal = (s) => {
+    setEditingSouvenirItem(s);
+    setEditSouvenirForm({
+      imageFile: null,
+      imagePreview: s.image || '',
+      name: s.name || '',
+      description: s.description || '',
+      price: s.price ?? '',
+      category: s.category || 'souvenir'
+    });
+    setEditSouvenirImageError(false);
+    setShowEditSouvenirModal(true);
+  };
+
+  const closeEditSouvenirModal = () => {
+    setShowEditSouvenirModal(false);
+    setEditingSouvenirItem(null);
+  };
+
+  const handleAddSouvenirFormChange = (field, value) => {
+    setAddSouvenirForm(prev => ({ ...prev, [field]: value }));
+    if (field === 'imagePreview') setAddSouvenirImageError(false);
+  };
+
+  const handleEditSouvenirFormChange = (field, value) => {
+    setEditSouvenirForm(prev => ({ ...prev, [field]: value }));
+    if (field === 'imagePreview') setEditSouvenirImageError(false);
+  };
+
+  const handleSouvenirImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    setAddSouvenirForm(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: URL.createObjectURL(file),
+    }));
+    setAddSouvenirImageError(false);
+    e.target.value = '';
+  };
+
+  const handleEditSouvenirImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    setEditSouvenirForm(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: URL.createObjectURL(file),
+    }));
+    setEditSouvenirImageError(false);
+    e.target.value = '';
+  };
+
+  const handleAddSouvenirSubmit = async (e) => {
+    e.preventDefault();
+    if (!addSouvenirForm.name?.trim() || addSouvenirForm.price === '') {
+      alert('Name and price are required.');
+      return;
+    }
+    if (!addSouvenirForm.imageFile) {
+      alert('Please select an image for the souvenir item.');
+      return;
+    }
+    setAddSouvenirSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', addSouvenirForm.imageFile);
+      formData.append('name', addSouvenirForm.name.trim());
+      formData.append('description', addSouvenirForm.description.trim());
+      formData.append('price', String(addSouvenirForm.price));
+      formData.append('category', addSouvenirForm.category || 'souvenir');
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/api/admin/souvenir-items`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      loadSection('souvenir');
+      loadDashboardStats();
+      closeAddSouvenirModal();
+    } catch (error) {
+      alert(`Failed to add souvenir item: ${error.message}`);
+    } finally {
+      setAddSouvenirSubmitting(false);
+    }
+  };
+
+  const handleEditSouvenirSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingSouvenirItem?.mongoId) return;
+    if (!editSouvenirForm.name?.trim() || editSouvenirForm.price === '') {
+      alert('Name and price are required.');
+      return;
+    }
+    setEditSouvenirSubmitting(true);
+    try {
+      const formData = new FormData();
+      if (editSouvenirForm.imageFile) formData.append('image', editSouvenirForm.imageFile);
+      formData.append('name', editSouvenirForm.name.trim());
+      formData.append('description', editSouvenirForm.description.trim());
+      formData.append('price', String(editSouvenirForm.price));
+      formData.append('category', editSouvenirForm.category || 'souvenir');
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/api/admin/souvenir-items/${editingSouvenirItem.mongoId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      loadSection('souvenir');
+      loadDashboardStats();
+      closeEditSouvenirModal();
+    } catch (error) {
+      alert(`Failed to update souvenir item: ${error.message}`);
+    } finally {
+      setEditSouvenirSubmitting(false);
+    }
+  };
+
+  const handleDeleteSouvenirItem = async (mongoId) => {
+    if (!window.confirm('Delete this souvenir item?')) return;
+    try {
+      await fetchJSON(`/api/admin/souvenir-items/${mongoId}`, { method: 'DELETE' });
+      loadSection('souvenir');
+      loadDashboardStats();
+    } catch (error) {
+      alert(`Failed to delete souvenir item: ${error.message}`);
     }
   };
 
@@ -560,6 +736,78 @@ const AdminDashboard = () => {
     );
   };
 
+  const renderSouvenirTable = () => {
+    if (!sectionData || sectionData.length === 0) {
+      return <div className="alert alert-info">No souvenir items found.</div>;
+    }
+    return (
+      <div className="table-responsive">
+        <table className="table table-bordered table-hover admin-table admin-menu-table">
+          <thead className="table-dark">
+            <tr>
+              <th>Image</th>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Price</th>
+              <th>Category</th>
+              <th className="admin-menu-center">View</th>
+              <th className="admin-menu-center">Edit</th>
+              <th className="admin-menu-center">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sectionData.map(s => (
+              <tr key={s.id}>
+                <td>
+                  <img src={s.image} alt={s.name} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-link p-0"
+                    onClick={() => navigate('/menu')}
+                  >
+                    {s.name}
+                  </button>
+                </td>
+                <td>{s.description}</td>
+                <td>฿{s.price}</td>
+                <td>{s.category}</td>
+                <td className="admin-menu-center">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() => navigate('/menu')}
+                  >
+                    View
+                  </button>
+                </td>
+                <td className="admin-menu-center">
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={(e) => { e.stopPropagation(); openEditSouvenirModal(s); }}
+                  >
+                    Edit
+                  </button>
+                </td>
+                <td className="admin-menu-center">
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteSouvenirItem(s.mongoId); }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   const renderReviewsSection = () => {
     const selected = reviewMenus.find((m) => String(m.mealId) === String(selectedMealId));
     return (
@@ -787,6 +1035,13 @@ const AdminDashboard = () => {
               </button>
               <span className="admin-topbar-separator">|</span>
               <button
+                className={`admin-topbar-link ${activeSection === 'souvenir' ? 'active' : ''}`}
+                onClick={() => loadSection('souvenir')}
+              >
+                Souvenir
+              </button>
+              <span className="admin-topbar-separator">|</span>
+              <button
                 className={`admin-topbar-link ${activeSection === 'transactions' ? 'active' : ''}`}
                 onClick={() => loadSection('transactions')}
               >
@@ -800,6 +1055,8 @@ const AdminDashboard = () => {
                   <span className="admin-topbar-stat">Active Users: {stats.activeUsers}</span>
                   <span className="admin-topbar-separator">|</span>
                   <span className="admin-topbar-stat">Menu Items: {stats.totalMenuItems}</span>
+                  <span className="admin-topbar-separator">|</span>
+                  <span className="admin-topbar-stat">Souvenirs: {stats.totalSouvenirItems ?? 0}</span>
                 </>
               )}
               <span className="admin-topbar-separator">|</span>
@@ -849,6 +1106,8 @@ const AdminDashboard = () => {
                   ? 'Users'
                   : activeSection === 'menu'
                   ? 'Menu Items'
+                  : activeSection === 'souvenir'
+                  ? 'Souvenir Items'
                   : activeSection === 'reviews'
                   ? 'User Reviews'
                   : 'Transactions'}
@@ -859,9 +1118,24 @@ const AdminDashboard = () => {
                 </button>
               )}
               {activeSection === 'menu' && (
-                <button className="btn btn-primary" onClick={openAddMenuModal}>
-                  Add Menu
-                </button>
+                <>
+                  <button className="btn btn-outline-secondary me-2" onClick={() => navigate('/menu')}>
+                    View All Menu Items
+                  </button>
+                  <button className="btn btn-primary" onClick={openAddMenuModal}>
+                    Add Menu
+                  </button>
+                </>
+              )}
+              {activeSection === 'souvenir' && (
+                <>
+                  <button className="btn btn-outline-secondary me-2" onClick={() => navigate('/menu')}>
+                    View All Souvenir Items
+                  </button>
+                  <button className="btn btn-primary" onClick={openAddSouvenirModal}>
+                    Add Souvenir
+                  </button>
+                </>
               )}
             </div>
 
@@ -873,6 +1147,8 @@ const AdminDashboard = () => {
                 renderUsersTable()
               ) : activeSection === 'menu' ? (
                 renderMenuTable()
+              ) : activeSection === 'souvenir' ? (
+                renderSouvenirTable()
               ) : activeSection === 'reviews' ? (
                 renderReviewsSection()
               ) : (
@@ -1052,6 +1328,174 @@ const AdminDashboard = () => {
                 <button type="button" className="btn btn-outline-secondary" onClick={closeEditMenuModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={editMenuSubmitting}>
                   {editMenuSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Souvenir Modal */}
+      {showAddSouvenirModal && (
+        <div className="admin-modal-overlay" onClick={closeAddSouvenirModal}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h5>Add Souvenir Item</h5>
+              <button type="button" className="admin-modal-close" onClick={closeAddSouvenirModal} aria-label="Close">&times;</button>
+            </div>
+            <form onSubmit={handleAddSouvenirSubmit} className="admin-modal-body">
+              <input
+                ref={souvenirFileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleSouvenirImageFileSelect}
+              />
+              <div
+                className="admin-add-menu-image-area"
+                onClick={() => souvenirFileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && souvenirFileInputRef.current?.click()}
+              >
+                {addSouvenirForm.imagePreview && !addSouvenirImageError ? (
+                  <img
+                    src={addSouvenirForm.imagePreview}
+                    alt="Preview"
+                    onError={() => setAddSouvenirImageError(true)}
+                  />
+                ) : (
+                  <span>Click to choose image</span>
+                )}
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Name:</label>
+                <input
+                  type="text"
+                  value={addSouvenirForm.name}
+                  onChange={e => handleAddSouvenirFormChange('name', e.target.value)}
+                  placeholder="Souvenir item name"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Description:</label>
+                <textarea
+                  value={addSouvenirForm.description}
+                  onChange={e => handleAddSouvenirFormChange('description', e.target.value)}
+                  placeholder="Description"
+                  rows={3}
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Price:</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={addSouvenirForm.price}
+                  onChange={e => handleAddSouvenirFormChange('price', e.target.value)}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Category:</label>
+                <input
+                  type="text"
+                  value={addSouvenirForm.category}
+                  onChange={e => handleAddSouvenirFormChange('category', e.target.value)}
+                  placeholder="souvenir"
+                />
+              </div>
+              <div className="admin-modal-footer">
+                <button type="button" className="btn btn-outline-secondary" onClick={closeAddSouvenirModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={addSouvenirSubmitting}>
+                  {addSouvenirSubmitting ? 'Adding...' : 'Add Souvenir Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Souvenir Modal */}
+      {showEditSouvenirModal && editingSouvenirItem && (
+        <div className="admin-modal-overlay" onClick={closeEditSouvenirModal}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h5>Edit Souvenir Item</h5>
+              <button type="button" className="admin-modal-close" onClick={closeEditSouvenirModal} aria-label="Close">&times;</button>
+            </div>
+            <form onSubmit={handleEditSouvenirSubmit} className="admin-modal-body">
+              <input
+                ref={souvenirEditFileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleEditSouvenirImageFileSelect}
+              />
+              <div
+                className="admin-add-menu-image-area"
+                onClick={() => souvenirEditFileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && souvenirEditFileInputRef.current?.click()}
+              >
+                {editSouvenirForm.imagePreview && !editSouvenirImageError ? (
+                  <img
+                    src={editSouvenirForm.imagePreview}
+                    alt="Preview"
+                    onError={() => setEditSouvenirImageError(true)}
+                  />
+                ) : (
+                  <span>Click to change image</span>
+                )}
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Name:</label>
+                <input
+                  type="text"
+                  value={editSouvenirForm.name}
+                  onChange={e => handleEditSouvenirFormChange('name', e.target.value)}
+                  placeholder="Souvenir item name"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Description:</label>
+                <textarea
+                  value={editSouvenirForm.description}
+                  onChange={e => handleEditSouvenirFormChange('description', e.target.value)}
+                  placeholder="Description"
+                  rows={3}
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Price:</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={editSouvenirForm.price}
+                  onChange={e => handleEditSouvenirFormChange('price', e.target.value)}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Category:</label>
+                <input
+                  type="text"
+                  value={editSouvenirForm.category}
+                  onChange={e => handleEditSouvenirFormChange('category', e.target.value)}
+                  placeholder="souvenir"
+                />
+              </div>
+              <div className="admin-modal-footer">
+                <button type="button" className="btn btn-outline-secondary" onClick={closeEditSouvenirModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={editSouvenirSubmitting}>
+                  {editSouvenirSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

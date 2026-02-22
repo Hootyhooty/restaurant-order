@@ -110,6 +110,26 @@
   gap: 30px;
 }
 
+.souvenir-section {
+  margin-top: 60px;
+  padding-top: 40px;
+  border-top: 2px solid #e31837;
+}
+
+.souvenir-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.souvenir-empty {
+  color: #666;
+  font-size: 1rem;
+  text-align: center;
+  padding: 30px;
+}
+
 @media (max-width: 1024px) {
   .meals-layout {
     gap: 30px;

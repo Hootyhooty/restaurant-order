@@ -36,13 +36,14 @@ const Login = () => {
           <h2 className="login-title">Login to Picha</h2>
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
-              <label htmlFor="username">Username</label>
+              <label htmlFor="username">Username or Email</label>
               <input
                 type="text"
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                placeholder="Enter username or email"
                 className="form-input"
               />
             </div>

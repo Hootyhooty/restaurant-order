@@ -40,21 +40,28 @@ const register = async (req, res) => {
 };
 
 // POST /api/auth/login
+// Accepts either username or email for login
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    console.log('Received login request:', { username });
+    const usernameOrEmail = (username || '').trim();
+    console.log('Received login request:', { username: usernameOrEmail });
 
-    if (!username || !password) {
+    if (!usernameOrEmail || !password) {
       console.log('Validation failed: Missing required fields');
       return res
         .status(400)
-        .json({ message: 'Username and password are required' });
+        .json({ message: 'Username/email and password are required' });
     }
 
-    const customer = await Customer.findOne({ username });
+    const isEmail = usernameOrEmail.includes('@');
+    const customer = await Customer.findOne(
+      isEmail
+        ? { email: usernameOrEmail.toLowerCase() }
+        : { username: usernameOrEmail }
+    );
     if (!customer) {
-      console.log('User not found:', username);
+      console.log('User not found:', usernameOrEmail);
       return res
         .status(401)
         .json({ message: 'Invalid username or password' });
@@ -62,7 +69,7 @@ const login = async (req, res) => {
 
     const isMatch = await customer.comparePassword(password);
     if (!isMatch) {
-      console.log('Password mismatch for user:', username);
+      console.log('Password mismatch for user:', usernameOrEmail);
       return res
         .status(401)
         .json({ message: 'Invalid username or password' });

@@ -13,6 +13,10 @@ const {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getSouvenirItems,
+  createSouvenirItem,
+  updateSouvenirItem,
+  deleteSouvenirItem,
   getDashboardStats,
   getReviewMenus,
   getReviews,
@@ -47,6 +51,11 @@ router.get('/menu-items', rolesRequired('ADMIN'), getMenuItems);
 router.post('/menu-items', rolesRequired('ADMIN'), uploadMenuImage.single('image'), createMenuItem);
 router.put('/menu-items/:menuItemId', rolesRequired('ADMIN'), uploadMenuImage.single('image'), updateMenuItem);
 router.delete('/menu-items/:menuItemId', rolesRequired('ADMIN'), deleteMenuItem);
+
+router.get('/souvenir-items', rolesRequired('ADMIN'), getSouvenirItems);
+router.post('/souvenir-items', rolesRequired('ADMIN'), uploadMenuImage.single('image'), createSouvenirItem);
+router.put('/souvenir-items/:souvenirItemId', rolesRequired('ADMIN'), uploadMenuImage.single('image'), updateSouvenirItem);
+router.delete('/souvenir-items/:souvenirItemId', rolesRequired('ADMIN'), deleteSouvenirItem);
 
 // Reviews
 router.get('/review-menus', rolesRequired('ADMIN'), getReviewMenus);
