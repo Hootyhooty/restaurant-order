@@ -76,12 +76,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Enhanced MongoDB connection logging
 // Force database name to be restaurant_db
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_db';
+const { syncSouvenirsDbToFile } = require('./utils/syncSouvenirs');
+
 mongoose.connect(mongoUri, {
   dbName: 'restaurant_db',  // Explicitly set database name
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => {
+}).then(async () => {
   console.log('Connected to MongoDB database: restaurant_db');
+  await syncSouvenirsDbToFile();
 }).catch((err) => {
   console.error('MongoDB connection error:', err.message);
 });

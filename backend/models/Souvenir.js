@@ -7,6 +7,7 @@ const souvenirSchema = new mongoose.Schema(
     description: { type: String, default: '', trim: true },
     price: { type: Number, required: true, min: 0 },
     category: { type: String, default: 'souvenir', trim: true },
+    imageFilename: { type: String, trim: true }, // for DB→file sync and legacy docs
     souvenirFileId: { type: Number }, // id in data/souvenirs.js for delete/update sync
   },
   { timestamps: true }

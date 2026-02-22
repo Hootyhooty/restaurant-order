@@ -570,6 +570,7 @@ const createSouvenirItem = async (req, res) => {
       description: souvenirData.description,
       price: souvenirData.price,
       category: souvenirData.category,
+      imageFilename: souvenirData.imageFilename,
       souvenirFileId,
     });
     await souvenir.save();
@@ -629,6 +630,7 @@ const updateSouvenirItem = async (req, res) => {
     souvenir.description = (description || '').trim();
     souvenir.price = Number(price);
     souvenir.category = (category || 'souvenir').trim();
+    souvenir.imageFilename = imageFilename;
     await souvenir.save();
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json({
