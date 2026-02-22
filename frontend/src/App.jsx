@@ -6,6 +6,7 @@ import './App.css';
 import Header from './components/Header';
 import Home from './components/Home';
 import Menu from './components/Menu';
+import Store from './components/Store';
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
@@ -28,6 +29,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
+            <Route path="/store" element={<Store />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />

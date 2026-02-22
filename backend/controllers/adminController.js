@@ -484,31 +484,43 @@ const appendSouvenirToFile = (souvenir) => {
   const maxId = souvenirs.length === 0 ? 0 : Math.max(...souvenirs.map(s => s.id));
   const newId = maxId + 1;
   const escape = (str) => (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const newBlock = `  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
-  let content = fs.readFileSync(souvenirsDataPath, 'utf8');
+  const absPath = path.resolve(souvenirsDataPath);
+  let content = fs.readFileSync(absPath, 'utf8');
+  let newContent;
   if (souvenirs.length === 0) {
-    content = content.replace(/\[\s*\]/, `[${newBlock}]`);
+    // Directly insert first item - replace empty array "[\n];" or "[];" with content
+    const newBlock = `  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+    const arrayStart = content.indexOf('const souvenirs = ');
+    if (arrayStart === -1) throw new Error('appendSouvenirToFile: could not find "const souvenirs = "');
+    const bracketOpen = content.indexOf('[', arrayStart);
+    const bracketClose = content.indexOf('];', bracketOpen);
+    if (bracketOpen === -1 || bracketClose === -1) throw new Error('appendSouvenirToFile: could not find array brackets');
+    newContent = content.slice(0, bracketOpen + 1) + '\n' + newBlock + content.slice(bracketClose);
   } else {
-    content = content.replace(/  \},\s*\r?\n\];/, `  },\n${newBlock}];`);
+    const newBlock = `  },\n  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+    content = content.replace(/  \},\s*\r?\n\];/, newBlock + '];');
+    newContent = content;
   }
-  fs.writeFileSync(souvenirsDataPath, content);
+  fs.writeFileSync(absPath, newContent, 'utf8');
   return newId;
 };
 
 const removeSouvenirFromFile = (souvenirFileId) => {
-  let content = fs.readFileSync(souvenirsDataPath, 'utf8');
+  const absPath = path.resolve(souvenirsDataPath);
+  let content = fs.readFileSync(absPath, 'utf8');
   const blockRegex = new RegExp(`  \\{\\s*id:\\s*${souvenirFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
   content = content.replace(blockRegex, '');
-  fs.writeFileSync(souvenirsDataPath, content);
+  fs.writeFileSync(absPath, content, 'utf8');
 };
 
 const updateSouvenirInFile = (souvenirFileId, souvenir) => {
   const escape = (str) => (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const newBlock = `  {\n    id: ${souvenirFileId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
-  let content = fs.readFileSync(souvenirsDataPath, 'utf8');
+  const absPath = path.resolve(souvenirsDataPath);
+  let content = fs.readFileSync(absPath, 'utf8');
   const blockRegex = new RegExp(`  \\{\\s*id:\\s*${souvenirFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
   content = content.replace(blockRegex, newBlock);
-  fs.writeFileSync(souvenirsDataPath, content);
+  fs.writeFileSync(absPath, content, 'utf8');
 };
 
 const getSouvenirItems = async (req, res) => {

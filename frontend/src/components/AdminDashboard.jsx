@@ -765,7 +765,7 @@ const AdminDashboard = () => {
                   <button
                     type="button"
                     className="btn btn-link p-0"
-                    onClick={() => navigate('/menu')}
+                    onClick={() => navigate('/store')}
                   >
                     {s.name}
                   </button>
@@ -777,7 +777,7 @@ const AdminDashboard = () => {
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm"
-                    onClick={() => navigate('/menu')}
+                    onClick={() => navigate('/store')}
                   >
                     View
                   </button>
@@ -1129,7 +1129,7 @@ const AdminDashboard = () => {
               )}
               {activeSection === 'souvenir' && (
                 <>
-                  <button className="btn btn-outline-secondary me-2" onClick={() => navigate('/menu')}>
+                  <button className="btn btn-outline-secondary me-2" onClick={() => navigate('/store')}>
                     View All Souvenir Items
                   </button>
                   <button className="btn btn-primary" onClick={openAddSouvenirModal}>

@@ -8,7 +8,6 @@ const Menu = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [hasUserClicked, setHasUserClicked] = useState(false);
   const [meals, setMeals] = useState([]);
-  const [souvenirs, setSouvenirs] = useState([]);
   const [categories, setCategories] = useState([{ id: 'all', name: 'All' }]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,23 +18,12 @@ const Menu = () => {
         setLoading(true);
         setError(null);
 
-        const [mealsRes, souvenirsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/meals`),
-          fetch(`${API_BASE}/api/souvenirs`),
-        ]);
-
-        if (!mealsRes.ok) {
-          throw new Error('Failed to load menu');
-        }
+        const mealsRes = await fetch(`${API_BASE}/api/meals`);
+        if (!mealsRes.ok) throw new Error('Failed to load menu');
 
         const mealsData = await mealsRes.json();
         setMeals(mealsData.items || []);
         setCategories(mealsData.categories || [{ id: 'all', name: 'All' }]);
-
-        if (souvenirsRes.ok) {
-          const souvenirsData = await souvenirsRes.json();
-          setSouvenirs(souvenirsData.items || []);
-        }
       } catch (err) {
         console.error('Menu fetch error:', err);
         setError(err.message || 'Error loading menu');
@@ -126,20 +114,6 @@ const Menu = () => {
               {filteredMeals.map((meal) => (
                 <MealCard key={meal.id} meal={meal} />
               ))}
-            </div>
-
-            {/* Souvenir section - same structure as meal cards */}
-            <div className="souvenir-section">
-              <h3 className="souvenir-section-title">Souvenirs</h3>
-              {souvenirs.length === 0 ? (
-                <p className="souvenir-empty">-- no item for sell at the moment --</p>
-              ) : (
-                <div className="meals-grid">
-                  {souvenirs.map((item) => (
-                    <MealCard key={item.id} meal={item} />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>

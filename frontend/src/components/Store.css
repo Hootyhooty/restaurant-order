@@ -1,0 +1,71 @@
+/* src/components/Store.css */
+.store-section {
+  padding: 80px 0;
+  background-color: #f8f9fa;
+  min-height: 60vh;
+}
+
+.store-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.store-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.store-subtitle {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.store-empty {
+  color: #666;
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.store-loading,
+.store-error {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.store-error {
+  color: #e31837;
+}
+
+@media (max-width: 768px) {
+  .store-section {
+    padding: 60px 0;
+  }
+
+  .store-title {
+    font-size: 2rem;
+  }
+
+  .store-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .store-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
