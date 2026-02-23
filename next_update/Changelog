@@ -125,3 +125,13 @@ Admin page
 - copy all img from backend/public to the cloudinary database (only img)
 - rewire all img to use from the cloudinary database (only img) 
 
+- I'd like to change Cloudinary directory structure to
+    -restaurant
+        |-display (only store users imgs)
+        |-souvenir (only store non-food product imgs)
+        |-food (only store food menu imgs)
+        
+- also all imgs seem not showing correctly maybe rewire them
+       cd backend
+       node scripts/migrateLocalImagesToCloudinary.js
+       node scripts/rewriteImageUrlsFromMapping.js

@@ -53,8 +53,23 @@ async function main() {
 
     try {
       const publicIdBase = relFromPublic.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9/_-]/g, '_');
+
+      // Choose folder based on path:
+      // - display/*      → restaurant/display
+      // - souvenir/*     → restaurant/souvenir
+      // - food_img/*     → restaurant/food
+      // - everything else → restaurant
+      let folder = 'restaurant';
+      if (relFromPublic.startsWith('display/')) {
+        folder = 'restaurant/display';
+      } else if (relFromPublic.startsWith('souvenir/')) {
+        folder = 'restaurant/souvenir';
+      } else if (relFromPublic.startsWith('food_img/')) {
+        folder = 'restaurant/food';
+      }
+
       const uploadResult = await uploadImageFile(filePath, {
-        folder: 'restaurant/migrated',
+        folder,
         public_id: publicIdBase,
       });
       const url = uploadResult.secure_url;

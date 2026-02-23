@@ -37,6 +37,10 @@ function loadMapping() {
   return json;
 }
 
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function replaceInFile(filePath, mapping) {
   if (!fs.existsSync(filePath)) {
     console.warn(`Skip (not found): ${path.relative(rootDir, filePath)}`);
@@ -61,16 +65,24 @@ function replaceInFile(filePath, mapping) {
     // - "backend/public/food_img/Name.jpg"
     if (!/\.(png|jpe?g|gif|webp|bmp)$/i.test(key)) continue;
 
-    if (content.includes(key)) {
-      content = content.split(key).join(url);
-    }
+    // Replace only when the key appears as a literal string path,
+    // not inside an existing http(s) URL (to avoid double-rewriting).
+    const escapedKey = escapeRegExp(key);
+
+    // Match "'...key...'" or "\"...key...\"" but not "http...key"
+    const patterns = [
+      new RegExp(`(['"])${escapedKey}\\1`, 'g'),
+    ];
 
     // Also try with a leading slash if not already present
     if (!key.startsWith('/')) {
       const withSlash = '/' + key;
-      if (content.includes(withSlash)) {
-        content = content.split(withSlash).join(url);
-      }
+      const escapedWithSlash = escapeRegExp(withSlash);
+      patterns.push(new RegExp(`(['"])${escapedWithSlash}\\1`, 'g'));
+    }
+
+    for (const re of patterns) {
+      content = content.replace(re, (_match, quote) => `${quote}${url}${quote}`);
     }
   }
 

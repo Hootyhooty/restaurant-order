@@ -18,18 +18,24 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
+    let secureUrl = '';
+    if (req.file.buffer) {
+      const result = await uploadImageBuffer(req.file.buffer, {
+        folder: 'restaurant/display',
+        public_id: `display_${Date.now()}`,
+      });
+      secureUrl = result.secure_url;
+    }
+
     return res.status(201).json({
       status: 'success',
       message: 'Image uploaded successfully',
       data: {
-        // For backward compatibility, if Cloudinary is not configured, we fall back to disk.
-        filename: req.file.originalname || 'image',
-        url: req.file.buffer
-          ? (await uploadImageBuffer(req.file.buffer, {
-              folder: 'restaurant/user',
-              public_id: `user_${Date.now()}`,
-            })).secure_url
-          : ''
+        // filename is what the frontend stores as user.photo.
+        // We set it to the Cloudinary URL so existing code that checks
+        // "startsWith('http')" works without changes.
+        filename: secureUrl || req.file.originalname || 'image',
+        url: secureUrl,
       }
     });
   } catch (error) {

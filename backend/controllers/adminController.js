@@ -214,7 +214,7 @@ const updateMenuItem = async (req, res) => {
     // If a new file is uploaded, send it to Cloudinary
     if (req.file && req.file.buffer) {
       const uploadResult = await uploadImageBuffer(req.file.buffer, {
-        folder: 'restaurant/menu',
+        folder: 'restaurant/food',
         public_id: `menu_${meal.mealFileId || 'new'}_${Date.now()}`,
       });
       imageUrl = uploadResult.secure_url;
@@ -264,7 +264,7 @@ const createMenuItem = async (req, res) => {
     }
     // Upload to Cloudinary
     const uploadResult = await uploadImageBuffer(req.file.buffer, {
-      folder: 'restaurant/menu',
+      folder: 'restaurant/food',
       public_id: `menu_${Date.now()}`,
     });
     const imageUrl = uploadResult.secure_url;
