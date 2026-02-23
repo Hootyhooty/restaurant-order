@@ -16,7 +16,7 @@ const meals = [
     name: 'Lemon Chicken and Rice',
     description: 'Delicious lemon chicken with rice and vegetables',
     price: 89,
-    image: '/food_img/Lemon-Chicken-and-Rice.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868604/restaurant/food/food_img/Lemon-Chicken-and-Rice.jpg',
     category: 'rice',
     isPopular: true,
   },
@@ -25,7 +25,7 @@ const meals = [
     name: 'Southwestern Rice',
     description: 'Savory southwestern rice with mixed vegetables',
     price: 79,
-    image: '/food_img/Southwestern-Rice.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868615/restaurant/food/food_img/Southwestern-Rice.jpg',
     category: 'rice',
     isPopular: true,
   },
@@ -34,7 +34,7 @@ const meals = [
     name: 'Shrimp Rice Casserole',
     description: 'Fresh shrimp rice casserole with green onions',
     price: 99,
-    image: '/food_img/Makeover-Shrimp-Rice-Casserole.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868605/restaurant/food/food_img/Makeover-Shrimp-Rice-Casserole.jpg',
     category: 'rice',
   },
   {
@@ -42,7 +42,7 @@ const meals = [
     name: 'Jambalaya',
     description: 'Spicy jambalaya rice with sausage and chicken',
     price: 99,
-    image: '/food_img/Jambalaya.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868602/restaurant/food/food_img/Jambalaya.jpg',
     category: 'rice',
   },
   {
@@ -50,7 +50,7 @@ const meals = [
     name: 'Turkey Club Sandwich',
     description: 'Classic turkey club sandwich with bacon',
     price: 99,
-    image: '/food_img/Turkey-Club-Sandwich.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868616/restaurant/food/food_img/Turkey-Club-Sandwich.jpg',
     category: 'sandwich',
   },
   {
@@ -58,7 +58,7 @@ const meals = [
     name: 'Copycat Panera Bacon Turkey Bravo',
     description: 'Premium bacon turkey sandwich with special sauce',
     price: 99,
-    image: '/food_img/Copycat-Panera-Bacon-Turkey-Bravo.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868594/restaurant/food/food_img/Copycat-Panera-Bacon-Turkey-Bravo.jpg',
     category: 'sandwich',
   },
   {
@@ -66,7 +66,7 @@ const meals = [
     name: 'Sloppy Joes Burger',
     description: 'Delicious sloppy joes burger with sauce',
     price: 99,
-    image: '/food_img/Sloppy-Joes-Burger.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868614/restaurant/food/food_img/Sloppy-Joes-Burger.jpg',
     category: 'sandwich',
   },
   {
@@ -74,7 +74,7 @@ const meals = [
     name: 'Feta Bruschetta',
     description: 'Fresh feta bruschetta with tomatoes',
     price: 69,
-    image: '/food_img/Feta-Bruschetta.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868596/restaurant/food/food_img/Feta-Bruschetta.jpg',
     category: 'sides',
   },
   {
@@ -82,7 +82,7 @@ const meals = [
     name: 'Kenai Dip',
     description: 'Creamy Kenai dip with chips',
     price: 69,
-    image: '/food_img/Kenai-Dip.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868603/restaurant/food/food_img/Kenai-Dip.jpg',
     category: 'sides',
   },
   {
@@ -90,7 +90,7 @@ const meals = [
     name: 'Perfect Bite Fruit Salad',
     description: 'Fresh fruit salad with perfect bites',
     price: 69,
-    image: '/food_img/Perfect-Bite-Fruit-Salad.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868610/restaurant/food/food_img/Perfect-Bite-Fruit-Salad.jpg',
     category: 'sides',
   },
   {
@@ -98,7 +98,7 @@ const meals = [
     name: 'Frozen Whipped Lemonade',
     description: 'Refreshing frozen whipped lemonade',
     price: 69,
-    image: '/food_img/Frozen-Whipped-Lemonade.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868597/restaurant/food/food_img/Frozen-Whipped-Lemonade.jpg',
     category: 'drinks',
   },
   {
@@ -106,7 +106,7 @@ const meals = [
     name: 'Sgroppino',
     description: 'Italian sgroppino cocktail',
     price: 79,
-    image: '/food_img/Sgroppino.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868612/restaurant/food/food_img/Sgroppino.jpg',
     category: 'drinks',
   },
   {
@@ -114,7 +114,7 @@ const meals = [
     name: 'Carajillo',
     description: 'Spanish carajillo coffee cocktail',
     price: 79,
-    image: '/food_img/Carajillo.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868592/restaurant/food/food_img/Carajillo.jpg',
     category: 'drinks',
   },
   {
@@ -122,7 +122,7 @@ const meals = [
     name: 'Homemade Chocolate Pudding',
     description: 'Rich homemade chocolate pudding',
     price: 99,
-    image: '/food_img/Homemade-Chocolate-Pudding.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868600/restaurant/food/food_img/Homemade-Chocolate-Pudding.jpg',
     category: 'desserts',
   },
   {
@@ -130,7 +130,7 @@ const meals = [
     name: 'Orange Creamsicle Bars',
     description: 'Delicious orange creamsicle bars',
     price: 99,
-    image: '/food_img/Orange-Creamsicle-Bars.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868609/restaurant/food/food_img/Orange-Creamsicle-Bars.jpg',
     category: 'desserts',
   },
   {
@@ -138,7 +138,7 @@ const meals = [
     name: 'Lemon Whipped Lemonade',
     description: 'Fresh lemon whipped lemonade',
     price: 99,
-    image: '/food_img/Frozen-Whipped-Lemonade.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868597/restaurant/food/food_img/Frozen-Whipped-Lemonade.jpg',
     category: 'drinks',
   },
   {
@@ -146,7 +146,7 @@ const meals = [
     name: 'Chicken Bacon Ranch',
     description: 'Featuring a favorite combination of flavors, our Chicken Bacon Ranch with Sweet Potatoes is High in protein and fiber, this dish is both nutritious and delicious.',
     price: 89,
-    image: '/food_img/menu_1771062917406.jpg',
+    image: 'https://res.cloudinary.com/dpfypv35h/image/upload/v1771868607/restaurant/food/food_img/menu_1771062917406.jpg',
     category: 'sides',
   },
 ];
