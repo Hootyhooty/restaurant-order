@@ -2,7 +2,7 @@
 // Store page - displays souvenir items (same card layout as meals)
 import { useState, useEffect } from 'react';
 import './Store.css';
-import MealCard from './MealCard';
+import SouvenirCard from './SouvenirCard';
 import { API_BASE } from '../apiConfig';
 
 const Store = () => {
@@ -68,7 +68,7 @@ const Store = () => {
         ) : (
           <div className="store-grid">
             {souvenirs.map((item) => (
-              <MealCard key={item.id} meal={item} />
+              <SouvenirCard key={item.id} souvenir={item} />
             ))}
           </div>
         )}

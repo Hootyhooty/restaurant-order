@@ -140,3 +140,7 @@ Admin page
     cd backend
     node scripts/migrateLocalImagesToCloudinary.js
     node scripts/rewriteImageUrlsFromMapping.js
+
+-stores page
+    - imgs in store page still doesnt work
+    - change meal-card and meal-image to souvenir-card and souvenir-image

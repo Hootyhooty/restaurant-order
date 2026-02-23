@@ -1,5 +1,6 @@
 /* src/components/MealCard.css */
-.meal-card {
+.meal-card,
+.souvenir-card {
   background-color: white;
   border-radius: 12px;
   overflow: hidden;
@@ -8,7 +9,8 @@
   position: relative;
 }
 
-.meal-card:hover {
+.meal-card:hover,
+.souvenir-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
@@ -26,20 +28,23 @@
   z-index: 2;
 }
 
-.meal-image {
+.meal-image,
+.souvenir-image {
   position: relative;
   height: 200px;
   overflow: hidden;
 }
 
-.meal-image img {
+.meal-image img,
+.souvenir-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-.meal-card:hover .meal-image img {
+.meal-card:hover .meal-image img,
+.souvenir-card:hover .souvenir-image img {
   transform: scale(1.05);
 }
 
