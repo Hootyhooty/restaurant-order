@@ -54,11 +54,11 @@ async function main() {
     try {
       const publicIdBase = relFromPublic.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9/_-]/g, '_');
 
-      // Choose folder based on path:
-      // - display/*      → restaurant/display
-      // - souvenir/*     → restaurant/souvenir
-      // - food_img/*     → restaurant/food
-      // - everything else → restaurant
+      // Use only restaurant/display | souvenir | food (no "migrated" folder).
+      // - display/*   → restaurant/display
+      // - souvenir/*  → restaurant/souvenir
+      // - food_img/*  → restaurant/food
+      // - other       → restaurant
       let folder = 'restaurant';
       if (relFromPublic.startsWith('display/')) {
         folder = 'restaurant/display';
