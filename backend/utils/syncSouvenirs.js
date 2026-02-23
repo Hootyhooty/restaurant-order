@@ -35,7 +35,17 @@ module.exports = {
     for (let i = 0; i < docs.length; i++) {
       const d = docs[i];
       const id = i + 1;
-      const imgPath = d.imageFilename ? `/food_img/${d.imageFilename}` : '';
+      // imageFilename can be either:
+      // - a local filename (legacy) → /food_img/<filename>
+      // - a full Cloudinary URL     → use as-is
+      let imgPath = '';
+      if (d.imageFilename) {
+        if (/^https?:\/\//i.test(d.imageFilename)) {
+          imgPath = d.imageFilename;
+        } else {
+          imgPath = `/food_img/${d.imageFilename}`;
+        }
+      }
       const imgValue = imgPath ? `'${imgPath}'` : "''";
       blocks.push(`  {
     id: ${id},
