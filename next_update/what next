@@ -1,4 +1,3 @@
-- change login to based on email or username
 - change format for registartion req name and location.
 - make statistic collector
 - integrate with firebase to store img 
@@ -10,7 +9,6 @@
 - implement social function
     - show the user social app link
 - work on promotion section
-- work on store section
 - implement about us
 - implement contact
 - change "order now" to "Booking now" for dine in

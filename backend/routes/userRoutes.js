@@ -1,5 +1,4 @@
 // src/backend/routes/userRoutes.js
-const path = require('path');
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -15,15 +14,6 @@ const {
   getPublicProfile,
 } = require('../controllers/userController');
 
-const displayDir = path.join(__dirname, '..', 'public', 'display');
-const displayStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, displayDir),
-  filename: (req, file, cb) => {
-    const ext = (file.originalname.match(/\.\w+$/) || ['.jpg'])[0];
-    cb(null, `user_${Date.now()}${ext}`);
-  }
-});
-
 const fileFilter = (req, file, cb) => {
   if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
     cb(null, true);
@@ -33,7 +23,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: displayStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: fileFilter
 });

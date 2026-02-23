@@ -99,6 +99,29 @@ sending message function
           Message:
           [Reply] [Delete]
   
+login
+  - Email now can also login the user (not replace username but they can use either)
 
+Store page 
+  - add a card to sell souvenir items (doing exactly the same as meal card) just add card but 
+    no item for sell at the moment and the page show -- no item for sell at the moment -- if 
+    there is no item
 
+Admin page 
+  - implement new tab "Souvenir" in the table ( literally doing the same as menu tab)
+  - also add a button to add new souvenir item (exactly the same as add new menu item button)
+  - also add a button to edit souvenir item (exactly the same as edit menu item button)
+  - also add a button to delete souvenir item (exactly the same as delete menu item button)
+  - also add a button to view souvenir item (exactly the same as view menu item button)
+  - also add a button to view all souvenir items (exactly the same as view all menu items button)
+  - also add a button to view all souvenir items (exactly the same as view all menu items button)
+
+- I want to implement cloudinary on this project for storing img files, so what should I do?
+    - I already have account and api key. So just skip to implement part 
+        - In case you need keyword from .env 
+            CLOUD_NAME: xxxxxx
+            CLOUD_KEY: xxxxxx
+            CLOUD_SECRET: xxxxxxx
+- copy all img from backend/public to the cloudinary database (only img)
+- rewire all img to use from the cloudinary database (only img) 
 

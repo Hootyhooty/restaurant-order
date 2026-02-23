@@ -1,5 +1,4 @@
 // Admin routes - protected by admin role middleware
-const path = require('path');
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
@@ -24,16 +23,9 @@ const {
   getTransactions
 } = require('../controllers/adminController');
 
-const foodImgDir = path.join(__dirname, '..', 'public', 'food_img');
-const menuImageStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, foodImgDir),
-  filename: (req, file, cb) => {
-    const ext = (file.originalname.match(/\.\w+$/) || ['.jpg'])[0];
-    cb(null, `menu_${Date.now()}${ext}`);
-  }
-});
+// Use in-memory storage for images; we upload to Cloudinary in controllers
 const uploadMenuImage = multer({
-  storage: menuImageStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (/^image\/(jpeg|jpg|png|gif|webp)$/i.test(file.mimetype)) cb(null, true);

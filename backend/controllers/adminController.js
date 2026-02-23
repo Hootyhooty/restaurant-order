@@ -10,6 +10,7 @@ const mealsDataPath = path.join(__dirname, '..', 'data', 'meals.js');
 const souvenirsDataPath = path.join(__dirname, '..', 'data', 'souvenirs.js');
 const { getMealsData } = require('../utils/mealsData');
 const { getSouvenirsData } = require('../utils/souvenirsData');
+const { uploadImageBuffer } = require('../utils/cloudinary');
 
 // Get all users (admin only)
 const getUsers = async (req, res) => {
@@ -116,7 +117,7 @@ const appendMealToFile = (meal) => {
   const maxId = Math.max(0, ...meals.map(m => m.id));
   const newId = maxId + 1;
   const escape = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const entry = `  },\n  {\n    id: ${newId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '/food_img/${meal.imageFilename}',\n    category: '${meal.category}',\n  },\n];`;
+  const entry = `  },\n  {\n    id: ${newId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '${escape(meal.image)}',\n    category: '${meal.category}',\n  },\n];`;
   let content = fs.readFileSync(mealsDataPath, 'utf8');
   // Match "  },\n];" - don't use $ as there's more content (function getMealBySlug...) after
   content = content.replace(/  \},\s*\r?\n\];/, entry);
@@ -133,7 +134,7 @@ const removeMealFromFile = (mealFileId) => {
 
 const updateMealInFile = (mealFileId, meal) => {
   const escape = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const newBlock = `  {\n    id: ${mealFileId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '/food_img/${meal.imageFilename}',\n    category: '${meal.category}',\n  },\n`;
+  const newBlock = `  {\n    id: ${mealFileId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '${escape(meal.image)}',\n    category: '${meal.category}',\n  },\n`;
   let content = fs.readFileSync(mealsDataPath, 'utf8');
   const blockRegex = new RegExp(`  \\{\\s*id:\\s*${mealFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
   content = content.replace(blockRegex, newBlock);
@@ -208,17 +209,17 @@ const updateMenuItem = async (req, res) => {
     if (!fileMeal) {
       return res.status(404).json({ success: false, message: 'Menu item not found in meals file' });
     }
-    let imageFilename = null;
-    if (req.file) {
-      imageFilename = req.file.filename;
-      if (fileMeal.image) {
-        const oldFilename = fileMeal.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
-        const oldPath = path.join(__dirname, '..', 'public', 'food_img', oldFilename);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-    } else if (fileMeal.image) {
-      imageFilename = fileMeal.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
-    } else {
+    // Existing image URL (may be local /food_img/... or full URL)
+    let imageUrl = fileMeal.image || '';
+    // If a new file is uploaded, send it to Cloudinary
+    if (req.file && req.file.buffer) {
+      const uploadResult = await uploadImageBuffer(req.file.buffer, {
+        folder: 'restaurant/menu',
+        public_id: `menu_${meal.mealFileId || 'new'}_${Date.now()}`,
+      });
+      imageUrl = uploadResult.secure_url;
+    }
+    if (!imageUrl) {
       return res.status(400).json({ success: false, message: 'Image is required' });
     }
     updateMealInFile(meal.mealFileId, {
@@ -226,14 +227,13 @@ const updateMenuItem = async (req, res) => {
       description: (description || '').trim(),
       price: Number(price),
       category: category.trim(),
-      imageFilename
+      image: imageUrl,
     });
     meal.name = name.trim();
     meal.description = (description || '').trim();
     meal.price = Number(price);
     meal.category = category.trim();
     await meal.save();
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json({
       success: true,
       item: {
@@ -241,7 +241,7 @@ const updateMenuItem = async (req, res) => {
         name: meal.name,
         description: meal.description,
         price: meal.price,
-        image: `${baseUrl}/food_img/${imageFilename}`,
+        image: imageUrl,
         category: meal.category,
         isPopular: meal.isPopular
       }
@@ -259,16 +259,21 @@ const createMenuItem = async (req, res) => {
     if (!name || price === undefined || price === null || !category) {
       return res.status(400).json({ success: false, message: 'Name, price, and category are required' });
     }
-    if (!req.file) {
+    if (!req.file || !req.file.buffer) {
       return res.status(400).json({ success: false, message: 'Image file is required' });
     }
-    const imageFilename = req.file.filename;
+    // Upload to Cloudinary
+    const uploadResult = await uploadImageBuffer(req.file.buffer, {
+      folder: 'restaurant/menu',
+      public_id: `menu_${Date.now()}`,
+    });
+    const imageUrl = uploadResult.secure_url;
     const mealData = {
       name: name.trim(),
       description: (description || '').trim(),
       price: Number(price),
       category: category.trim(),
-      imageFilename
+      image: imageUrl
     };
     const mealFileId = appendMealToFile(mealData);
     const meal = new Meal({
@@ -280,7 +285,6 @@ const createMenuItem = async (req, res) => {
       mealFileId
     });
     await meal.save();
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.status(201).json({
       success: true,
       item: {
@@ -288,7 +292,7 @@ const createMenuItem = async (req, res) => {
         name: meal.name,
         description: meal.description,
         price: meal.price,
-        image: `${baseUrl}/food_img/${imageFilename}`,
+        image: imageUrl,
         category: meal.category,
         isPopular: meal.isPopular
       }
@@ -489,7 +493,7 @@ const appendSouvenirToFile = (souvenir) => {
   let newContent;
   if (souvenirs.length === 0) {
     // Directly insert first item - replace empty array "[\n];" or "[];" with content
-    const newBlock = `  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+    const newBlock = `  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '${escape(souvenir.image)}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
     const arrayStart = content.indexOf('const souvenirs = ');
     if (arrayStart === -1) throw new Error('appendSouvenirToFile: could not find "const souvenirs = "');
     const bracketOpen = content.indexOf('[', arrayStart);
@@ -497,7 +501,7 @@ const appendSouvenirToFile = (souvenir) => {
     if (bracketOpen === -1 || bracketClose === -1) throw new Error('appendSouvenirToFile: could not find array brackets');
     newContent = content.slice(0, bracketOpen + 1) + '\n' + newBlock + content.slice(bracketClose);
   } else {
-    const newBlock = `  },\n  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+    const newBlock = `  },\n  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '${escape(souvenir.image)}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
     content = content.replace(/  \},\s*\r?\n\];/, newBlock + '];');
     newContent = content;
   }
@@ -515,7 +519,7 @@ const removeSouvenirFromFile = (souvenirFileId) => {
 
 const updateSouvenirInFile = (souvenirFileId, souvenir) => {
   const escape = (str) => (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const newBlock = `  {\n    id: ${souvenirFileId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '/food_img/${souvenir.imageFilename}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
+  const newBlock = `  {\n    id: ${souvenirFileId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '${escape(souvenir.image)}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
   const absPath = path.resolve(souvenirsDataPath);
   let content = fs.readFileSync(absPath, 'utf8');
   const blockRegex = new RegExp(`  \\{\\s*id:\\s*${souvenirFileId},[\\s\\S]*?\\n  \\},\\s*\\n`, 'm');
@@ -554,15 +558,20 @@ const createSouvenirItem = async (req, res) => {
     if (!name || price === undefined || price === null) {
       return res.status(400).json({ success: false, message: 'Name and price are required' });
     }
-    if (!req.file) {
+    if (!req.file || !req.file.buffer) {
       return res.status(400).json({ success: false, message: 'Image file is required' });
     }
+    const uploadResult = await uploadImageBuffer(req.file.buffer, {
+      folder: 'restaurant/souvenir',
+      public_id: `souvenir_${Date.now()}`,
+    });
+    const imageUrl = uploadResult.secure_url;
     const souvenirData = {
       name: (name || '').trim(),
       description: (description || '').trim(),
       price: Number(price),
       category: (category || 'souvenir').trim(),
-      imageFilename: req.file.filename,
+      image: imageUrl,
     };
     const souvenirFileId = appendSouvenirToFile(souvenirData);
     const souvenir = new Souvenir({
@@ -570,11 +579,10 @@ const createSouvenirItem = async (req, res) => {
       description: souvenirData.description,
       price: souvenirData.price,
       category: souvenirData.category,
-      imageFilename: souvenirData.imageFilename,
+      imageFilename: imageUrl,
       souvenirFileId,
     });
     await souvenir.save();
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.status(201).json({
       success: true,
       item: {
@@ -582,7 +590,7 @@ const createSouvenirItem = async (req, res) => {
         name: souvenir.name,
         description: souvenir.description,
         price: souvenir.price,
-        image: `${baseUrl}/food_img/${req.file.filename}`,
+        image: imageUrl,
         category: souvenir.category,
       }
     });
@@ -607,32 +615,31 @@ const updateSouvenirItem = async (req, res) => {
     if (!fileSouvenir) {
       return res.status(404).json({ success: false, message: 'Souvenir not found in souvenirs file' });
     }
-    let imageFilename = req.file ? req.file.filename : null;
-    if (!imageFilename && fileSouvenir.image) {
-      imageFilename = fileSouvenir.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
+    // Existing image URL (may be local /food_img/... or full URL)
+    let imageUrl = fileSouvenir.image || '';
+    if (req.file && req.file.buffer) {
+      const uploadResult = await uploadImageBuffer(req.file.buffer, {
+        folder: 'restaurant/souvenir',
+        public_id: `souvenir_${souvenir.souvenirFileId || 'new'}_${Date.now()}`,
+      });
+      imageUrl = uploadResult.secure_url;
     }
-    if (!imageFilename) {
+    if (!imageUrl) {
       return res.status(400).json({ success: false, message: 'Image is required' });
-    }
-    if (req.file && fileSouvenir.image) {
-      const oldFilename = fileSouvenir.image.replace(/^\/?food_img[/\\]/, '').replace(/^.*[/\\]food_img[/\\]/, '');
-      const oldPath = path.join(__dirname, '..', 'public', 'food_img', oldFilename);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
     updateSouvenirInFile(souvenir.souvenirFileId, {
       name: (name || '').trim(),
       description: (description || '').trim(),
       price: Number(price),
       category: (category || 'souvenir').trim(),
-      imageFilename,
+      image: imageUrl,
     });
     souvenir.name = (name || '').trim();
     souvenir.description = (description || '').trim();
     souvenir.price = Number(price);
     souvenir.category = (category || 'souvenir').trim();
-    souvenir.imageFilename = imageFilename;
+    souvenir.imageFilename = imageUrl;
     await souvenir.save();
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json({
       success: true,
       item: {
@@ -640,7 +647,7 @@ const updateSouvenirItem = async (req, res) => {
         name: souvenir.name,
         description: souvenir.description,
         price: souvenir.price,
-        image: `${baseUrl}/food_img/${imageFilename}`,
+        image: imageUrl,
         category: souvenir.category,
       }
     });

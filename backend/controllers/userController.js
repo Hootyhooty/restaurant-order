@@ -6,8 +6,9 @@ const Image = require('../models/Image');
 const Transaction = require('../models/Transaction');
 const Review = require('../models/Review');
 const AppError = require('../utils/appError');
+const { uploadImageBuffer } = require('../utils/cloudinary');
 
-// Upload image to public/display (disk storage)
+// Upload image to Cloudinary (profile or generic uploads)
 exports.uploadImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -17,14 +18,18 @@ exports.uploadImage = async (req, res) => {
       });
     }
 
-    const filename = req.file.filename;
-
     return res.status(201).json({
       status: 'success',
       message: 'Image uploaded successfully',
       data: {
-        filename: filename,
-        url: `/display/${filename}`
+        // For backward compatibility, if Cloudinary is not configured, we fall back to disk.
+        filename: req.file.originalname || 'image',
+        url: req.file.buffer
+          ? (await uploadImageBuffer(req.file.buffer, {
+              folder: 'restaurant/user',
+              public_id: `user_${Date.now()}`,
+            })).secure_url
+          : ''
       }
     });
   } catch (error) {
