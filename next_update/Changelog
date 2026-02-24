@@ -144,3 +144,10 @@ Admin page
 -stores page
     - imgs in store page still doesnt work
     - change meal-card and meal-image to souvenir-card and souvenir-image
+
+- message function
+    - Add pagination (maybe limit to 10/page. What actually most dev use btw?)
+    - Add compound index
+    - Add message preview field
+    - Add soft delete instead of hard delete
+    - Add rate limiting (prevent spam)

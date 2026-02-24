@@ -1,11 +1,9 @@
 - change format for registartion req name and location.
 - make statistic collector
-- integrate with firebase to store img 
 - using redist insted of mongodb
 - using protregse instead of mongodb 
 - trying aws integration
 
-- tomorrow let do firebase and move all img to its database
 - implement social function
     - show the user social app link
 - work on promotion section
@@ -14,7 +12,6 @@
 - change "order now" to "Booking now" for dine in
 
 Admin page
-    - add adding sourvenir products in admin page
     - add create promotion function
 
 Implement later

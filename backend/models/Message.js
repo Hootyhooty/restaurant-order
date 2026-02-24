@@ -33,11 +33,18 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
     collection: 'messages',
   }
 );
+
+messageSchema.index({ recipientId: 1, deletedAt: 1, createdAt: -1 });
+messageSchema.index({ senderId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Message', messageSchema);

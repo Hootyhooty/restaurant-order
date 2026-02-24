@@ -14,6 +14,10 @@ const Profile = () => {
   const [profileUser, setProfileUser] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [messagesTotal, setMessagesTotal] = useState(0);
+  const [messagesLimit, setMessagesLimit] = useState(10);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [composeRecipient, setComposeRecipient] = useState(null);
   const [sendSubject, setSendSubject] = useState('');
@@ -21,6 +25,32 @@ const Profile = () => {
   const [sending, setSending] = useState(false);
 
   const isOwnProfile = !routeUserId || (authUser && authUser.id === routeUserId);
+
+  const loadMessages = async (nextPage = 1, limitOverride) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      setMessagesLoading(true);
+      const effectiveLimit = limitOverride || messagesLimit || 10;
+      const params = new URLSearchParams();
+      params.set('page', String(nextPage));
+      params.set('limit', String(effectiveLimit));
+      const res = await fetch(`${API_BASE}/api/messages?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.items) {
+        setMessages(data.items);
+        setMessagesPage(data.page || nextPage);
+        setMessagesTotal(data.total ?? data.items.length ?? 0);
+        setMessagesLimit(data.limit || effectiveLimit);
+      }
+    } catch (err) {
+      console.error('Load messages error:', err);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOwnProfile && !routeUserId) return;
@@ -66,21 +96,8 @@ const Profile = () => {
         console.error('Load history error:', err);
       }
     };
-    const loadMessages = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch(`${API_BASE}/api/messages`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data?.items) setMessages(data.items);
-      } catch (err) {
-        console.error('Load messages error:', err);
-      }
-    };
     loadHistory();
-    loadMessages();
+    loadMessages(1, messagesLimit);
   }, [isLoggedIn, authUser, routeUserId, isOwnProfile, navigate]);
 
   const handleSendMessage = () => {
@@ -422,52 +439,88 @@ const Profile = () => {
             {activeTab === 'messages' && (
               <div>
                 <h3 className="profile-tab-title">Messages</h3>
-                {messages.length === 0 ? (
+                {messagesLoading && messages.length === 0 ? (
+                  <p className="profile-text">Loading messages...</p>
+                ) : messages.length === 0 ? (
                   <p className="profile-text">No messages yet.</p>
                 ) : (
-                  <div className="profile-messages-list">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`profile-message-card ${msg.read ? 'read' : 'unread'}`}
-                        onClick={() => !msg.read && markMessageRead(msg.id)}
-                      >
-                        <div className="profile-message-format">
-                          <div className="profile-message-row">
-                            <span className="profile-message-label">From:</span>
-                            <span>{msg.senderName}</span>
+                  <>
+                    <div className="profile-messages-list">
+                      {messages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`profile-message-card ${msg.read ? 'read' : 'unread'}`}
+                          onClick={() => !msg.read && markMessageRead(msg.id)}
+                        >
+                          <div className="profile-message-format">
+                            <div className="profile-message-row">
+                              <span className="profile-message-label">From:</span>
+                              <span>{msg.senderName}</span>
+                            </div>
+                            <div className="profile-message-row">
+                              <span className="profile-message-label">Title:</span>
+                              <span>{msg.subject}</span>
+                            </div>
+                            <div className="profile-message-row">
+                              <span className="profile-message-label">Message:</span>
+                              <span className="profile-message-body">
+                                {msg.preview || msg.body}
+                              </span>
+                            </div>
                           </div>
-                          <div className="profile-message-row">
-                            <span className="profile-message-label">Title:</span>
-                            <span>{msg.subject}</span>
-                          </div>
-                          <div className="profile-message-row">
-                            <span className="profile-message-label">Message:</span>
-                            <span className="profile-message-body">{msg.body}</span>
+                          <div className="profile-message-actions">
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReply(msg);
+                              }}
+                            >
+                              Reply
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={(e) => handleDeleteMessage(msg.id, e)}
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
-                        <div className="profile-message-actions">
+                      ))}
+                    </div>
+                    {messagesTotal > messagesLimit && (
+                      <div className="d-flex justify-content-between align-items-center mt-3">
+                        <div className="text-muted">Total: {messagesTotal}</div>
+                        <div className="btn-group">
                           <button
                             type="button"
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReply(msg);
-                            }}
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled={messagesPage <= 1 || messagesLoading}
+                            onClick={() => loadMessages(messagesPage - 1)}
                           >
-                            Reply
+                            Prev
                           </button>
                           <button
                             type="button"
-                            className="btn btn-outline-danger btn-sm"
-                            onClick={(e) => handleDeleteMessage(msg.id, e)}
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled
                           >
-                            Delete
+                            Page {messagesPage}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled={messagesPage * messagesLimit >= messagesTotal || messagesLoading}
+                            onClick={() => loadMessages(messagesPage + 1)}
+                          >
+                            Next
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

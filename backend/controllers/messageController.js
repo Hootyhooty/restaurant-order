@@ -8,6 +8,7 @@ const sendMessage = async (req, res) => {
   try {
     const { recipientId, subject, body } = req.body;
     const senderId = req.user._id.toString();
+    const isAdmin = req.user?.role === 'ADMIN';
 
     if (!recipientId || !subject || !body) {
       return res.status(400).json({
@@ -22,6 +23,25 @@ const sendMessage = async (req, res) => {
         success: false,
         message: 'Recipient not found',
       });
+    }
+
+    if (!isAdmin) {
+      const windowMinutes = 10;
+      const maxMessagesPerWindow = 20;
+      const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000);
+
+      const recentCount = await Message.countDocuments({
+        senderId,
+        createdAt: { $gte: windowStart },
+      });
+
+      if (recentCount >= maxMessagesPerWindow) {
+        return res.status(429).json({
+          success: false,
+          message:
+            'You are sending messages too quickly. Please wait a few minutes before sending more messages.',
+        });
+      }
     }
 
     const message = new Message({
@@ -51,9 +71,20 @@ const sendMessage = async (req, res) => {
 const getMyMessages = async (req, res) => {
   try {
     const userId = req.user._id.toString();
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
 
-    const messages = await Message.find({ recipientId: userId })
+    const filter = {
+      recipientId: userId,
+      deletedAt: null,
+    };
+
+    const total = await Message.countDocuments(filter);
+
+    const messages = await Message.find(filter)
       .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean();
 
     // Populate sender info (username only)
@@ -74,11 +105,23 @@ const getMyMessages = async (req, res) => {
       recipientId: m.recipientId,
       subject: m.subject,
       body: m.body,
+      preview:
+        typeof m.body === 'string'
+          ? m.body.length > 120
+            ? `${m.body.slice(0, 117)}...`
+            : m.body
+          : '',
       read: m.read,
       createdAt: m.createdAt,
     }));
 
-    res.json({ success: true, items });
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      items,
+    });
   } catch (error) {
     console.error('Get messages error:', error);
     res.status(500).json({
@@ -95,7 +138,7 @@ const deleteMessage = async (req, res) => {
     const userId = req.user._id.toString();
 
     const message = await Message.findById(id);
-    if (!message) {
+    if (!message || message.deletedAt) {
       return res.status(404).json({ success: false, message: 'Message not found' });
     }
 
@@ -103,7 +146,8 @@ const deleteMessage = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    await Message.findByIdAndDelete(id);
+    message.deletedAt = new Date();
+    await message.save();
     res.json({ success: true });
   } catch (error) {
     console.error('Delete message error:', error);

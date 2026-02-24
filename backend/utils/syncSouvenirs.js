@@ -43,7 +43,7 @@ module.exports = {
         if (/^https?:\/\//i.test(d.imageFilename)) {
           imgPath = d.imageFilename;
         } else {
-          imgPath = `/food_img/${d.imageFilename}`;
+          imgPath = `/souvenir/${d.imageFilename}`;
         }
       }
       const imgValue = imgPath ? `'${imgPath}'` : "''";
