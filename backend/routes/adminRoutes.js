@@ -23,6 +23,13 @@ const {
   getTransactions
 } = require('../controllers/adminController');
 
+const {
+  getBookings,
+  checkInBooking,
+  noShowBooking,
+  cancelBooking,
+} = require('../controllers/bookingAdminController');
+
 // Use in-memory storage for images; we upload to Cloudinary in controllers
 const uploadMenuImage = multer({
   storage: multer.memoryStorage(),
@@ -56,5 +63,11 @@ router.delete('/reviews/:reviewId', rolesRequired('ADMIN'), deleteReview);
 
 // Transactions
 router.get('/transactions', rolesRequired('ADMIN'), getTransactions);
+
+// Bookings
+router.get('/bookings', rolesRequired('ADMIN'), getBookings);
+router.post('/bookings/:bookingId/check-in', rolesRequired('ADMIN'), checkInBooking);
+router.post('/bookings/:bookingId/no-show', rolesRequired('ADMIN'), noShowBooking);
+router.post('/bookings/:bookingId/cancel', rolesRequired('ADMIN'), cancelBooking);
 
 module.exports = router;

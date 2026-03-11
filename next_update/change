@@ -1,0 +1,174 @@
+header
+- "order now" button now redirect to menu page and change to "check out" button and redirect to the same url as 
+  "buy" button did when click. the button will be able only when the basket is not empty.
+- add "Booking" button between "Menu" and "Promotions"
+
+Booking page
+- read "booking plan.drawio" and implement a map exactly the same as I draw inside
+- The user will have to choose Date, time slot and guest number first 
+    - Date when the user click on it. it will show calender for the user to select (the calender start from tomorrow)
+    - Time show time slot
+        - 9.00-11.00
+        - 11.00-13.00
+        - 13.00-15.00
+        - 15.00-17.00
+        - 17.00-19.00
+        - 19.00-21.00
+    - Guest number
+        - 2
+        - 4
+        - 6
+        - 8
+- table 1 can takes 8 ppl ,10-12 can takes 6 ppl and the rest avaiable for 2 and 4 ppl. Only show table that are 
+  available based on group size for the user to choose. such as 2-4 ppl cant pick table that are 6 or 8 ppl vice versa.
+- once the user pick all date, time slot and guest number. the systemm will show all avaiable tables. 
+    - if the table is available so it will let the user to be able to click on
+    - if no that table will show "NA" instead of the table number and unclickable.
+- the user will be able to reserved table by clicking on table number other than that are excluded and restrict to only
+  one user per one reservation or one table.
+- when click on the table, it will show pop up for the user to select 
+    - first ask if the user prefer to pre-order or not
+        - If yes show another popup and list all menus (check "menu popup in booking.drawio")
+        - If no pass to the next process
+- next, showing the user result to confirm the user to take the reservation. Also add pre-order food cost
+    - the reservation fee is ฿100 and the reservation cost is 
+        - ฿500 for 2-4 guests
+        - ฿1000 for 6 guests 
+        - ฿1500 for 8 guests
+      and will pay the user back the same amount of the reservation cost when the user check in intime. 
+    - add a box for the user to enter a redeem code for a discount.
+    - 2 buttons below the box confirm" and cancel 
+- next when the user clicked on confirm. redirect the user to stripe payment before redirect check if the table is still
+  available or not. if not available show a message to the user and redirect to the booking page.
+- when the process finish 
+    - first check if there is more than one user paid booking for the table at the same date and time or not. 
+      -If there is no more than one user paid booking for the table at the same date and time. then mark the table 
+       as unavailable and show a message to the user and redirect to the booking page.
+      -If there is more than one user paid booking for the table at the same date and time. 
+       then show a message to the user that the table is already booked and the admin will refund the user automatically.
+       and marked the transaction for refund then redirect to the booking page.
+    - store all the detail in database restaurant_db.booking
+    - message to the user about the reservation weather it is refund or not. make sure it will show in the message box and mark sendeer as Admin
+    - user can always cancel the reservation via the message that the system send to them or in the table in profile page
+
+profile
+- add new category in the table "Booking" that reserve for all booking that the user make. also cancel button for cacelling
+  the reservation and also make a confirmation button for the user to make sure they want to cancel it. And make sure the user
+  understand that they wont get a refund for the reservation cost and fee. Make sure this button only available until 3 hours
+  before the reservation time.
+
+admin page
+- add new category in the table "booking" add the button before transaction.
+  - in the new category besides showing all the detail of bookings. also add button "Check In" , "No show" and "Cancel"
+     - "Check In"  will mark the user as already taking the reservation intime.
+     - "No show" will cancel the reservation and mark as no refundable.
+     - "Cancel" will cancel the reservation and mark for refunding the user the food pre-order cost only.
+    
+
+*Important
+- only show that table unavailable only when a user paid the fee otherwise no regist on anything
+
+*Question
+- how to add strip api for refunding the user?
+
+
+summarise
+
+User selects
+-date
+-time slot
+-guest count
+
+Table Capacity
+-table 1 → 8 people
+-table 10–12 → 6 people
+-others → 2–4 people
+
+Table rule
+-2 guests → table 2/4 only
+-6 guests → table 6
+-8 guests → table 8
+
+Availability Logic
+-find bookings
+-where
+-date = selectedDate
+-timeSlot = selectedSlot
+
+Pre-Order Flow
+-Modal Stepper
+    -Step 1: Pre-order? yes/no
+    -Step 2: Menu selection
+    -Step 3: Reservation summary
+
+Payment Flow
+-click confirm
+  → server check booking exists
+  → if not exist
+  → create Stripe checkout
+  → redirect
+-If conflict happens:
+  -duplicate booking detected
+    1. refund payment
+    2. show message
+    3. send user back to booking page
+
+Database Storage
+- restaurant_db.booking
+- schema
+  -userId
+  -tableId
+  -date
+  -timeSlot
+  -guestCount
+  -reservationCost
+  -reservationFee
+  -preOrderItems
+  -stripeSessionId
+  -status
+- and the unique index:
+  -tableId + date + timeSlot
+
+Messaging System
+- Admin → user message
+- Example message:
+  Reservation Confirmed
+  Table: 5
+  Date: March 20
+  Time: 17:00–19:00
+  Guests: 4
+- If refund:
+  Reservation Failed
+  Table already booked.
+  Refund will be processed automatically
+  
+Profile Page
+-Table tab should show:
+  -bookingId
+  -date
+  -timeSlot
+  -table
+  -status
+-Cancel rule
+  -cancel allowed until 3 hours before reservation
+
+Admin Panel
+- In booking tab shows detail of booking and 3 buttons:
+    -Check In : user arrived
+    -No Show  : user didn't arrive
+    -Cancel : admin cancelled
+- Refund rules:
+  Check In → refund reservation cost
+  No Show → no refund
+  Cancel → refund preorder food only
+- should I add all these booking status states?
+  -confirmed
+  -checked_in
+  -no_show
+  -cancelled
+  -refund_pending
+  -refunded
+
+*Important Clarification
+rule: table unavailable only after payment. This is correct but remember during Stripe payment 2 users can pay simultaneously
+database unique index must enforce the final protection. Without that index, your system will break.

@@ -152,6 +152,10 @@ const AdminDashboard = () => {
         const data = await fetchJSON('/api/admin/transactions?page=1&limit=20');
         setSectionData(data.items || []);
         setTotal(data.total || 0);
+      } else if (section === 'booking') {
+        const data = await fetchJSON('/api/admin/bookings?page=1&limit=20');
+        setSectionData(data.items || []);
+        setTotal(data.total || 0);
       } else if (section === 'souvenir') {
         const data = await fetchJSON('/api/admin/souvenir-items?limit=100');
         setSectionData(data.items || []);
@@ -201,6 +205,26 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Failed to load transactions:', error);
       alert(`Failed to load transactions: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+    scrollToTop();
+  };
+
+  const loadBookings = async ({ q = query, nextPage = page } = {}) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(nextPage));
+      params.set('limit', '20');
+      if (q) params.set('q', q);
+      const data = await fetchJSON(`/api/admin/bookings?${params.toString()}`);
+      setSectionData(data.items || []);
+      setTotal(data.total || 0);
+      setPage(data.page || nextPage);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+      alert(`Failed to load bookings: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -1009,6 +1033,125 @@ const AdminDashboard = () => {
     );
   };
 
+  const bookingAction = async (bookingId, action) => {
+    if (!bookingId) return;
+    const label = action === 'check-in' ? 'Check In' : action === 'no-show' ? 'No show' : 'Cancel';
+    if (!window.confirm(`${label} this booking?`)) return;
+    try {
+      await fetchJSON(`/api/admin/bookings/${bookingId}/${action}`, { method: 'POST' });
+      loadBookings({ nextPage: 1, q: query });
+    } catch (error) {
+      alert(`Failed: ${error.message}`);
+    }
+  };
+
+  const renderBookingSection = () => {
+    return (
+      <div>
+        <div className="row g-3 mb-3">
+          <div className="col-md-9">
+            <label className="form-label"><strong>Search</strong></label>
+            <input
+              className="form-control"
+              placeholder="bookingId, userId, date, time slot, table, guests, status…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="col-md-3 d-flex align-items-end">
+            <button className="btn btn-primary w-100" onClick={() => loadBookings({ nextPage: 1 })}>
+              Search
+            </button>
+          </div>
+        </div>
+
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover admin-table">
+            <thead className="table-dark">
+              <tr>
+                <th>Booking ID</th>
+                <th>User ID</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Table</th>
+                <th>Guests</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(sectionData || []).length === 0 ? (
+                <tr><td colSpan={9} className="text-center">No bookings found.</td></tr>
+              ) : (
+                sectionData.map((b) => (
+                  <tr key={b.id}>
+                    <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>{b.id}</td>
+                    <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>{b.userId}</td>
+                    <td>{b.date}</td>
+                    <td>{String(b.timeSlot || '').replace('-', '–')}</td>
+                    <td>{b.tableId}</td>
+                    <td>{b.guestCount}</td>
+                    <td>{b.status}</td>
+                    <td>{b.amountTotal != null ? `฿${Number(b.amountTotal).toLocaleString()}` : '—'}</td>
+                    <td>
+                      <div className="btn-group btn-group-sm">
+                        <button
+                          className="btn btn-outline-success"
+                          disabled={b.status !== 'confirmed'}
+                          onClick={() => bookingAction(b.id, 'check-in')}
+                        >
+                          Check In
+                        </button>
+                        <button
+                          className="btn btn-outline-warning"
+                          disabled={b.status !== 'confirmed'}
+                          onClick={() => bookingAction(b.id, 'no-show')}
+                        >
+                          No show
+                        </button>
+                        <button
+                          className="btn btn-outline-danger"
+                          disabled={b.status !== 'confirmed'}
+                          onClick={() => bookingAction(b.id, 'cancel')}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <div className="text-muted">Total: {total}</div>
+          <div className="btn-group">
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              disabled={page <= 1 || loading}
+              onClick={() => loadBookings({ nextPage: page - 1 })}
+            >
+              Prev
+            </button>
+            <button className="btn btn-outline-secondary btn-sm" disabled>
+              Page {page}
+            </button>
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              disabled={page * 20 >= total || loading}
+              onClick={() => loadBookings({ nextPage: page + 1 })}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!user || user.role !== 'ADMIN') {
     return null;
   }
@@ -1046,6 +1189,13 @@ const AdminDashboard = () => {
                 onClick={() => loadSection('transactions')}
               >
                 Transactions
+              </button>
+              <span className="admin-topbar-separator">|</span>
+              <button
+                className={`admin-topbar-link ${activeSection === 'booking' ? 'active' : ''}`}
+                onClick={() => loadSection('booking')}
+              >
+                Booking
               </button>
               {stats && (
                 <>
@@ -1110,6 +1260,8 @@ const AdminDashboard = () => {
                   ? 'Souvenir Items'
                   : activeSection === 'reviews'
                   ? 'User Reviews'
+                  : activeSection === 'booking'
+                  ? 'Booking'
                   : 'Transactions'}
               </h4>
               {activeSection === 'users' && (
@@ -1151,6 +1303,8 @@ const AdminDashboard = () => {
                 renderSouvenirTable()
               ) : activeSection === 'reviews' ? (
                 renderReviewsSection()
+              ) : activeSection === 'booking' ? (
+                renderBookingSection()
               ) : (
                 renderTransactionsSection()
               )}

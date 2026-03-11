@@ -100,6 +100,16 @@ const Header = () => {
     }
   };
 
+  const handleCheckout = async () => {
+    // If cart is empty, "Order now" should send user to Menu.
+    // If cart has items, "Check out" behaves like clicking the cart "Buy" button.
+    if (items.length === 0) {
+      navigate('/menu');
+      return;
+    }
+    await handleBuy();
+  };
+
   const profileImage =
     !user?.photo || user.photo.trim() === '' || profileImgError
       ? DEFAULT_AVATAR
@@ -115,7 +125,7 @@ const Header = () => {
         <div className="header-content">
           <div className="logo">
             <img
-              src="/food_img/Picha.png"
+              src="https://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migrated/https://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migratedhttps://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migrated/food_img/Picha.png"
               alt="Picha"
               className="logo-img"
             />
@@ -124,6 +134,9 @@ const Header = () => {
             <ul className="nav-list">
               <li className="nav-item">
                 <Link to="/menu" className="nav-link">Menu</Link>
+              </li>
+              <li className="nav-item">
+                <Link to="/booking" className="nav-link">Booking</Link>
               </li>
               <li className="nav-item">
                 <Link to="#promotions" className="nav-link">Promotions</Link>
@@ -245,7 +258,9 @@ const Header = () => {
             >
               {isLoggedIn ? 'Logout' : 'Login'}
             </button>
-            <button className="btn btn-primary">Order Now</button>
+            <button type="button" className="btn btn-primary" onClick={handleCheckout} disabled={isPaying}>
+              {isPaying ? 'Redirecting…' : items.length === 0 ? 'Order now' : 'Check out'}
+            </button>
           </div>
           <button className="mobile-menu-btn" onClick={toggleMenu}>
             <span className={`hamburger ${isMenuOpen ? 'open' : ''}`}></span>

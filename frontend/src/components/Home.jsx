@@ -12,7 +12,9 @@ const Home = () => {
             <h1 className="hero-title">Picha</h1>
             <p className="hero-subtitle">Discover the flavors you love with our menu</p>
             <div className="hero-actions">
-              <button className="btn btn-primary hero-btn">Booking</button>
+              <Link to="/booking" className="btn btn-primary hero-btn">
+                Booking
+              </Link>
               <Link to="/menu" className="btn btn-secondary hero-btn">
                 View All Menu
               </Link>

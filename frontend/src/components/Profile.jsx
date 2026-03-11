@@ -9,10 +9,12 @@ const Profile = () => {
   const { isLoggedIn, user: authUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const { userId: routeUserId } = useParams();
-  const [activeTab, setActiveTab] = useState('history'); // history | messages | promotion | social
+  const [activeTab, setActiveTab] = useState('history'); // history | booking | messages | promotion | social
   const [profileImgError, setProfileImgError] = useState(false);
   const [profileUser, setProfileUser] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
+  const [bookingItems, setBookingItems] = useState([]);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const [messagesPage, setMessagesPage] = useState(1);
   const [messagesTotal, setMessagesTotal] = useState(0);
@@ -96,9 +98,62 @@ const Profile = () => {
         console.error('Load history error:', err);
       }
     };
+
+    const loadBookings = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        setBookingLoading(true);
+        const res = await fetch(`${API_BASE}/api/bookings/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.items) setBookingItems(data.items);
+      } catch (err) {
+        console.error('Load bookings error:', err);
+      } finally {
+        setBookingLoading(false);
+      }
+    };
     loadHistory();
+    loadBookings();
     loadMessages(1, messagesLimit);
   }, [isLoggedIn, authUser, routeUserId, isOwnProfile, navigate]);
+
+  const bookingStartAt = (b) => {
+    const [start] = String(b.timeSlot || '').split('-');
+    if (!start || !b.date) return null;
+    return new Date(`${b.date}T${start}:00`);
+  };
+
+  const canCancelBooking = (b) => {
+    if (!b || b.status !== 'confirmed') return false;
+    const startAt = bookingStartAt(b);
+    if (!startAt || Number.isNaN(startAt.getTime())) return false;
+    const cutoff = new Date(startAt.getTime() - 3 * 60 * 60 * 1000);
+    return Date.now() <= cutoff.getTime();
+  };
+
+  const cancelBooking = async (bookingId) => {
+    if (!window.confirm('Cancel this reservation? You will NOT get a refund for reservation fee and cost.')) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ confirm: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || 'Failed to cancel');
+      setBookingItems((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b)));
+    } catch (err) {
+      alert(err.message || 'Failed to cancel booking.');
+    }
+  };
 
   const handleSendMessage = () => {
     if (!isLoggedIn) {
@@ -337,6 +392,13 @@ const Profile = () => {
               <>
                 <button
                   type="button"
+                  className={`profile-tab ${activeTab === 'booking' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('booking')}
+                >
+                  Booking
+                </button>
+                <button
+                  type="button"
                   className={`profile-tab ${activeTab === 'messages' ? 'active' : ''}`}
                   onClick={() => setActiveTab('messages')}
                 >
@@ -430,6 +492,57 @@ const Profile = () => {
                               </td>
                             </tr>
                           ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+            {activeTab === 'booking' && isOwnProfile && (
+              <div>
+                <h3 className="profile-tab-title">Booking</h3>
+                {bookingLoading && bookingItems.length === 0 ? (
+                  <p className="profile-text">Loading bookings...</p>
+                ) : bookingItems.length === 0 ? (
+                  <p className="profile-text">No bookings yet.</p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-hover profile-history-table">
+                      <thead>
+                        <tr>
+                          <th>Booking ID</th>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Table</th>
+                          <th>Guests</th>
+                          <th>Status</th>
+                          <th>Total</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bookingItems.map((b) => (
+                          <tr key={b.id}>
+                            <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>{b.id}</td>
+                            <td>{b.date}</td>
+                            <td>{String(b.timeSlot || '').replace('-', '–')}</td>
+                            <td>{b.tableId}</td>
+                            <td>{b.guestCount}</td>
+                            <td>{b.status}</td>
+                            <td>{b.amountTotal != null ? `฿${Number(b.amountTotal).toLocaleString()}` : '—'}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-outline-danger btn-sm"
+                                disabled={!canCancelBooking(b)}
+                                onClick={() => cancelBooking(b.id)}
+                                title={!canCancelBooking(b) ? 'Cancel is only available until 3 hours before the reservation time.' : undefined}
+                              >
+                                Cancel
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

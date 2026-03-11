@@ -1,9 +1,126 @@
 const Stripe = require('stripe');
 const Transaction = require('../models/Transaction');
 const { getMealsData } = require('../utils/mealsData');
+const Booking = require('../models/Booking');
+const BookingIntent = require('../models/BookingIntent');
+const Message = require('../models/Message');
+const Customer = require('../models/Customer');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+
+const getAdminUserId = async () => {
+  const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
+  return admin?._id?.toString() || null;
+};
+
+const sendAdminMessage = async ({ recipientId, subject, body }) => {
+  const adminId = await getAdminUserId();
+  if (!adminId) return;
+  await Message.create({
+    senderId: adminId,
+    recipientId,
+    subject,
+    body,
+  });
+};
+
+const handleBookingCheckoutCompleted = async ({ event, session }) => {
+  const bookingIntentId = session?.metadata?.bookingIntentId;
+  if (!bookingIntentId) return;
+
+  const intent = await BookingIntent.findById(bookingIntentId);
+  if (!intent) {
+    console.warn('Webhook: booking intent not found', bookingIntentId);
+    return;
+  }
+
+  // Idempotency: if already processed, do nothing
+  if (intent.status === 'paid' || intent.status === 'refunded' || intent.status === 'conflict') {
+    return;
+  }
+
+  intent.status = 'paid';
+  intent.stripeEventId = event.id;
+  intent.stripeCheckoutSessionId = session.id;
+  intent.stripePaymentIntentId = session.payment_intent || intent.stripePaymentIntentId;
+  await intent.save();
+
+  try {
+    const booking = await Booking.create({
+      userId: intent.userId,
+      tableId: intent.tableId,
+      date: intent.date,
+      timeSlot: intent.timeSlot,
+      guestCount: intent.guestCount,
+      reservationFee: intent.reservationFee,
+      reservationCost: intent.reservationCost,
+      preOrderItems: intent.preOrderItems,
+      preOrderTotal: intent.preOrderTotal,
+      amountTotal: intent.amountTotal,
+      redeemCode: intent.redeemCode || '',
+      discountAmount: intent.discountAmount || 0,
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: session.payment_intent || undefined,
+      status: 'confirmed',
+    });
+
+    await sendAdminMessage({
+      recipientId: intent.userId,
+      subject: 'Reservation Confirmed',
+      body:
+        `Reservation Confirmed\n\n` +
+        `Table: ${booking.tableId}\n` +
+        `Date: ${booking.date}\n` +
+        `Time: ${String(booking.timeSlot || '').replace('-', '–')}\n` +
+        `Guests: ${booking.guestCount}\n\n` +
+        `Reservation fee: ฿${booking.reservationFee}\n` +
+        `Reservation cost: ฿${booking.reservationCost}\n` +
+        `Pre-order total: ฿${booking.preOrderTotal}\n` +
+        `Total paid: ฿${booking.amountTotal}\n\n` +
+        `You can cancel in your Profile → Booking until 3 hours before your reservation time.`,
+    });
+  } catch (err) {
+    // If two users pay at the same time, unique index blocks duplicates
+    if (err && (err.code === 11000 || String(err.message || '').includes('duplicate key'))) {
+      intent.status = 'conflict';
+      intent.refundReason = 'Table already booked (payment conflict)';
+      await intent.save();
+
+      try {
+        if (stripe && session.payment_intent) {
+          await stripe.refunds.create({
+            payment_intent: session.payment_intent,
+          });
+          intent.status = 'refunded';
+          intent.refundedAmount = intent.amountTotal;
+          await intent.save();
+        }
+      } catch (refundErr) {
+        intent.status = 'refund_pending';
+        intent.refundReason = `Refund failed: ${refundErr.message || 'unknown error'}`;
+        await intent.save();
+      }
+
+      await sendAdminMessage({
+        recipientId: intent.userId,
+        subject: 'Reservation Failed (Refund)',
+        body:
+          `Reservation Failed\n\n` +
+          `Unfortunately, this table was already booked for that date/time.\n` +
+          `We will refund your payment automatically.\n\n` +
+          `Table: ${intent.tableId}\n` +
+          `Date: ${intent.date}\n` +
+          `Time: ${String(intent.timeSlot || '').replace('-', '–')}\n` +
+          `Guests: ${intent.guestCount}\n`,
+      });
+      return;
+    }
+
+    console.error('Webhook: booking creation error:', err);
+    throw err;
+  }
+};
 
 const normalizeCartItems = (items) => {
   if (!Array.isArray(items)) return [];
@@ -130,6 +247,12 @@ const webhookHandler = async (req, res) => {
       const session = event.data.object;
       const transactionId = session?.metadata?.transactionId;
       const orderId = session?.metadata?.orderId;
+
+      // Booking flow
+      if (session?.metadata?.bookingIntentId) {
+        await handleBookingCheckoutCompleted({ event, session });
+        return res.json({ received: true });
+      }
 
       const update = {
         status: 'paid',

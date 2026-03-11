@@ -17,6 +17,9 @@ import Footer from './components/Footer';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import ScrollToTop from './components/ScrollToTop';
+import Booking from './components/Booking';
+import BookingPaymentSuccess from './components/BookingPaymentSuccess';
+import BookingPaymentCancel from './components/BookingPaymentCancel';
 
 function App() {
   return (
@@ -39,6 +42,9 @@ function App() {
             <Route path="/review/:menuSlug" element={<ReviewPage />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/cancel" element={<PaymentCancel />} />
+            <Route path="/booking" element={<Booking />} />
+            <Route path="/booking/payment/success" element={<BookingPaymentSuccess />} />
+            <Route path="/booking/payment/cancel" element={<BookingPaymentCancel />} />
           </Routes>
           <Footer />
           </div>

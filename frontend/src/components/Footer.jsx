@@ -8,7 +8,7 @@ const Footer = () => {
           <div className="footer-section">
             <div className="footer-logo">
               <img
-                src="/food_img/Picha.png"
+                src="https://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migrated/https://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migratedhttps://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migrated/food_img/Picha.png"
                 alt="Picha"
                 className="footer-logo-img"
               />
