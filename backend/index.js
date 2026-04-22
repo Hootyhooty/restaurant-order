@@ -2,6 +2,8 @@
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
+const { randomUUID } = require('crypto');
+const { recordApiLatency } = require('./utils/apiLatencyStore');
 
 [path.join(__dirname, 'public', 'food_img'), path.join(__dirname, 'public', 'display')].forEach((dir) => {
   try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
@@ -25,6 +27,44 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 }
 
 const app = express();
+
+// Request ID + API latency structured logging
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+  const requestId = req.get('x-request-id') || randomUUID();
+  req.requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+
+  res.on('finish', () => {
+    // Log only API traffic for cleaner KPI analysis
+    if (!req.originalUrl.startsWith('/api/')) return;
+
+    const endedAt = process.hrtime.bigint();
+    const durationMs = Number(endedAt - startedAt) / 1_000_000;
+
+    const logEntry = {
+      level: 'info',
+      type: 'api_request',
+      requestId,
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      duration_ms: Number(durationMs.toFixed(2)),
+      timestamp: new Date().toISOString(),
+    };
+
+    recordApiLatency({
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs,
+    });
+
+    console.log(JSON.stringify(logEntry));
+  });
+
+  next();
+});
 
 // Allow frontend origins and handle preflight (localhost + deployed frontends)
 const localOrigins = [

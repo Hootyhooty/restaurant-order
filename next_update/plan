@@ -1,0 +1,145 @@
+2-Week Execution Plan (Production-Grade Push)
+
+Goal:
+Move from "feature works" to production-grade/senior-level quality.
+
+==================================================
+Week 1 - Quality + Reliability Foundation
+==================================================
+
+Day 1 - Baseline + Scope Lock
+- [ ] Freeze major feature changes for 2 weeks (except critical bugs)
+- [ ] Define success metrics:
+      - booking success rate
+      - payment success rate
+      - refund completion rate
+      - API p95 latency
+- [ ] Document KPI targets and scope in this file
+Definition of done:
+- [ ] KPI list is clear and agreed
+
+Day 2 - Unit Tests for Booking Rules
+- [ ] Add unit tests for table capacity rules
+- [ ] Add unit tests for reservation cost calculation
+- [ ] Add unit tests for cancellation cutoff (3-hour rule)
+- [ ] Add unit tests for booking status transition guard logic
+Definition of done:
+- [ ] Unit test suite passes consistently
+
+Day 3 - API Integration Tests
+- [ ] Test GET /api/bookings/availability
+- [ ] Test POST /api/bookings/create-checkout-session
+- [ ] Test POST /api/bookings/:id/cancel
+- [ ] Test admin actions (check-in, no-show, cancel)
+- [ ] Add conflict test (same table/date/time)
+Definition of done:
+- [ ] Integration tests pass with seeded deterministic data
+
+Day 4 - Webhook Idempotency Hardening
+- [ ] Ensure duplicate Stripe webhook events are safe
+- [ ] Persist processed event IDs or enforce idempotent updates
+- [ ] Add duplicate webhook simulation test
+Definition of done:
+- [ ] Replayed webhook does not duplicate booking/refund side effects
+
+Day 5 - Refund Reconciliation Job
+- [ ] Implement job to scan refund_pending
+- [ ] Retry Stripe refunds from failed/pending records
+- [ ] Update DB status and send message notifications after retry
+- [ ] Add manual trigger command/script
+Definition of done:
+- [ ] Pending refunds can be recovered automatically or by manual trigger
+
+Day 6 - Load Test Baseline (k6)
+- [ ] Create k6 script for availability endpoint
+- [ ] Create k6 script for checkout-session endpoint
+- [ ] Run normal load scenario
+- [ ] Run burst scenario
+- [ ] Run race condition scenario
+Definition of done:
+- [ ] Baseline report exists (p50/p95/p99, error rate, throughput)
+
+Day 7 - Performance Tuning Pass
+- [ ] Tune DB indexes/queries from load test findings
+- [ ] Reduce heavy payloads in critical endpoints if needed
+- [ ] Re-run load tests
+Definition of done:
+- [ ] Improved second report with measurable gains
+
+==================================================
+Week 2 - Ops, Security, and Deployment Maturity
+==================================================
+
+Day 8 - Structured Logging
+- [ ] Add request-correlated logging with requestId
+- [ ] Include userId, bookingId, sessionId in key logs
+- [ ] Use consistent JSON log format
+Definition of done:
+- [ ] Can trace one booking flow across all services/log points
+
+Day 9 - Monitoring + Alerts
+- [ ] Add metrics:
+      - booking attempts/success/fail
+      - webhook processing duration
+      - refund_pending backlog count
+- [ ] Define alert thresholds for failures/backlog spikes
+Definition of done:
+- [ ] Dashboard + alert rules are active
+
+Day 10 - Security Hardening
+- [ ] Add rate limiting to auth/booking endpoints
+- [ ] Add strict input validation on all new routes
+- [ ] Tighten CORS and Helmet settings for production
+Definition of done:
+- [ ] Security checklist complete with no high-risk gaps
+
+Day 11 - Admin Audit Trail
+- [ ] Log admin booking actions (who/what/when)
+- [ ] Include check-in/no-show/cancel/refund events
+Definition of done:
+- [ ] Audit history is queryable and complete
+
+Day 12 - CI/CD Quality Gates
+- [ ] Enforce lint in pipeline
+- [ ] Enforce unit + integration tests in pipeline
+- [ ] Enforce frontend build + backend checks in pipeline
+- [ ] Block merge when checks fail
+Definition of done:
+- [ ] Pull requests cannot merge without green checks
+
+Day 13 - Staging Verification
+- [ ] Deploy to staging
+- [ ] Run end-to-end checklist:
+      - happy path booking
+      - conflict + refund path
+      - cancellation cutoff path
+      - admin action flows
+Definition of done:
+- [ ] Staging sign-off complete
+
+Day 14 - Release Readiness Wrap-up
+- [ ] Create incident/rollback runbook
+- [ ] Create refund reconciliation runbook
+- [ ] Document architecture and known risks + mitigations
+Definition of done:
+- [ ] Release candidate package is ready
+
+==================================================
+Definition of Done (End of 2 Weeks)
+==================================================
+- [ ] Critical booking/payment flows have automated coverage
+- [ ] Webhook/refund logic is idempotent and recoverable
+- [ ] Load test results documented with targets met or tracked
+- [ ] Monitoring and alerting is active for booking/payment health
+- [ ] CI quality gates protect main branch
+- [ ] Runbooks and release docs are complete
+
+==================================================
+If Time Is Limited (Top 5 Priorities)
+==================================================
+1) Booking + webhook automated tests
+2) Webhook idempotency
+3) Refund reconciliation worker
+4) k6 load testing + tuning
+5) CI quality gates
+

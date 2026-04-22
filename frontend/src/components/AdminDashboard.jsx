@@ -23,6 +23,7 @@ const AdminDashboard = () => {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [analysisRange, setAnalysisRange] = useState('day');
   const [reviewMenus, setReviewMenus] = useState([]);
   const [selectedMealId, setSelectedMealId] = useState('');
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
@@ -156,6 +157,10 @@ const AdminDashboard = () => {
         const data = await fetchJSON('/api/admin/bookings?page=1&limit=20');
         setSectionData(data.items || []);
         setTotal(data.total || 0);
+      } else if (section === 'analysis') {
+        const data = await fetchJSON(`/api/admin/analysis?range=${encodeURIComponent(analysisRange)}`);
+        setSectionData(data.analysis || null);
+        setTotal(0);
       } else if (section === 'souvenir') {
         const data = await fetchJSON('/api/admin/souvenir-items?limit=100');
         setSectionData(data.items || []);
@@ -1152,6 +1157,154 @@ const AdminDashboard = () => {
     );
   };
 
+  const buildSparklinePoints = (values, width = 260, height = 80) => {
+    if (!Array.isArray(values) || values.length === 0) return '';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    return values
+      .map((v, i) => {
+        const x = (i / Math.max(1, values.length - 1)) * width;
+        const y = height - ((v - min) / range) * height;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  };
+
+  const renderSparkline = (values, color = '#e31837') => {
+    const points = buildSparklinePoints(values);
+    if (!points) {
+      return <div className="analysis-empty">No data</div>;
+    }
+    return (
+      <svg viewBox="0 0 260 80" className="analysis-sparkline">
+        <polyline fill="none" stroke={color} strokeWidth="3" points={points} />
+      </svg>
+    );
+  };
+
+  const renderAnalysisSection = () => {
+    const analysis = sectionData || {};
+    const payments = analysis.payments || {};
+    const transactions = analysis.transactions || {};
+    const refunds = analysis.refunds || {};
+    const latency = analysis.apiLatency || {};
+
+    const paymentVals = (payments.series || []).map((x) => Number(x.amount || 0));
+    const txVals = (transactions.series || []).map((x) => Number(x.total || 0));
+    const refundVals = (refunds.series || []).map((x) => Number(x.total || 0));
+    const latencyVals = [latency.p50, latency.p75, latency.p90, latency.p95].filter((n) => Number.isFinite(n));
+
+    return (
+      <div className="analysis-layout">
+        <div className="analysis-tab-header">
+          <div className="analysis-current-tab">Analysis</div>
+          <select
+            className="form-select analysis-range-select"
+            value={analysisRange}
+            onChange={async (e) => {
+              const next = e.target.value;
+              setAnalysisRange(next);
+              try {
+                setLoading(true);
+                const data = await fetchJSON(`/api/admin/analysis?range=${encodeURIComponent(next)}`);
+                setSectionData(data.analysis || null);
+              } catch (error) {
+                alert(`Failed to reload analysis: ${error.message}`);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            title="Aggregation range"
+          >
+            <option value="day">day</option>
+            <option value="week">week</option>
+            <option value="month">month</option>
+          </select>
+        </div>
+
+        <div className="analysis-grid">
+          <div className="analysis-card">
+            <h6>Payments</h6>
+            {renderSparkline(paymentVals, '#198754')}
+            <div className="analysis-meta">
+              <div>Total (all time): ฿{Number(payments.totalAllTime || 0).toLocaleString()}</div>
+              <div>This month: ฿{Number(payments.totalThisMonth || 0).toLocaleString()}</div>
+              <div>This week: ฿{Number(payments.totalThisWeek || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className="analysis-card">
+            <h6>Transactions</h6>
+            {renderSparkline(txVals, '#0d6efd')}
+            <div className="analysis-meta">
+              <div>Total: {transactions.total || 0}</div>
+              <div>Success: {transactions.success || 0}</div>
+              <div>Fail: {transactions.fail || 0}</div>
+            </div>
+          </div>
+
+          <div className="analysis-card">
+            <h6>Refund</h6>
+            {renderSparkline(refundVals, '#fd7e14')}
+            <div className="analysis-meta">
+              <div>Total: {refunds.total || 0}</div>
+              <div>Success: {refunds.success || 0}</div>
+              <div>Fail: {refunds.fail || 0}</div>
+            </div>
+          </div>
+
+          <div className="analysis-card">
+            <h6>API Latency (ms)</h6>
+            {renderSparkline(latencyVals, '#6f42c1')}
+            <div className="analysis-meta">
+              <div>p50: {Number(latency.p50 || 0).toLocaleString()}</div>
+              <div>p75: {Number(latency.p75 || 0).toLocaleString()}</div>
+              <div>p90: {Number(latency.p90 || 0).toLocaleString()}</div>
+              <div>p95: {Number(latency.p95 || 0).toLocaleString()}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="analysis-endpoints">
+          <h6>Top API Endpoints by Request Volume (24h)</h6>
+          <div className="table-responsive">
+            <table className="table table-bordered table-hover admin-table">
+              <thead className="table-dark">
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Count</th>
+                  <th>p50</th>
+                  <th>p75</th>
+                  <th>p90</th>
+                  <th>p95</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(latency.endpoints) && latency.endpoints.length > 0 ? (
+                  latency.endpoints.map((e) => (
+                    <tr key={e.endpoint}>
+                      <td style={{ textAlign: 'left' }}>{e.endpoint}</td>
+                      <td>{e.count}</td>
+                      <td>{e.p50}</td>
+                      <td>{e.p75}</td>
+                      <td>{e.p90}</td>
+                      <td>{e.p95}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center">No latency samples yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!user || user.role !== 'ADMIN') {
     return null;
   }
@@ -1160,8 +1313,33 @@ const AdminDashboard = () => {
     <section className="admin-dashboard">
       <div className="container-fluid">
         <div className="row">
-          {/* Top Bar: navigation + stats + logout */}
           <div className="col-12">
+            {/* Admin profile block above tabs */}
+            {user && (
+              <div className="admin-info mb-4">
+                <div className="d-flex align-items-center">
+                  <div className="admin-avatar">
+                    <img
+                      src={
+                        !user.photo || user.photo.trim() === '' || user.photo === 'other_img/default.jpg' || user.photo === 'default.jpg'
+                          ? DEFAULT_AVATAR
+                          : user.photo.startsWith('http')
+                          ? user.photo
+                          : `${API_BASE}/api/users/uploads/${user.photo}`
+                      }
+                      alt="Admin"
+                    />
+                  </div>
+                  <div>
+                    <div><strong>Username:</strong> {user.username}</div>
+                    <div><strong>Email:</strong> {user.email}</div>
+                    <div><span className="badge bg-danger">ADMIN</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Top tabs bar */}
             <div className="admin-topbar">
               <button
                 className={`admin-topbar-link ${activeSection === 'users' ? 'active' : ''}`}
@@ -1197,6 +1375,13 @@ const AdminDashboard = () => {
               >
                 Booking
               </button>
+              <span className="admin-topbar-separator">|</span>
+              <button
+                className={`admin-topbar-link ${activeSection === 'analysis' ? 'active' : ''}`}
+                onClick={() => loadSection('analysis')}
+              >
+                Analysis
+              </button>
               {stats && (
                 <>
                   <span className="admin-topbar-separator">|</span>
@@ -1224,31 +1409,6 @@ const AdminDashboard = () => {
 
           {/* Main Content */}
           <div className="col-12">
-            {/* Admin Info */}
-            {user && (
-              <div className="admin-info mb-4">
-                <div className="d-flex align-items-center">
-                  <div className="admin-avatar">
-                    <img
-                      src={
-                        !user.photo || user.photo.trim() === '' || user.photo === 'other_img/default.jpg' || user.photo === 'default.jpg'
-                          ? DEFAULT_AVATAR
-                          : user.photo.startsWith('http')
-                          ? user.photo
-                          : `${API_BASE}/api/users/uploads/${user.photo}`
-                      }
-                      alt="Admin"
-                    />
-                  </div>
-                  <div>
-                    <div><strong>Username:</strong> {user.username}</div>
-                    <div><strong>Email:</strong> {user.email}</div>
-                    <div><span className="badge bg-danger">ADMIN</span></div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Section Header */}
             <div className="section-header">
               <h4>
@@ -1262,6 +1422,8 @@ const AdminDashboard = () => {
                   ? 'User Reviews'
                   : activeSection === 'booking'
                   ? 'Booking'
+                  : activeSection === 'analysis'
+                  ? 'Analysis'
                   : 'Transactions'}
               </h4>
               {activeSection === 'users' && (
@@ -1305,6 +1467,8 @@ const AdminDashboard = () => {
                 renderReviewsSection()
               ) : activeSection === 'booking' ? (
                 renderBookingSection()
+              ) : activeSection === 'analysis' ? (
+                renderAnalysisSection()
               ) : (
                 renderTransactionsSection()
               )}

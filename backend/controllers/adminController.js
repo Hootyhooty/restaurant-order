@@ -6,6 +6,8 @@ const Meal = require('../models/Meal');
 const Souvenir = require('../models/Souvenir');
 const Review = require('../models/Review');
 const Transaction = require('../models/Transaction');
+const Booking = require('../models/Booking');
+const { getLatencySnapshot } = require('../utils/apiLatencyStore');
 const mealsDataPath = path.join(__dirname, '..', 'data', 'meals.js');
 const souvenirsDataPath = path.join(__dirname, '..', 'data', 'souvenirs.js');
 const { getMealsData } = require('../utils/mealsData');
@@ -482,6 +484,116 @@ const getTransactions = async (req, res) => {
   }
 };
 
+const getAnalysis = async (req, res) => {
+  try {
+    const range = String(req.query.range || 'day').toLowerCase();
+    const allowedRanges = new Set(['day', 'week', 'month']);
+    const safeRange = allowedRanges.has(range) ? range : 'day';
+
+    const paidTxFilter = { status: 'paid' };
+    const paidTx = await Transaction.find(paidTxFilter)
+      .select('amountTotal createdAt status')
+      .lean();
+
+    const allTx = await Transaction.find({})
+      .select('createdAt status')
+      .lean();
+
+    const allBookings = await Booking.find({})
+      .select('createdAt status amountTotal')
+      .lean();
+
+    const now = new Date();
+    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const startOfMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const rangeStart =
+      safeRange === 'day'
+        ? new Date(now.getTime() - 24 * 60 * 60 * 1000)
+        : safeRange === 'week'
+        ? startOfWeek
+        : startOfMonth;
+
+    const inRange = (d) => new Date(d) >= rangeStart;
+
+    const paymentTotalAll = paidTx.reduce((sum, t) => sum + Number(t.amountTotal || 0), 0);
+    const paymentTotalMonth = paidTx
+      .filter((t) => new Date(t.createdAt) >= startOfMonth)
+      .reduce((sum, t) => sum + Number(t.amountTotal || 0), 0);
+    const paymentTotalWeek = paidTx
+      .filter((t) => new Date(t.createdAt) >= startOfWeek)
+      .reduce((sum, t) => sum + Number(t.amountTotal || 0), 0);
+
+    const txSuccess = allTx.filter((t) => t.status === 'paid').length;
+    const txFail = allTx.filter((t) => t.status === 'failed' || t.status === 'canceled').length;
+    const txTotal = allTx.length;
+
+    const refundSuccess = allBookings.filter((b) => b.status === 'refunded').length;
+    const refundFail = allBookings.filter((b) => b.status === 'refund_pending').length;
+    const refundTotal = refundSuccess + refundFail;
+
+    const byDay = new Map();
+    for (const t of paidTx.filter((x) => inRange(x.createdAt))) {
+      const d = new Date(t.createdAt).toISOString().slice(0, 10);
+      byDay.set(d, (byDay.get(d) || 0) + Number(t.amountTotal || 0));
+    }
+    const paymentSeries = [...byDay.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, amount]) => ({ date, amount: Number(amount.toFixed(2)) }));
+
+    const txSeriesMap = new Map();
+    for (const t of allTx.filter((x) => inRange(x.createdAt))) {
+      const d = new Date(t.createdAt).toISOString().slice(0, 10);
+      if (!txSeriesMap.has(d)) txSeriesMap.set(d, { date: d, total: 0, success: 0, fail: 0 });
+      const row = txSeriesMap.get(d);
+      row.total += 1;
+      if (t.status === 'paid') row.success += 1;
+      if (t.status === 'failed' || t.status === 'canceled') row.fail += 1;
+    }
+    const transactionSeries = [...txSeriesMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+
+    const refundSeriesMap = new Map();
+    for (const b of allBookings.filter((x) => inRange(x.createdAt))) {
+      if (b.status !== 'refunded' && b.status !== 'refund_pending') continue;
+      const d = new Date(b.createdAt).toISOString().slice(0, 10);
+      if (!refundSeriesMap.has(d)) refundSeriesMap.set(d, { date: d, total: 0, success: 0, fail: 0 });
+      const row = refundSeriesMap.get(d);
+      row.total += 1;
+      if (b.status === 'refunded') row.success += 1;
+      if (b.status === 'refund_pending') row.fail += 1;
+    }
+    const refundSeries = [...refundSeriesMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+
+    return res.json({
+      success: true,
+      analysis: {
+        range: safeRange,
+        payments: {
+          totalAllTime: Number(paymentTotalAll.toFixed(2)),
+          totalThisMonth: Number(paymentTotalMonth.toFixed(2)),
+          totalThisWeek: Number(paymentTotalWeek.toFixed(2)),
+          series: paymentSeries,
+        },
+        transactions: {
+          total: txTotal,
+          success: txSuccess,
+          fail: txFail,
+          series: transactionSeries,
+        },
+        refunds: {
+          total: refundTotal,
+          success: refundSuccess,
+          fail: refundFail,
+          series: refundSeries,
+        },
+        apiLatency: getLatencySnapshot(safeRange),
+      },
+    });
+  } catch (error) {
+    console.error('Get analysis error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load analysis' });
+  }
+};
+
 // Souvenir CRUD - same pattern as menu: data/souvenirs.js is source of truth, MongoDB links for admin ops
 const appendSouvenirToFile = (souvenir) => {
   const souvenirs = getSouvenirsData();
@@ -697,4 +809,5 @@ module.exports = {
   getReviews,
   deleteReview,
   getTransactions,
+  getAnalysis,
 };

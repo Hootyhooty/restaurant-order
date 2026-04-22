@@ -20,7 +20,8 @@ const {
   getReviewMenus,
   getReviews,
   deleteReview,
-  getTransactions
+  getTransactions,
+  getAnalysis,
 } = require('../controllers/adminController');
 
 const {
@@ -63,6 +64,7 @@ router.delete('/reviews/:reviewId', rolesRequired('ADMIN'), deleteReview);
 
 // Transactions
 router.get('/transactions', rolesRequired('ADMIN'), getTransactions);
+router.get('/analysis', rolesRequired('ADMIN'), getAnalysis);
 
 // Bookings
 router.get('/bookings', rolesRequired('ADMIN'), getBookings);
