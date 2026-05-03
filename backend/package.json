@@ -4,7 +4,9 @@
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
-        "dev": "nodemon index.js"
+        "dev": "nodemon index.js",
+        "test": "node --test --test-concurrency=1",
+        "refund:reconcile": "node scripts/runRefundReconciliation.js"
     },
     "dependencies": {
         "bcrypt": "^5.0.1",
@@ -19,6 +21,8 @@
         "cloudinary": "^2.5.1"
     },
     "devDependencies": {
-        "nodemon": "^3.0.1"
+        "mongodb-memory-server": "^10.1.4",
+        "nodemon": "^3.0.1",
+        "supertest": "^7.1.0"
     }
 }

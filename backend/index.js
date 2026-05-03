@@ -119,17 +119,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_db';
 const { syncSouvenirsDbToFile } = require('./utils/syncSouvenirs');
 
-mongoose.connect(mongoUri, {
-  dbName: 'restaurant_db',  // Explicitly set database name
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(async () => {
-  console.log('Connected to MongoDB database: restaurant_db');
-  await syncSouvenirsDbToFile();
-}).catch((err) => {
-  console.error('MongoDB connection error:', err.message);
-});
-
 app.use('/food_img', express.static(path.join(__dirname, 'public', 'food_img')));
 app.use('/display', express.static(path.join(__dirname, 'public', 'display')));
 app.use('/api/auth', authRoutes);
@@ -143,6 +132,25 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/bookings', bookingRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+module.exports = app;
+
+if (require.main === module) {
+  mongoose
+    .connect(mongoUri, {
+      dbName: 'restaurant_db',
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(async () => {
+      console.log('Connected to MongoDB database: restaurant_db');
+      await syncSouvenirsDbToFile();
+    })
+    .catch((err) => {
+      console.error('MongoDB connection error:', err.message);
+    });
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}

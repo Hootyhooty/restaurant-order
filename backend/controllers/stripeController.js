@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 const Transaction = require('../models/Transaction');
+const ProcessedStripeEvent = require('../models/ProcessedStripeEvent');
 const { getMealsData } = require('../utils/mealsData');
 const Booking = require('../models/Booking');
 const BookingIntent = require('../models/BookingIntent');
@@ -35,16 +36,10 @@ const handleBookingCheckoutCompleted = async ({ event, session }) => {
     return;
   }
 
-  // Idempotency: if already processed, do nothing
-  if (intent.status === 'paid' || intent.status === 'refunded' || intent.status === 'conflict') {
+  // Application-level idempotency (Stripe event dedupe is enforced separately)
+  if (intent.status !== 'pending') {
     return;
   }
-
-  intent.status = 'paid';
-  intent.stripeEventId = event.id;
-  intent.stripeCheckoutSessionId = session.id;
-  intent.stripePaymentIntentId = session.payment_intent || intent.stripePaymentIntentId;
-  await intent.save();
 
   try {
     const booking = await Booking.create({
@@ -65,6 +60,12 @@ const handleBookingCheckoutCompleted = async ({ event, session }) => {
       status: 'confirmed',
     });
 
+    intent.status = 'paid';
+    intent.stripeEventId = event.id;
+    intent.stripeCheckoutSessionId = session.id;
+    intent.stripePaymentIntentId = session.payment_intent || intent.stripePaymentIntentId;
+    await intent.save();
+
     await sendAdminMessage({
       recipientId: intent.userId,
       subject: 'Reservation Confirmed',
@@ -84,6 +85,9 @@ const handleBookingCheckoutCompleted = async ({ event, session }) => {
     // If two users pay at the same time, unique index blocks duplicates
     if (err && (err.code === 11000 || String(err.message || '').includes('duplicate key'))) {
       intent.status = 'conflict';
+      intent.stripeEventId = event.id;
+      intent.stripeCheckoutSessionId = session.id;
+      intent.stripePaymentIntentId = session.payment_intent || intent.stripePaymentIntentId;
       intent.refundReason = 'Table already booked (payment conflict)';
       await intent.save();
 
@@ -225,6 +229,20 @@ const createCheckoutSession = async (req, res) => {
   }
 };
 
+/**
+ * Atomically claim this Stripe event for processing. Duplicate deliveries share the same event.id → skip.
+ * On processing failure, caller must deleteOne({ eventId }) so Stripe retries can succeed.
+ */
+const claimStripeWebhookEvent = async (event) => {
+  try {
+    await ProcessedStripeEvent.create({ eventId: event.id, type: event.type });
+    return true;
+  } catch (err) {
+    if (err.code === 11000) return false;
+    throw err;
+  }
+};
+
 // POST /api/stripe/webhook
 // Stripe requires the raw body to verify signature.
 const webhookHandler = async (req, res) => {
@@ -243,43 +261,54 @@ const webhookHandler = async (req, res) => {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      const transactionId = session?.metadata?.transactionId;
-      const orderId = session?.metadata?.orderId;
-
-      // Booking flow
-      if (session?.metadata?.bookingIntentId) {
-        await handleBookingCheckoutCompleted({ event, session });
-        return res.json({ received: true });
-      }
-
-      const update = {
-        status: 'paid',
-        stripeEventId: event.id,
-        stripeCheckoutSessionId: session.id,
-        stripePaymentIntentId: session.payment_intent || undefined,
-        customerEmail: session.customer_details?.email || session.customer_email || '',
-        currency: session.currency || 'thb',
-        amountTotal: session.amount_total != null ? session.amount_total / 100 : undefined,
-      };
-
-      let tx = null;
-      if (transactionId) {
-        tx = await Transaction.findByIdAndUpdate(transactionId, { $set: update }, { new: true });
-      } else if (orderId) {
-        tx = await Transaction.findOneAndUpdate({ orderId }, { $set: update }, { new: true });
-      }
-      if (!tx) {
-        tx = await Transaction.findOneAndUpdate({ stripeCheckoutSessionId: session.id }, { $set: update }, { new: true });
-      }
-
-      if (!tx) {
-        console.warn('Webhook: transaction not found for session', session.id);
-      }
+    const claimed = await claimStripeWebhookEvent(event);
+    if (!claimed) {
+      return res.json({ received: true });
     }
 
-    return res.json({ received: true });
+    try {
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const transactionId = session?.metadata?.transactionId;
+        const orderId = session?.metadata?.orderId;
+
+        // Booking flow
+        if (session?.metadata?.bookingIntentId) {
+          await handleBookingCheckoutCompleted({ event, session });
+          return res.json({ received: true });
+        }
+
+        const update = {
+          status: 'paid',
+          stripeEventId: event.id,
+          stripeCheckoutSessionId: session.id,
+          stripePaymentIntentId: session.payment_intent || undefined,
+          customerEmail: session.customer_details?.email || session.customer_email || '',
+          currency: session.currency || 'thb',
+          amountTotal: session.amount_total != null ? session.amount_total / 100 : undefined,
+        };
+
+        let tx = null;
+        if (transactionId) {
+          tx = await Transaction.findByIdAndUpdate(transactionId, { $set: update }, { new: true });
+        } else if (orderId) {
+          tx = await Transaction.findOneAndUpdate({ orderId }, { $set: update }, { new: true });
+        }
+        if (!tx) {
+          tx = await Transaction.findOneAndUpdate({ stripeCheckoutSessionId: session.id }, { $set: update }, { new: true });
+        }
+
+        if (!tx) {
+          console.warn('Webhook: transaction not found for session', session.id);
+        }
+      }
+
+      return res.json({ received: true });
+    } catch (processingErr) {
+      await ProcessedStripeEvent.deleteOne({ eventId: event.id });
+      console.error('Webhook processing error:', processingErr);
+      return res.status(500).send('Webhook handler error');
+    }
   } catch (error) {
     console.error('Webhook handler error:', error);
     return res.status(500).send('Webhook handler error');
@@ -289,5 +318,7 @@ const webhookHandler = async (req, res) => {
 module.exports = {
   createCheckoutSession,
   webhookHandler,
+  handleBookingCheckoutCompleted,
+  claimStripeWebhookEvent,
 };
 

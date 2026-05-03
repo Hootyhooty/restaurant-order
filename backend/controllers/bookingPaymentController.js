@@ -1,22 +1,17 @@
-const Stripe = require('stripe');
 const Booking = require('../models/Booking');
 const BookingIntent = require('../models/BookingIntent');
 const Message = require('../models/Message');
 const Customer = require('../models/Customer');
 const { getMealsData } = require('../utils/mealsData');
-const { guestAllowedForTable, TIME_SLOTS } = require('./bookingController');
-
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
-
-const RESERVATION_FEE = 100;
-
-const reservationCostForGuests = (guestCount) => {
-  if (guestCount === 2 || guestCount === 4) return 500;
-  if (guestCount === 6) return 1000;
-  if (guestCount === 8) return 1500;
-  return 0;
-};
+const {
+  guestAllowedForTable,
+  TIME_SLOTS,
+  RESERVATION_FEE,
+  reservationCostForGuests,
+  parseDateTimeFromSlot,
+  getUserCancellationCutoff,
+} = require('../utils/bookingRules');
+const { getStripe } = require('../utils/stripeClient');
 
 const isISODate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
 
@@ -30,14 +25,6 @@ const normalizePreOrderItems = (items) => {
     .filter((i) => Number.isFinite(i.id) && Number.isFinite(i.quantity) && i.quantity > 0);
 };
 
-const parseDateTimeFromSlot = (dateStr, slotStr) => {
-  const [start] = String(slotStr || '').split('-');
-  const [hh, mm] = String(start || '').split(':').map((x) => Number(x));
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setHours(hh || 0, mm || 0, 0, 0);
-  return d;
-};
-
 const getAdminUserId = async () => {
   const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
   return admin?._id?.toString() || null;
@@ -47,6 +34,7 @@ const getAdminUserId = async () => {
 // Body: { date, timeSlot, guestCount, tableId, redeemCode?, preOrderItems?: [{id, quantity}] }
 const createBookingCheckoutSession = async (req, res) => {
   try {
+    const stripe = getStripe();
     if (!stripe) {
       return res.status(500).json({ success: false, message: 'Stripe is not configured (missing STRIPE_SECRET_KEY).' });
     }
@@ -227,9 +215,8 @@ const cancelMyBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'This booking cannot be cancelled.' });
     }
 
-    const startAt = parseDateTimeFromSlot(b.date, b.timeSlot);
-    const cutoff = new Date(startAt.getTime() - 3 * 60 * 60 * 1000);
-    if (Date.now() > cutoff.getTime()) {
+    const cancelCutoff = getUserCancellationCutoff(b.date, b.timeSlot);
+    if (Date.now() > cancelCutoff.getTime()) {
       return res.status(400).json({ success: false, message: 'Cancellation is only allowed until 3 hours before the reservation time.' });
     }
 

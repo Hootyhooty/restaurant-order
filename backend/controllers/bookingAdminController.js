@@ -1,10 +1,7 @@
-const Stripe = require('stripe');
 const Booking = require('../models/Booking');
 const Message = require('../models/Message');
 const Customer = require('../models/Customer');
-
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+const { refundPaymentIntentAmount } = require('../utils/stripeRefundPayment');
 
 const getAdminUserId = async () => {
   const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
@@ -19,17 +16,6 @@ const sendAdminMessage = async ({ recipientId, subject, body }) => {
     recipientId,
     subject,
     body,
-  });
-};
-
-const refundPaymentIntentAmount = async ({ paymentIntentId, amountMajor }) => {
-  if (!stripe) throw new Error('Stripe is not configured.');
-  if (!paymentIntentId) throw new Error('Missing payment intent id.');
-  const amount = Math.max(0, Math.round(Number(amountMajor || 0) * 100));
-  if (amount <= 0) return null;
-  return await stripe.refunds.create({
-    payment_intent: paymentIntentId,
-    amount,
   });
 };
 

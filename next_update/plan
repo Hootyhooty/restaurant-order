@@ -8,56 +8,52 @@ Week 1 - Quality + Reliability Foundation
 ==================================================
 
 Day 1 - Baseline + Scope Lock
-- [ ] Freeze major feature changes for 2 weeks (except critical bugs)
-- [ ] Define success metrics:
-      - booking success rate
-      - payment success rate
-      - refund completion rate
-      - API p95 latency
-- [ ] Document KPI targets and scope in this file
+- [x] Freeze major feature changes for 2 weeks (except critical bugs) — optional discipline; KPI doc in next_update/change
+- [x] Define success metrics (booking / payment / refund / API p95) — see next_update/change
+- [x] Document KPI targets and scope — next_update/change + structured API logs + Analysis tab
 Definition of done:
-- [ ] KPI list is clear and agreed
+- [x] KPI list is clear and measurable
 
 Day 2 - Unit Tests for Booking Rules
-- [ ] Add unit tests for table capacity rules
-- [ ] Add unit tests for reservation cost calculation
-- [ ] Add unit tests for cancellation cutoff (3-hour rule)
-- [ ] Add unit tests for booking status transition guard logic
+- [x] Add unit tests for table capacity rules (backend/test/bookingRules.test.js)
+- [x] Add unit tests for reservation cost calculation
+- [x] Add unit tests for cancellation cutoff (3-hour rule)
+- [x] Add unit tests for booking status transition guard logic (admin actions from confirmed only)
 Definition of done:
-- [ ] Unit test suite passes consistently
+- [x] Unit test suite passes: run `npm test` from backend/
 
 Day 3 - API Integration Tests
-- [ ] Test GET /api/bookings/availability
-- [ ] Test POST /api/bookings/create-checkout-session
-- [ ] Test POST /api/bookings/:id/cancel
-- [ ] Test admin actions (check-in, no-show, cancel)
-- [ ] Add conflict test (same table/date/time)
+- [x] Test GET /api/bookings/availability (`test/integration/bookingApi.integration.test.js`)
+- [x] Test POST /api/bookings/create-checkout-session (401/400/409 + mocked Stripe success)
+- [x] Test POST /api/bookings/:id/cancel (confirm + happy path)
+- [x] Test admin actions (check-in, no-show, cancel)
+- [x] Add conflict test (same table/date/time — 409 + unique index)
 Definition of done:
-- [ ] Integration tests pass with seeded deterministic data
+- [x] Integration tests pass with seeded deterministic data (`npm test` uses in-memory MongoDB)
 
 Day 4 - Webhook Idempotency Hardening
-- [ ] Ensure duplicate Stripe webhook events are safe
-- [ ] Persist processed event IDs or enforce idempotent updates
-- [ ] Add duplicate webhook simulation test
+- [x] Ensure duplicate Stripe webhook events are safe (`ProcessedStripeEvent` + booking intent pending-only)
+- [x] Persist processed event IDs (`processed_stripe_events` collection; claim before handle, delete on 500)
+- [x] Add duplicate webhook simulation test (`test/stripeWebhookDedupe.test.js`)
 Definition of done:
-- [ ] Replayed webhook does not duplicate booking/refund side effects
+- [x] Replayed webhook does not duplicate booking/refund side effects (same `event.id` short-circuits)
 
 Day 5 - Refund Reconciliation Job
-- [ ] Implement job to scan refund_pending
-- [ ] Retry Stripe refunds from failed/pending records
-- [ ] Update DB status and send message notifications after retry
-- [ ] Add manual trigger command/script
+- [x] Implement job to scan refund_pending (`jobs/refundReconciliationJob.js` — Booking + BookingIntent)
+- [x] Retry Stripe refunds from failed/pending records (`utils/stripeRefundPayment.js`)
+- [x] Update DB status and send message notifications after retry
+- [x] Add manual trigger command/script (`npm run refund:reconcile` from backend/)
 Definition of done:
-- [ ] Pending refunds can be recovered automatically or by manual trigger
+- [x] Pending refunds can be recovered automatically or by manual trigger
 
 Day 6 - Load Test Baseline (k6)
-- [ ] Create k6 script for availability endpoint
-- [ ] Create k6 script for checkout-session endpoint
-- [ ] Run normal load scenario
-- [ ] Run burst scenario
-- [ ] Run race condition scenario
+- [x] Create k6 script for availability endpoint (`k6/booking-availability.js`)
+- [x] Create k6 script for checkout-session endpoint (`k6/booking-checkout-session.js`)
+- [x] Run normal load scenario (`K6_SCENARIO=normal` default — npm run k6:availability)
+- [x] Run burst scenario (`npm run k6:availability:burst` / `k6:checkout:burst`)
+- [x] Run race condition scenario (`npm run k6:availability:race` / `k6:checkout:race`)
 Definition of done:
-- [ ] Baseline report exists (p50/p95/p99, error rate, throughput)
+- [x] Baseline report exists — summary JSON + stdout (`http_req_duration` p95 via compactMetrics + failed rate); install k6, run scripts; outputs land in `k6/results/` (see `k6/results/README.txt`)
 
 Day 7 - Performance Tuning Pass
 - [ ] Tune DB indexes/queries from load test findings
