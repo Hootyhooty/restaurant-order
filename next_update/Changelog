@@ -646,5 +646,24 @@ endpoint = all (updated)
 running (1m20.5s), 00/12 VUs, 851 complete and 0 interrupted iterations                                          
 default ✓ [======================================] 00/12 VUs  1m20s  
 
-- add rate limit
+- Strict CORS: already have.
+- Auth hardening: not now I still need to make sending email verification to work.
+- Input validation: add this.
+- Security logging & monitoring: add this.
+- Secrets hygiene: add this.
+- Transport/session posture: add this. 
+- request validation middleware: add this.
+- Day 7 performance tuning update:
+- Added DB/query tuning:
+  - `Review` compound index `{ mealId: 1, createdAt: -1 }` for latest-reviews queries.
+  - `Review` unique index `{ mealId: 1, userId: 1 }` to enforce one review per user per meal.
+  - `listReviews` now uses explicit field projection.
+- Reduced heavy payload support:
+  - `GET /api/meals` supports `lite=1` (minimal fields).
+  - `GET /api/souvenirs` supports `lite=1` (minimal fields).
+- Re-ran deployed load test (`TARGET_ENDPOINT=all`, `K6_LITE_PAYLOAD=1`):
+  - Previous all-endpoint report p95: `155.98ms`
+  - New all-endpoint report p95: `125.79ms`
+  - Improvement: `~19.36%` faster p95
+  - `http_req_failed`: `0.00%` (still passing)
 

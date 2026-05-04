@@ -19,6 +19,11 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Speeds up "latest reviews by meal" query path.
+reviewSchema.index({ mealId: 1, createdAt: -1 });
+// Keeps one review per user per meal to avoid duplicates and reduce query noise.
+reviewSchema.index({ mealId: 1, userId: 1 }, { unique: true });
+
 reviewSchema.pre('save', async function (next) {
   if (!this._id) {
     this._id = generateUUID();

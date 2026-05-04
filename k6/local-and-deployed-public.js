@@ -15,6 +15,7 @@ import { check, sleep } from 'k6';
 const target = (__ENV.TEST_TARGET || 'deployed').toLowerCase();
 const baseUrl = (__ENV.BASE_URL || 'https://picha-restaunrant-backend.onrender.com').replace(/\/$/, '');
 const targetEndpoint = (__ENV.TARGET_ENDPOINT || 'all').toLowerCase();
+const litePayload = String(__ENV.K6_LITE_PAYLOAD || '1').toLowerCase() !== '0';
 
 function optionsByTarget() {
   if (target === 'local') {
@@ -45,8 +46,8 @@ function optionsByTarget() {
 export const options = optionsByTarget();
 
 const endpointMap = {
-  meals: '/api/meals',
-  souvenirs: '/api/souvenirs',
+  meals: litePayload ? '/api/meals?lite=1&limit=120' : '/api/meals',
+  souvenirs: litePayload ? '/api/souvenirs?lite=1&limit=120' : '/api/souvenirs',
   reviews: '/api/reviews?mealId=1&limit=20',
   availability: '/api/bookings/availability?date=2099-12-20&timeSlot=17:00-19:00&guestCount=2',
 };

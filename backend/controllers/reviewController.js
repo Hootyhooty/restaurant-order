@@ -11,6 +11,7 @@ const listReviews = async (req, res) => {
     }
 
     const items = await Review.find({ mealId })
+      .select('_id userId username review rating createdAt')
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();

@@ -9,17 +9,31 @@ const { getMealRatingSummary } = require('../utils/reviewStats');
 const getMeals = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 500;
+    const lite = String(req.query.lite || '').toLowerCase() === '1' || String(req.query.lite || '').toLowerCase() === 'true';
     const meals = getMealsData();
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const items = meals.slice(0, limit).map(m => ({
-      ...m,
-      image: m.image && m.image.startsWith('/') ? baseUrl + m.image : (m.image || '')
-    }));
+    const items = meals.slice(0, limit).map((m) => {
+      const image = m.image && m.image.startsWith('/') ? baseUrl + m.image : (m.image || '');
+      if (lite) {
+        return {
+          id: m.id,
+          name: m.name,
+          slug: m.slug,
+          price: m.price,
+          category: m.category,
+          image,
+        };
+      }
+      return {
+        ...m,
+        image,
+      };
+    });
 
     res.json({
       success: true,
       items,
-      categories,
+      categories: lite ? undefined : categories,
     });
   } catch (error) {
     console.error('Get meals error:', error);

@@ -56,11 +56,11 @@ Definition of done:
 - [x] Baseline report exists — summary JSON + stdout (`http_req_duration` p95 via compactMetrics + failed rate); install k6, run scripts; outputs land in `k6/results/` (see `k6/results/README.txt`)
 
 Day 7 - Performance Tuning Pass
-- [ ] Tune DB indexes/queries from load test findings
-- [ ] Reduce heavy payloads in critical endpoints if needed
-- [ ] Re-run load tests
+- [x] Tune DB indexes/queries from load test findings
+- [x] Reduce heavy payloads in critical endpoints if needed
+- [x] Re-run load tests
 Definition of done:
-- [ ] Improved second report with measurable gains
+- [x] Improved second report with measurable gains
 
 ==================================================
 Week 2 - Ops, Security, and Deployment Maturity
