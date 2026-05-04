@@ -1,0 +1,39 @@
+Use this exact checklist.
+1) Open terminal in repo root
+Path should be:
+C:\Users\oneto\restaurant\restaurant-order
+
+2) Confirm k6 works
+k6 version
+If not recognized, use full path once:
+& "C:\Program Files\K6\k6.exe" version
+
+3) Test deployed backend (what you want now)
+$env:TEST_TARGET="deployed"
+$env:BASE_URL="https://picha-restaunrant-backend.onrender.com"
+k6 run k6/local-and-deployed-public.js
+
+4) Read results (important lines)
+Look for:
+http_req_failed → should be near 0.00%
+checks → should be close to 100.00%
+http_req_duration p(95) → lower is better
+Quick interpretation:
+Good start: failed < 2%, checks > 98%
+Warning: failed > 5% or many non-200 responses
+
+5) Run local baseline (optional, for comparison)
+Start backend locally first, then:
+Then compare local vs deployed p(95) and failure rate.
+$env:TEST_TARGET="local"
+$env:BASE_URL="http://localhost:5000"
+k6 run k6/local-and-deployed-public.js
+
+6) Increase load safely (deployed)
+Start small, then increase gradually.
+If you paste your first k6 output here, I’ll read it and tell you exactly whether your deployed backend is healthy or where the bottleneck is.
+$env:TEST_TARGET="deployed"
+$env:BASE_URL="https://picha-restaunrant-backend.onrender.com"
+$env:K6_STAGE1_VUS="8"
+$env:K6_STAGE2_VUS="20"
+k6 run k6/local-and-deployed-public.js

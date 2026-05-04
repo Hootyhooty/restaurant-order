@@ -382,3 +382,269 @@ Day 6 - Load Test Baseline (k6)
 - [x] Run race condition scenario (`npm run k6:availability:race` / `k6:checkout:race`)
 Definition of done:
 - [x] Baseline report exists — summary JSON + stdout (`http_req_duration` p95 via compactMetrics + failed rate); install k6, run scripts; outputs land in `k6/results/` (see `k6/results/README.txt`)
+
+4 May 2026
+- K6 read guildeline how to test here the result 
+
+endpoint = meal
+
+     execution: local
+        script: k6/local-and-deployed-public.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 12 max VUs, 1m50s max duration (incl. graceful stop):
+              * default: Up to 12 looping VUs for 1m20s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s) 
+
+
+
+  █ THRESHOLDS
+
+    http_req_duration
+    ✓ 'p(95)<1500' p(95)=110.21ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 2640    32.866747/s
+    checks_succeeded...: 100.00% 2640 out of 2640
+    checks_failed......: 0.00%   0 out of 2640
+
+    ✓ status is 200
+    ✓ not rate limited
+    ✓ response is json-ish
+
+    HTTP
+    http_req_duration..............: avg=70.55ms  min=41.69ms med=63.44ms  max=320.69ms p(90)=93.99ms  p(95)=110.21ms
+      { expected_response:true }...: avg=70.55ms  min=41.69ms med=63.44ms  max=320.69ms p(90)=93.99ms  p(95)=110.21ms
+    http_req_failed................: 0.00%  0 out of 880
+    http_reqs......................: 880    10.955582/s
+
+    EXECUTION
+    iteration_duration.............: avg=571.99ms min=547.2ms med=564.39ms max=821.62ms p(90)=595.99ms p(95)=612.12ms
+    iterations.....................: 880    10.955582/s
+    vus............................: 1      min=1        max=12
+    vus_max........................: 12     min=12       max=12
+
+    NETWORK
+    data_received..................: 4.2 MB 53 kB/s
+    data_sent......................: 96 kB  1.2 kB/s
+
+
+
+                                                                                                                 
+running (1m20.3s), 00/12 VUs, 880 complete and 0 interrupted iterations                                          
+default ✓ [======================================] 00/12 VUs  1m20s  
+
+endpoint = souvenirs
+
+     execution: local
+        script: k6/local-and-deployed-public.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 12 max VUs, 1m50s max duration (incl. graceful stop):
+              * default: Up to 12 looping VUs for 1m20s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s) 
+
+
+
+  █ THRESHOLDS
+
+    http_req_duration
+    ✓ 'p(95)<1500' p(95)=129.48ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 2622    32.764854/s
+    checks_succeeded...: 100.00% 2622 out of 2622
+    checks_failed......: 0.00%   0 out of 2622
+
+    ✓ status is 200
+    ✓ not rate limited
+    ✓ response is json-ish
+
+    HTTP
+    http_req_duration..............: avg=74.48ms  min=45.17ms  med=64.65ms max=307.61ms p(90)=111.21ms p(95)=129.48ms
+      { expected_response:true }...: avg=74.48ms  min=45.17ms  med=64.65ms max=307.61ms p(90)=111.21ms p(95)=129.48ms
+    http_req_failed................: 0.00%  0 out of 874
+    http_reqs......................: 874    10.921618/s
+
+    EXECUTION
+    iteration_duration.............: avg=575.76ms min=546.35ms med=566ms   max=808.07ms p(90)=613.33ms p(95)=635.58ms
+    iterations.....................: 874    10.921618/s
+    vus............................: 1      min=1        max=12
+    vus_max........................: 12     min=12       max=12
+
+    NETWORK
+    data_received..................: 907 kB 11 kB/s
+    data_sent......................: 59 kB  735 B/s
+
+
+
+                                                                                                                 
+running (1m20.0s), 00/12 VUs, 874 complete and 0 interrupted iterations                                          
+default ✓ [======================================] 00/12 VUs  1m20s   
+
+endpoint = reviews (updated)
+
+     execution: local
+        script: k6/local-and-deployed-public.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 12 max VUs, 1m50s max duration (incl. graceful stop):
+              * default: Up to 12 looping VUs for 1m20s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s) 
+
+
+
+  █ THRESHOLDS
+
+    http_req_duration
+    ✓ 'p(95)<1500' p(95)=194.52ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 2508    31.232814/s
+    checks_succeeded...: 100.00% 2508 out of 2508
+    checks_failed......: 0.00%   0 out of 2508
+
+    ✓ status is 200
+    ✓ not rate limited
+    ✓ response is json-ish
+
+    HTTP
+    http_req_duration..............: avg=101.36ms min=52.2ms   med=88.72ms  max=398.12ms p(90)=157.3ms p(95)=194.52ms
+      { expected_response:true }...: avg=101.36ms min=52.2ms   med=88.72ms  max=398.12ms p(90)=157.3ms p(95)=194.52ms
+    http_req_failed................: 0.00%  0 out of 836
+    http_reqs......................: 836    10.410938/s
+
+    EXECUTION
+    iteration_duration.............: avg=602.81ms min=552.79ms med=590.12ms max=963.39ms p(90)=660.1ms p(95)=696.7ms
+    iterations.....................: 836    10.410938/s
+    vus............................: 1      min=1        max=12
+    vus_max........................: 12     min=12       max=12
+
+    NETWORK
+    data_received..................: 726 kB 9.0 kB/s
+    data_sent......................: 57 kB  706 B/s
+
+
+
+                                                                                                                 
+running (1m20.3s), 00/12 VUs, 836 complete and 0 interrupted iterations                                          
+default ✓ [======================================] 00/12 VUs  1m20s    
+
+endpoint = availability
+
+     execution: local
+        script: k6/local-and-deployed-public.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 12 max VUs, 1m50s max duration (incl. graceful stop):
+              * default: Up to 12 looping VUs for 1m20s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s) 
+
+
+
+  █ THRESHOLDS
+
+    http_req_duration
+    ✓ 'p(95)<1500' p(95)=129.31ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 2619    32.534911/s
+    checks_succeeded...: 100.00% 2619 out of 2619
+    checks_failed......: 0.00%   0 out of 2619
+
+    ✓ status is 200
+    ✓ not rate limited
+    ✓ response is json-ish
+
+    HTTP
+    http_req_duration..............: avg=75.22ms  min=44.21ms  med=63.24ms max=499.42ms p(90)=102.18ms p(95)=129.31ms
+      { expected_response:true }...: avg=75.22ms  min=44.21ms  med=63.24ms max=499.42ms p(90)=102.18ms p(95)=129.31ms
+    http_req_failed................: 0.00%  0 out of 873
+    http_reqs......................: 873    10.84497/s
+
+    EXECUTION
+    iteration_duration.............: avg=576.65ms min=544.88ms med=564.5ms max=1s       p(90)=604.33ms p(95)=631.65ms
+    iterations.....................: 873    10.84497/s
+    vus............................: 1      min=1        max=12
+    vus_max........................: 12     min=12       max=12
+
+    NETWORK
+    data_received..................: 313 kB 3.9 kB/s
+    data_sent......................: 55 kB  683 B/s
+
+
+
+                                                                                                                 
+running (1m20.5s), 00/12 VUs, 873 complete and 0 interrupted iterations                                          
+default ✓ [======================================] 00/12 VUs  1m20s         
+
+endpoint = all (updated)
+
+     execution: local
+        script: k6/local-and-deployed-public.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 12 max VUs, 1m50s max duration (incl. graceful stop):
+              * default: Up to 12 looping VUs for 1m20s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s) 
+
+
+
+  █ THRESHOLDS
+
+    http_req_duration
+    ✓ 'p(95)<1500' p(95)=155.98ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 2553    31.716937/s
+    checks_succeeded...: 100.00% 2553 out of 2553
+    checks_failed......: 0.00%   0 out of 2553
+
+    ✓ status is 200
+    ✓ not rate limited
+    ✓ response is json-ish
+
+    HTTP
+    http_req_duration..............: avg=91.38ms  min=42.36ms  med=81.97ms  max=558.9ms p(90)=136.18ms p(95)=155.98ms
+      { expected_response:true }...: avg=91.38ms  min=42.36ms  med=81.97ms  max=558.9ms p(90)=136.18ms p(95)=155.98ms
+    http_req_failed................: 0.00%  0 out of 851
+    http_reqs......................: 851    10.572312/s
+
+    EXECUTION
+    iteration_duration.............: avg=592.88ms min=546.36ms med=582.91ms max=1.12s   p(90)=637.93ms p(95)=658.22ms
+    iterations.....................: 851    10.572312/s
+    vus............................: 1      min=1        max=12
+    vus_max........................: 12     min=12       max=12
+
+    NETWORK
+    data_received..................: 1.5 MB 19 kB/s
+    data_sent......................: 65 kB  808 B/s
+
+
+
+                                                                                                                 
+running (1m20.5s), 00/12 VUs, 851 complete and 0 interrupted iterations                                          
+default ✓ [======================================] 00/12 VUs  1m20s  
+
+- add rate limit
+

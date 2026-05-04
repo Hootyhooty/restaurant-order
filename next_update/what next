@@ -98,3 +98,21 @@ If you want the fastest senior jump, do these 5 next:
     - Observability stack (structured logs + metrics + alerts).
     - Security pass (rate limit + validation + admin audit logs).
 If you want, I can generate a concrete 2-week execution plan (day-by-day, with exact deliverables and success metrics) tailored to your current codebase.
+
+
+What else to implement for security (next priority)
+Strict CORS in production: always set FRONTEND_ORIGIN to your exact frontend origin(s), never wildcard.
+Auth hardening:
+Add account lock/backoff after repeated failed logins.
+Add password policy + optional email verification/reset flow protections.
+Input validation:
+Add schema validation (e.g. zod/joi) on all write endpoints before controllers.
+Security logging & monitoring:
+Log 401/403/429 spikes and alert on anomalies.
+Secrets hygiene:
+Rotate JWT_SECRET if it was ever exposed.
+Keep all secrets only in Render env vars, never in repo.
+Transport/session posture:
+Ensure HTTPS-only in production.
+If you move to cookies later, enforce HttpOnly, Secure, SameSite.
+If you want, next I can implement request validation middleware (high impact, low risk) for your auth/review/booking write routes.

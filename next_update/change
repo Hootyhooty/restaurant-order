@@ -1,48 +1,14 @@
-Day 1 - Baseline + Scope Lock
+- Strict CORS. not sure what are you talking about? Do i need to point all that refer to FRONTEND_ORIGIN
+  to https://picha-restaurant.onrender.com? need more explaination.
 
-Scope lock (2 weeks):
-- [ ] Freeze major feature changes for 2 weeks (except critical bugs)
-- [ ] Focus only on reliability, tests, performance, security, and release readiness
-- [ ] Any new feature request goes to backlog (not this sprint)
+- Auth hardening: not now I still need to make sending email verification to work.
 
-KPI targets and baseline:
+- Input validation: add this.
 
-1) Booking success rate
-- Definition: successful booking confirmations / booking checkout attempts
-- Baseline (current): ___ %
-- 2-week target: >= 98.0%
-- Measured from: booking checkout logs + confirmed booking records
+- Security logging & monitoring: add this if there is no relate function about this existed.
 
-2) Payment success rate
-- Definition: successful Stripe checkout completions / checkout session creations
-- Baseline (current): ___ %
-- 2-week target: >= 97.0%
-- Measured from: Stripe webhook completed events + session creation logs
+- Secrets hygiene: yes add this.
 
-3) Refund completion rate
-- Definition: successful refunds / total refunds requested
-- Baseline (current): ___ %
-- 2-week target: >= 99.0% within 24 hours
-- Measured from: booking/refund status records (refunded vs refund_pending)
+- Transport/session posture: add this. 
 
-4) API p95 latency
-- Definition: 95th percentile response time per endpoint
-- Baseline (current):
-  - GET /api/bookings/availability: ___ ms
-  - POST /api/bookings/create-checkout-session: ___ ms
-- 2-week target:
-  - GET /api/bookings/availability: p95 < 200 ms
-  - POST /api/bookings/create-checkout-session: p95 < 500 ms
-- Measured from: k6 load test report + server timing logs
-
-How to measure this week:
-- [ ] Enable structured logging for booking/payment/refund events
-- [ ] Run baseline k6 tests for availability + checkout session endpoints
-- [ ] Capture Stripe webhook completion and refund outcomes
-- [ ] Record current baseline values above
-
-Definition of done (Day 1):
-- [ ] KPI list is clear and measurable
-- [ ] Baseline placeholders are ready or filled with first measured values
-- [ ] Target numbers are set and realistic
-- [ ] Scope lock is agreed for the next 2 weeks
+- request validation middleware: what exactly this?

@@ -21,12 +21,39 @@ const reviewRoutes = require('./routes/reviews');
 const messageRoutes = require('./routes/messages');
 const bookingRoutes = require('./routes/bookings');
 const { webhookHandler } = require('./controllers/stripeController');
+const {
+  helmetMiddleware,
+  authLimiter,
+  publicLimiter,
+} = require('./utils/security');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
   console.warn('Warning: MONGODB_URI or JWT_SECRET is not set. Create backend/.env based on backend/.env.example');
 }
+if (isProduction && !process.env.FRONTEND_ORIGIN) {
+  console.error('FRONTEND_ORIGIN is required in production. Use comma-separated origins if needed.');
+  process.exit(1);
+}
+if (isProduction && String(process.env.JWT_SECRET || '').length < 32) {
+  console.error('JWT_SECRET is too short for production. Use at least 32 characters.');
+  process.exit(1);
+}
 
 const app = express();
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use(helmetMiddleware);
+app.use((req, res, next) => {
+  if (!isProduction) return next();
+  const proto = req.get('x-forwarded-proto');
+  if (req.secure || proto === 'https') return next();
+  return res.status(400).json({
+    success: false,
+    message: 'HTTPS is required.',
+  });
+});
 
 // Request ID + API latency structured logging
 app.use((req, res, next) => {
@@ -61,6 +88,21 @@ app.use((req, res, next) => {
     });
 
     console.log(JSON.stringify(logEntry));
+
+    if (res.statusCode === 401 || res.statusCode === 403 || res.statusCode === 429 || req.validationError) {
+      console.warn(
+        JSON.stringify({
+          level: 'warn',
+          type: 'security_event',
+          requestId,
+          method: req.method,
+          path: req.originalUrl,
+          status: res.statusCode,
+          validationError: req.validationError || null,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+    }
   });
 
   next();
@@ -80,8 +122,9 @@ const extraOrigins = (process.env.FRONTEND_ORIGIN || '')
 
 const allowedOrigins = [...localOrigins, ...extraOrigins];
 
-// CORS configuration - allow all origins if FRONTEND_ORIGIN is not set (for easier deployment)
-// Otherwise, only allow explicitly listed origins
+// CORS configuration:
+// - production: only allow local+explicit FRONTEND_ORIGIN values
+// - non-production: if FRONTEND_ORIGIN is unset, allow all origins for easier local development
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -96,8 +139,12 @@ const corsOptions = {
       return callback(new Error('Not allowed by CORS'));
     }
     
-    // If FRONTEND_ORIGIN is not set, allow all origins (for easier initial deployment)
-    // You should set FRONTEND_ORIGIN in production for security
+    if (isProduction) {
+      console.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+      return callback(new Error('Not allowed by CORS'));
+    }
+
+    // Local/dev fallback when FRONTEND_ORIGIN is unset
     return callback(null, true);
   },
   credentials: true,
@@ -107,7 +154,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 // Stripe webhook must be registered before JSON body parsing
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), webhookHandler);
@@ -121,11 +168,11 @@ const { syncSouvenirsDbToFile } = require('./utils/syncSouvenirs');
 
 app.use('/food_img', express.static(path.join(__dirname, 'public', 'food_img')));
 app.use('/display', express.static(path.join(__dirname, 'public', 'display')));
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/meals', mealsRoutes);
-app.use('/api/souvenirs', souvenirsRoutes);
+app.use('/api/meals', publicLimiter, mealsRoutes);
+app.use('/api/souvenirs', publicLimiter, souvenirsRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
