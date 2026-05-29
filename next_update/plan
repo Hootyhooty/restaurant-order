@@ -67,33 +67,33 @@ Week 2 - Ops, Security, and Deployment Maturity
 ==================================================
 
 Day 8 - Structured Logging
-- [ ] Add request-correlated logging with requestId
-- [ ] Include userId, bookingId, sessionId in key logs
-- [ ] Use consistent JSON log format
+- [x] Add request-correlated logging with requestId
+- [x] Include userId, bookingId, sessionId in key logs
+- [x] Use consistent JSON log format
 Definition of done:
-- [ ] Can trace one booking flow across all services/log points
+- [x] Can trace one booking flow across all services/log points
 
 Day 9 - Monitoring + Alerts
-- [ ] Add metrics:
+- [x] Add metrics:
       - booking attempts/success/fail
       - webhook processing duration
       - refund_pending backlog count
-- [ ] Define alert thresholds for failures/backlog spikes
+- [x] Define alert thresholds for failures/backlog spikes
 Definition of done:
-- [ ] Dashboard + alert rules are active
+- [x] Dashboard + alert rules are active
 
 Day 10 - Security Hardening
-- [ ] Add rate limiting to auth/booking endpoints
-- [ ] Add strict input validation on all new routes
-- [ ] Tighten CORS and Helmet settings for production
+- [x] Add rate limiting to auth/booking endpoints
+- [x] Add strict input validation on all new routes
+- [x] Tighten CORS and Helmet settings for production
 Definition of done:
-- [ ] Security checklist complete with no high-risk gaps
+- [x] Security checklist complete with no high-risk gaps
 
 Day 11 - Admin Audit Trail
-- [ ] Log admin booking actions (who/what/when)
-- [ ] Include check-in/no-show/cancel/refund events
+- [x] Log admin booking actions (who/what/when)
+- [x] Include check-in/no-show/cancel/refund events
 Definition of done:
-- [ ] Audit history is queryable and complete
+- [x] Audit history is queryable and complete
 
 Day 12 - CI/CD Quality Gates
 - [ ] Enforce lint in pipeline

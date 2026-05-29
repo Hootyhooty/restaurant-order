@@ -14,6 +14,42 @@ function isISODate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value) {
+  return UUID_RE.test(String(value || '').trim());
+}
+
+const BOOKING_TIME_SLOTS = new Set([
+  '11:00-13:00',
+  '13:00-15:00',
+  '15:00-17:00',
+  '17:00-19:00',
+  '19:00-21:00',
+  '21:00-23:00',
+]);
+
+function validatePreOrderItems(items) {
+  if (items == null) return { ok: true, items: [] };
+  if (!Array.isArray(items)) {
+    return { ok: false, message: 'preOrderItems must be an array.' };
+  }
+  if (items.length > 30) {
+    return { ok: false, message: 'preOrderItems cannot exceed 30 items.' };
+  }
+  for (const raw of items) {
+    const mealId = Number(raw?.id ?? raw?.mealId);
+    const quantity = Number(raw?.quantity);
+    if (!Number.isFinite(mealId) || mealId < 1) {
+      return { ok: false, message: 'Invalid pre-order meal id.' };
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      return { ok: false, message: 'Pre-order quantity must be between 1 and 99.' };
+    }
+  }
+  return { ok: true };
+}
+
 function validateRegisterBody(req, res, next) {
   const { username, email, password } = req.body || {};
   if (!isNonEmptyString(username) || !isNonEmptyString(email) || !isNonEmptyString(password)) {
@@ -83,8 +119,7 @@ function validateBookingAvailabilityQuery(req, res, next) {
     markValidationError(req, 'Invalid date. Expected YYYY-MM-DD.');
     return badRequest(res, 'Invalid date. Expected YYYY-MM-DD.');
   }
-  const allowedSlots = new Set(['11:00-13:00', '13:00-15:00', '15:00-17:00', '17:00-19:00', '19:00-21:00', '21:00-23:00']);
-  if (!allowedSlots.has(String(timeSlot || '').trim())) {
+  if (!BOOKING_TIME_SLOTS.has(String(timeSlot || '').trim())) {
     markValidationError(req, 'Invalid time slot.');
     return badRequest(res, 'Invalid time slot.');
   }
@@ -104,8 +139,7 @@ function validateBookingCheckoutBody(req, res, next) {
     markValidationError(req, 'Invalid date.');
     return badRequest(res, 'Invalid date.');
   }
-  const allowedSlots = new Set(['11:00-13:00', '13:00-15:00', '15:00-17:00', '17:00-19:00', '19:00-21:00', '21:00-23:00']);
-  if (!allowedSlots.has(timeSlot)) {
+  if (!BOOKING_TIME_SLOTS.has(timeSlot)) {
     markValidationError(req, 'Invalid time slot.');
     return badRequest(res, 'Invalid time slot.');
   }
@@ -116,6 +150,16 @@ function validateBookingCheckoutBody(req, res, next) {
   if (!Number.isFinite(tableId) || tableId < 1 || tableId > 12) {
     markValidationError(req, 'Invalid table.');
     return badRequest(res, 'Invalid table.');
+  }
+  const preOrderCheck = validatePreOrderItems(req.body?.preOrderItems);
+  if (!preOrderCheck.ok) {
+    markValidationError(req, preOrderCheck.message);
+    return badRequest(res, preOrderCheck.message);
+  }
+  const redeemCode = req.body?.redeemCode;
+  if (redeemCode != null && redeemCode !== '' && String(redeemCode).length > 64) {
+    markValidationError(req, 'redeemCode is too long.');
+    return badRequest(res, 'redeemCode is too long.');
   }
   next();
 }
@@ -139,6 +183,65 @@ function validateMessageCreateBody(req, res, next) {
     return badRequest(res, 'subject must be 180 characters or fewer');
   }
   next();
+}
+
+function validateStripeCheckoutBody(req, res, next) {
+  const items = req.body?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    markValidationError(req, 'Cart items are required.');
+    return badRequest(res, 'Cart items are required.');
+  }
+  if (items.length > 50) {
+    markValidationError(req, 'Cart cannot exceed 50 line items.');
+    return badRequest(res, 'Cart cannot exceed 50 line items.');
+  }
+  for (const raw of items) {
+    const id = Number(raw?.id);
+    const quantity = Number(raw?.quantity);
+    if (!Number.isFinite(id) || id < 1) {
+      markValidationError(req, 'Invalid meal id in cart.');
+      return badRequest(res, 'Invalid meal id in cart.');
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      markValidationError(req, 'Cart quantity must be between 1 and 99.');
+      return badRequest(res, 'Cart quantity must be between 1 and 99.');
+    }
+  }
+  next();
+}
+
+function validateMongoIdParam(paramName) {
+  return (req, res, next) => {
+    const value = String(req.params[paramName] || '').trim();
+    if (!isUuid(value)) {
+      markValidationError(req, `Invalid ${paramName}.`);
+      return badRequest(res, `Invalid ${paramName}.`);
+    }
+    next();
+  };
+}
+
+function validateAdminBookingsQuery(req, res, next) {
+  const q = String(req.query?.q || '').trim();
+  if (q.length > 120) {
+    markValidationError(req, 'Search query is too long.');
+    return badRequest(res, 'Search query is too long.');
+  }
+  return validatePaginationQuery(req, res, next);
+}
+
+function validateAuditLogsQuery(req, res, next) {
+  const bookingId = String(req.query?.bookingId || '').trim();
+  if (bookingId && !isUuid(bookingId)) {
+    markValidationError(req, 'Invalid bookingId filter.');
+    return badRequest(res, 'Invalid bookingId filter.');
+  }
+  const action = String(req.query?.action || '').trim();
+  if (action.length > 80) {
+    markValidationError(req, 'action filter is too long.');
+    return badRequest(res, 'action filter is too long.');
+  }
+  return validatePaginationQuery(req, res, next);
 }
 
 function validatePaginationQuery(req, res, next) {
@@ -169,5 +272,10 @@ module.exports = {
   validateBookingCheckoutBody,
   validateBookingCancelBody,
   validateMessageCreateBody,
+  validateStripeCheckoutBody,
+  validateMongoIdParam,
+  validateAdminBookingsQuery,
+  validateAuditLogsQuery,
   validatePaginationQuery,
+  isUuid,
 };

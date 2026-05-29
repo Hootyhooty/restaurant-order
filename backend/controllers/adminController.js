@@ -7,7 +7,12 @@ const Souvenir = require('../models/Souvenir');
 const Review = require('../models/Review');
 const Transaction = require('../models/Transaction');
 const Booking = require('../models/Booking');
+const BookingIntent = require('../models/BookingIntent');
+const AdminAuditLog = require('../models/AdminAuditLog');
 const { getLatencySnapshot } = require('../utils/apiLatencyStore');
+const { getOpsSnapshot } = require('../utils/opsMetricsStore');
+const { evaluateAlerts } = require('../utils/alertRules');
+const { warn: logWarn } = require('../utils/logger');
 const mealsDataPath = path.join(__dirname, '..', 'data', 'meals.js');
 const souvenirsDataPath = path.join(__dirname, '..', 'data', 'souvenirs.js');
 const { getMealsData } = require('../utils/mealsData');
@@ -563,6 +568,33 @@ const getAnalysis = async (req, res) => {
     }
     const refundSeries = [...refundSeriesMap.values()].sort((a, b) => a.date.localeCompare(b.date));
 
+    const apiLatency = getLatencySnapshot(safeRange);
+    const ops = getOpsSnapshot(safeRange);
+    const refundBacklogBookings = await Booking.countDocuments({ status: 'refund_pending' });
+    const refundBacklogIntents = await BookingIntent.countDocuments({ status: 'refund_pending' });
+    const refundBacklog = refundBacklogBookings + refundBacklogIntents;
+
+    const { alerts, thresholds } = evaluateAlerts({
+      bookings: ops.bookings,
+      webhooks: ops.webhooks,
+      refundBacklog,
+      apiLatency,
+    });
+
+    for (const alert of alerts) {
+      logWarn(
+        'alert_active',
+        {
+          alertId: alert.id,
+          severity: alert.severity,
+          message: alert.message,
+          value: alert.value,
+          threshold: alert.threshold,
+        },
+        req,
+      );
+    }
+
     return res.json({
       success: true,
       analysis: {
@@ -585,12 +617,66 @@ const getAnalysis = async (req, res) => {
           fail: refundFail,
           series: refundSeries,
         },
-        apiLatency: getLatencySnapshot(safeRange),
+        apiLatency,
+        ops: {
+          ...ops,
+          refundBacklog,
+          refundBacklogBookings,
+          refundBacklogIntents,
+        },
+        alerts,
+        alertThresholds: thresholds,
       },
     });
   } catch (error) {
     console.error('Get analysis error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load analysis' });
+  }
+};
+
+// GET /api/admin/audit-logs?page=1&limit=50&bookingId=&action=
+const getAuditLogs = async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const bookingId = String(req.query.bookingId || '').trim();
+    const action = String(req.query.action || '').trim();
+
+    const filter = {};
+    if (bookingId) filter.bookingId = bookingId;
+    if (action) filter.action = action;
+
+    const total = await AdminAuditLog.countDocuments(filter);
+    const items = await AdminAuditLog.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    return res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      items: items.map((row) => ({
+        id: row._id,
+        adminId: row.adminId,
+        adminUsername: row.adminUsername,
+        action: row.action,
+        resourceType: row.resourceType,
+        resourceId: row.resourceId,
+        bookingId: row.bookingId,
+        requestId: row.requestId,
+        previousStatus: row.previousStatus,
+        newStatus: row.newStatus,
+        metadata: row.metadata || {},
+        ip: row.ip,
+        createdAt: row.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Get audit logs error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load audit logs' });
   }
 };
 
@@ -810,4 +896,5 @@ module.exports = {
   deleteReview,
   getTransactions,
   getAnalysis,
+  getAuditLogs,
 };

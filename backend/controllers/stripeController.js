@@ -6,6 +6,8 @@ const Booking = require('../models/Booking');
 const BookingIntent = require('../models/BookingIntent');
 const Message = require('../models/Message');
 const Customer = require('../models/Customer');
+const { info, warn, error, setLogContext } = require('../utils/logger');
+const { recordBookingMetric, recordWebhookMetric } = require('../utils/opsMetricsStore');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
@@ -26,18 +28,28 @@ const sendAdminMessage = async ({ recipientId, subject, body }) => {
   });
 };
 
-const handleBookingCheckoutCompleted = async ({ event, session }) => {
+const handleBookingCheckoutCompleted = async ({ event, session, requestId }) => {
   const bookingIntentId = session?.metadata?.bookingIntentId;
   if (!bookingIntentId) return;
 
+  const logReq = {
+    requestId,
+    logContext: {
+      bookingIntentId: String(bookingIntentId),
+      sessionId: session?.id,
+      userId: session?.metadata?.userId,
+    },
+  };
+
   const intent = await BookingIntent.findById(bookingIntentId);
   if (!intent) {
-    console.warn('Webhook: booking intent not found', bookingIntentId);
+    warn('booking_webhook_intent_missing', { bookingIntentId, stripeEventId: event?.id }, logReq);
     return;
   }
 
   // Application-level idempotency (Stripe event dedupe is enforced separately)
   if (intent.status !== 'pending') {
+    info('booking_webhook_skipped', { bookingIntentId, intentStatus: intent.status }, logReq);
     return;
   }
 
@@ -65,6 +77,19 @@ const handleBookingCheckoutCompleted = async ({ event, session }) => {
     intent.stripeCheckoutSessionId = session.id;
     intent.stripePaymentIntentId = session.payment_intent || intent.stripePaymentIntentId;
     await intent.save();
+
+    setLogContext(logReq, { bookingId: booking._id.toString() });
+    recordBookingMetric({ outcome: 'success' });
+    info(
+      'booking_confirmed',
+      {
+        bookingId: booking._id.toString(),
+        bookingIntentId: String(bookingIntentId),
+        sessionId: session.id,
+        stripeEventId: event.id,
+      },
+      logReq,
+    );
 
     await sendAdminMessage({
       recipientId: intent.userId,
@@ -106,6 +131,18 @@ const handleBookingCheckoutCompleted = async ({ event, session }) => {
         await intent.save();
       }
 
+      recordBookingMetric({ outcome: 'conflict' });
+      warn(
+        'booking_payment_conflict',
+        {
+          bookingIntentId: String(bookingIntentId),
+          sessionId: session.id,
+          stripeEventId: event.id,
+          intentStatus: intent.status,
+        },
+        logReq,
+      );
+
       await sendAdminMessage({
         recipientId: intent.userId,
         subject: 'Reservation Failed (Refund)',
@@ -121,7 +158,11 @@ const handleBookingCheckoutCompleted = async ({ event, session }) => {
       return;
     }
 
-    console.error('Webhook: booking creation error:', err);
+    error(
+      'booking_webhook_processing_error',
+      { bookingIntentId: String(bookingIntentId), message: err.message || 'unknown' },
+      logReq,
+    );
     throw err;
   }
 };
@@ -246,6 +287,8 @@ const claimStripeWebhookEvent = async (event) => {
 // POST /api/stripe/webhook
 // Stripe requires the raw body to verify signature.
 const webhookHandler = async (req, res) => {
+  const startedAt = process.hrtime.bigint();
+  const requestId = req.requestId || req.get?.('x-request-id');
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!stripe || !webhookSecret) {
@@ -257,12 +300,14 @@ const webhookHandler = async (req, res) => {
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err.message);
+      recordWebhookMetric({ durationMs: 0, eventType: 'unknown', outcome: 'fail' });
+      error('webhook_signature_invalid', { message: err.message }, req);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     const claimed = await claimStripeWebhookEvent(event);
     if (!claimed) {
+      info('webhook_duplicate_skipped', { stripeEventId: event.id, eventType: event.type }, req);
       return res.json({ received: true });
     }
 
@@ -274,7 +319,19 @@ const webhookHandler = async (req, res) => {
 
         // Booking flow
         if (session?.metadata?.bookingIntentId) {
-          await handleBookingCheckoutCompleted({ event, session });
+          await handleBookingCheckoutCompleted({ event, session, requestId });
+          const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+          recordWebhookMetric({ durationMs, eventType: event.type, outcome: 'success' });
+          info(
+            'webhook_processed',
+            {
+              stripeEventId: event.id,
+              eventType: event.type,
+              sessionId: session.id,
+              duration_ms: Number(durationMs.toFixed(2)),
+            },
+            req,
+          );
           return res.json({ received: true });
         }
 
@@ -299,18 +356,37 @@ const webhookHandler = async (req, res) => {
         }
 
         if (!tx) {
-          console.warn('Webhook: transaction not found for session', session.id);
+          warn('webhook_transaction_missing', { sessionId: session.id, stripeEventId: event.id }, req);
         }
       }
 
+      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      recordWebhookMetric({ durationMs, eventType: event.type, outcome: 'success' });
+      info(
+        'webhook_processed',
+        {
+          stripeEventId: event.id,
+          eventType: event.type,
+          duration_ms: Number(durationMs.toFixed(2)),
+        },
+        req,
+      );
       return res.json({ received: true });
     } catch (processingErr) {
       await ProcessedStripeEvent.deleteOne({ eventId: event.id });
-      console.error('Webhook processing error:', processingErr);
+      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      recordWebhookMetric({ durationMs, eventType: event?.type || 'unknown', outcome: 'fail' });
+      error(
+        'webhook_processing_error',
+        { stripeEventId: event?.id, message: processingErr.message || 'unknown' },
+        req,
+      );
       return res.status(500).send('Webhook handler error');
     }
-  } catch (error) {
-    console.error('Webhook handler error:', error);
+  } catch (err) {
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+    recordWebhookMetric({ durationMs, eventType: 'unknown', outcome: 'fail' });
+    error('webhook_handler_error', { message: err.message || 'unknown' }, req);
     return res.status(500).send('Webhook handler error');
   }
 };

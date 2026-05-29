@@ -383,6 +383,38 @@ Day 6 - Load Test Baseline (k6)
 Definition of done:
 - [x] Baseline report exists — summary JSON + stdout (`http_req_duration` p95 via compactMetrics + failed rate); install k6, run scripts; outputs land in `k6/results/` (see `k6/results/README.txt`)
 
+==================================================
+Week 2 - Ops, Security, and Deployment Maturity
+==================================================
+
+Day 8 - Structured Logging
+- [x] `backend/utils/logger.js` — JSON logs with requestId, userId, bookingId, bookingIntentId, sessionId
+- [x] Wired into API middleware, booking checkout/cancel, Stripe webhooks, refund reconciliation job
+Definition of done:
+- [x] One booking flow is traceable by filtering logs on `requestId` / `bookingIntentId` / `sessionId`
+
+Day 9 - Monitoring + Alerts
+- [x] `backend/utils/opsMetricsStore.js` — booking attempts/success/fail/conflict + webhook duration
+- [x] `backend/utils/alertRules.js` — thresholds via `ALERT_*` env vars (see `backend/.env.example`)
+- [x] Admin Analysis tab — booking checkout, webhooks, refund backlog, active alerts
+Definition of done:
+- [x] Dashboard + alert rules active (`GET /api/admin/analysis`)
+
+29 May 2026
+
+Day 10 - Security Hardening
+- [x] Booking + webhook rate limiters; production Helmet (CSP/HSTS/referrer)
+- [x] Production CORS: only `FRONTEND_ORIGIN` (no localhost fallback)
+- [x] Validation on Stripe checkout, admin booking IDs, audit queries, pre-order items
+- [x] `next_update/security-checklist.md`
+
+Day 11 - Admin Audit Trail
+- [x] `AdminAuditLog` model + `utils/auditLog.js`
+- [x] Admin check-in / no-show / cancel + refund reconciliation events
+- [x] `GET /api/admin/audit-logs` + Admin → Audit tab
+
+29 May 2026 (Days 8–9)
+
 4 May 2026
 - K6 read guildeline how to test here the result 
 

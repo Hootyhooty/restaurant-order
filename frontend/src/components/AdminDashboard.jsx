@@ -24,6 +24,8 @@ const AdminDashboard = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [analysisRange, setAnalysisRange] = useState('day');
+  const [auditBookingFilter, setAuditBookingFilter] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('');
   const [reviewMenus, setReviewMenus] = useState([]);
   const [selectedMealId, setSelectedMealId] = useState('');
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
@@ -161,6 +163,8 @@ const AdminDashboard = () => {
         const data = await fetchJSON(`/api/admin/analysis?range=${encodeURIComponent(analysisRange)}`);
         setSectionData(data.analysis || null);
         setTotal(0);
+      } else if (section === 'audit') {
+        await loadAuditLogs({ nextPage: 1, bookingId: '', action: '' });
       } else if (section === 'souvenir') {
         const data = await fetchJSON('/api/admin/souvenir-items?limit=100');
         setSectionData(data.items || []);
@@ -214,6 +218,31 @@ const AdminDashboard = () => {
       setLoading(false);
     }
     scrollToTop();
+  };
+
+  const loadAuditLogs = async ({
+    bookingId = auditBookingFilter,
+    action = auditActionFilter,
+    nextPage = page,
+  } = {}) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        limit: '50',
+      });
+      if (bookingId) params.set('bookingId', bookingId);
+      if (action) params.set('action', action);
+      const data = await fetchJSON(`/api/admin/audit-logs?${params.toString()}`);
+      setSectionData(data.items || []);
+      setPage(data.page || nextPage);
+      setTotal(data.total || 0);
+    } catch (error) {
+      console.error('Failed to load audit logs:', error);
+      alert(`Failed to load audit logs: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadBookings = async ({ q = query, nextPage = page } = {}) => {
@@ -1050,6 +1079,95 @@ const AdminDashboard = () => {
     }
   };
 
+  const renderAuditSection = () => {
+    const items = sectionData || [];
+    return (
+      <div className="audit-layout">
+        <div className="row g-2 mb-3">
+          <div className="col-md-5">
+            <input
+              className="form-control"
+              placeholder="Filter by booking ID (UUID)"
+              value={auditBookingFilter}
+              onChange={(e) => setAuditBookingFilter(e.target.value)}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              className="form-control"
+              placeholder="Filter by action (e.g. booking.no_show)"
+              value={auditActionFilter}
+              onChange={(e) => setAuditActionFilter(e.target.value)}
+            />
+          </div>
+          <div className="col-md-3">
+            <button
+              className="btn btn-primary w-100"
+              onClick={() => loadAuditLogs({ nextPage: 1 })}
+            >
+              Search
+            </button>
+          </div>
+        </div>
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover admin-table">
+            <thead className="table-dark">
+              <tr>
+                <th>When</th>
+                <th>Admin</th>
+                <th>Action</th>
+                <th>Booking</th>
+                <th>Status change</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center">No audit entries found.</td>
+                </tr>
+              ) : (
+                items.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '—'}</td>
+                    <td>{row.adminUsername || row.adminId}</td>
+                    <td><code>{row.action}</code></td>
+                    <td style={{ fontSize: '12px' }}>{row.bookingId || row.resourceId || '—'}</td>
+                    <td>
+                      {row.previousStatus || '—'} → {row.newStatus || '—'}
+                    </td>
+                    <td style={{ fontSize: '12px', textAlign: 'left' }}>
+                      {row.metadata && Object.keys(row.metadata).length > 0
+                        ? JSON.stringify(row.metadata)
+                        : '—'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="d-flex justify-content-between align-items-center mt-2">
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            disabled={page <= 1}
+            onClick={() => loadAuditLogs({ nextPage: page - 1 })}
+          >
+            Previous
+          </button>
+          <span className="text-muted small">Page {page} · {total} entries</span>
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            disabled={page * 50 >= total}
+            onClick={() => loadAuditLogs({ nextPage: page + 1 })}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderBookingSection = () => {
     return (
       <div>
@@ -1189,6 +1307,10 @@ const AdminDashboard = () => {
     const transactions = analysis.transactions || {};
     const refunds = analysis.refunds || {};
     const latency = analysis.apiLatency || {};
+    const ops = analysis.ops || {};
+    const bookings = ops.bookings || {};
+    const webhooks = ops.webhooks || {};
+    const alerts = Array.isArray(analysis.alerts) ? analysis.alerts : [];
 
     const paymentVals = (payments.series || []).map((x) => Number(x.amount || 0));
     const txVals = (transactions.series || []).map((x) => Number(x.total || 0));
@@ -1264,6 +1386,60 @@ const AdminDashboard = () => {
               <div>p95: {Number(latency.p95 || 0).toLocaleString()}</div>
             </div>
           </div>
+
+          <div className="analysis-card">
+            <h6>Booking Checkout</h6>
+            {renderSparkline(
+              [bookings.attempts, bookings.success, bookings.fail, bookings.conflict].filter((n) =>
+                Number.isFinite(n),
+              ),
+              '#20c997',
+            )}
+            <div className="analysis-meta">
+              <div>Attempts: {bookings.attempts || 0}</div>
+              <div>Success: {bookings.success || 0} ({bookings.successRatePct || 0}%)</div>
+              <div>Fail: {bookings.fail || 0} ({bookings.failRatePct || 0}%)</div>
+              <div>Conflict: {bookings.conflict || 0} ({bookings.conflictRatePct || 0}%)</div>
+            </div>
+          </div>
+
+          <div className="analysis-card">
+            <h6>Webhooks</h6>
+            {renderSparkline([webhooks.p50, webhooks.p95, webhooks.p99].filter((n) => Number.isFinite(n)), '#dc3545')}
+            <div className="analysis-meta">
+              <div>Processed: {webhooks.count || 0}</div>
+              <div>Failures: {webhooks.fail || 0}</div>
+              <div>p95 duration: {Number(webhooks.p95 || 0).toLocaleString()} ms</div>
+            </div>
+          </div>
+
+          <div className="analysis-card">
+            <h6>Refund Backlog</h6>
+            {renderSparkline([ops.refundBacklog], '#ffc107')}
+            <div className="analysis-meta">
+              <div>Total refund_pending: {ops.refundBacklog || 0}</div>
+              <div>Bookings: {ops.refundBacklogBookings || 0}</div>
+              <div>Intents: {ops.refundBacklogIntents || 0}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="analysis-alerts">
+          <h6>Active Alerts</h6>
+          {alerts.length === 0 ? (
+            <div className="analysis-alert analysis-alert-ok">All monitored thresholds are within range.</div>
+          ) : (
+            alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`analysis-alert ${
+                  alert.severity === 'critical' ? 'analysis-alert-critical' : 'analysis-alert-warning'
+                }`}
+              >
+                <strong>{alert.severity === 'critical' ? 'Critical' : 'Warning'}:</strong> {alert.message}
+              </div>
+            ))
+          )}
         </div>
 
         <div className="analysis-endpoints">
@@ -1382,6 +1558,13 @@ const AdminDashboard = () => {
               >
                 Analysis
               </button>
+              <span className="admin-topbar-separator">|</span>
+              <button
+                className={`admin-topbar-link ${activeSection === 'audit' ? 'active' : ''}`}
+                onClick={() => loadSection('audit')}
+              >
+                Audit
+              </button>
               {stats && (
                 <>
                   <span className="admin-topbar-separator">|</span>
@@ -1424,6 +1607,8 @@ const AdminDashboard = () => {
                   ? 'Booking'
                   : activeSection === 'analysis'
                   ? 'Analysis'
+                  : activeSection === 'audit'
+                  ? 'Audit Trail'
                   : 'Transactions'}
               </h4>
               {activeSection === 'users' && (
@@ -1469,6 +1654,8 @@ const AdminDashboard = () => {
                 renderBookingSection()
               ) : activeSection === 'analysis' ? (
                 renderAnalysisSection()
+              ) : activeSection === 'audit' ? (
+                renderAuditSection()
               ) : (
                 renderTransactionsSection()
               )}

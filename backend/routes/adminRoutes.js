@@ -22,6 +22,7 @@ const {
   deleteReview,
   getTransactions,
   getAnalysis,
+  getAuditLogs,
 } = require('../controllers/adminController');
 
 const {
@@ -30,6 +31,11 @@ const {
   noShowBooking,
   cancelBooking,
 } = require('../controllers/bookingAdminController');
+const {
+  validateAdminBookingsQuery,
+  validateAuditLogsQuery,
+  validateMongoIdParam,
+} = require('../utils/validation');
 
 // Use in-memory storage for images; we upload to Cloudinary in controllers
 const uploadMenuImage = multer({
@@ -65,11 +71,27 @@ router.delete('/reviews/:reviewId', rolesRequired('ADMIN'), deleteReview);
 // Transactions
 router.get('/transactions', rolesRequired('ADMIN'), getTransactions);
 router.get('/analysis', rolesRequired('ADMIN'), getAnalysis);
+router.get('/audit-logs', rolesRequired('ADMIN'), validateAuditLogsQuery, getAuditLogs);
 
 // Bookings
-router.get('/bookings', rolesRequired('ADMIN'), getBookings);
-router.post('/bookings/:bookingId/check-in', rolesRequired('ADMIN'), checkInBooking);
-router.post('/bookings/:bookingId/no-show', rolesRequired('ADMIN'), noShowBooking);
-router.post('/bookings/:bookingId/cancel', rolesRequired('ADMIN'), cancelBooking);
+router.get('/bookings', rolesRequired('ADMIN'), validateAdminBookingsQuery, getBookings);
+router.post(
+  '/bookings/:bookingId/check-in',
+  rolesRequired('ADMIN'),
+  validateMongoIdParam('bookingId'),
+  checkInBooking,
+);
+router.post(
+  '/bookings/:bookingId/no-show',
+  rolesRequired('ADMIN'),
+  validateMongoIdParam('bookingId'),
+  noShowBooking,
+);
+router.post(
+  '/bookings/:bookingId/cancel',
+  rolesRequired('ADMIN'),
+  validateMongoIdParam('bookingId'),
+  cancelBooking,
+);
 
 module.exports = router;

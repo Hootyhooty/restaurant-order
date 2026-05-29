@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Message = require('../models/Message');
 const Customer = require('../models/Customer');
 const { refundPaymentIntentAmount } = require('../utils/stripeRefundPayment');
+const { recordAdminAudit } = require('../utils/auditLog');
 
 const getAdminUserId = async () => {
   const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
@@ -92,6 +93,8 @@ const checkInBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only confirmed bookings can be checked in.' });
     }
 
+    const previousStatus = b.status;
+
     try {
       await refundPaymentIntentAmount({
         paymentIntentId: b.stripePaymentIntentId,
@@ -101,6 +104,17 @@ const checkInBooking = async (req, res) => {
       b.refundReason = 'Checked in: refund reservation cost';
       b.status = 'checked_in';
       await b.save();
+
+      await recordAdminAudit(req, {
+        action: 'booking.check_in',
+        bookingId: b._id.toString(),
+        previousStatus,
+        newStatus: b.status,
+        metadata: {
+          refundAmount: b.reservationCost,
+          refundStatus: 'processed',
+        },
+      });
 
       await sendAdminMessage({
         recipientId: b.userId,
@@ -116,6 +130,19 @@ const checkInBooking = async (req, res) => {
       b.status = 'refund_pending';
       b.refundReason = `Check-in refund failed: ${refundErr.message || 'unknown error'}`;
       await b.save();
+
+      await recordAdminAudit(req, {
+        action: 'booking.check_in_refund_pending',
+        bookingId: b._id.toString(),
+        previousStatus,
+        newStatus: b.status,
+        metadata: {
+          refundAmount: b.reservationCost,
+          refundStatus: 'pending',
+          error: refundErr.message || 'unknown',
+        },
+      });
+
       await sendAdminMessage({
         recipientId: b.userId,
         subject: 'Reservation Check-in (Refund Pending)',
@@ -143,8 +170,16 @@ const noShowBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only confirmed bookings can be marked as no-show.' });
     }
 
+    const previousStatus = b.status;
     b.status = 'no_show';
     await b.save();
+
+    await recordAdminAudit(req, {
+      action: 'booking.no_show',
+      bookingId: b._id.toString(),
+      previousStatus,
+      newStatus: b.status,
+    });
 
     await sendAdminMessage({
       recipientId: b.userId,
@@ -175,7 +210,9 @@ const cancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only confirmed bookings can be cancelled.' });
     }
 
+    const previousStatus = b.status;
     const refundAmount = Number(b.preOrderTotal || 0);
+
     if (refundAmount > 0) {
       try {
         await refundPaymentIntentAmount({
@@ -195,6 +232,19 @@ const cancelBooking = async (req, res) => {
     }
 
     await b.save();
+
+    const auditAction =
+      b.status === 'refund_pending' ? 'booking.cancel_refund_pending' : 'booking.cancel';
+    await recordAdminAudit(req, {
+      action: auditAction,
+      bookingId: b._id.toString(),
+      previousStatus,
+      newStatus: b.status,
+      metadata: {
+        refundAmount,
+        refundStatus: b.status === 'refund_pending' ? 'pending' : refundAmount > 0 ? 'processed' : 'none',
+      },
+    });
 
     await sendAdminMessage({
       recipientId: b.userId,
@@ -222,4 +272,3 @@ module.exports = {
   noShowBooking,
   cancelBooking,
 };
-

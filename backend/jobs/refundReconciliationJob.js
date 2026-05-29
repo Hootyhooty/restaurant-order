@@ -3,6 +3,8 @@ const BookingIntent = require('../models/BookingIntent');
 const Customer = require('../models/Customer');
 const Message = require('../models/Message');
 const { refundPaymentIntentAmount } = require('../utils/stripeRefundPayment');
+const { info, warn } = require('../utils/logger');
+const { recordAdminAudit } = require('../utils/auditLog');
 
 const sendAdminMessage = async ({ recipientId, subject, body }) => {
   const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
@@ -50,6 +52,15 @@ async function runRefundReconciliation() {
             `Refund: reservation cost ฿${b.reservationCost}`,
         });
         summary.bookings.succeeded.push({ id: b._id, kind: 'check_in_refund' });
+        await recordAdminAudit(null, {
+          action: 'refund.reconciled',
+          bookingId: b._id.toString(),
+          previousStatus: 'refund_pending',
+          newStatus: b.status,
+          metadata: { kind: 'check_in_refund', refundAmount: b.reservationCost },
+          actorId: 'system',
+          actorUsername: 'system',
+        });
       } else if (reason.startsWith('Admin cancel refund failed')) {
         const refundAmount = Number(b.preOrderTotal || 0);
         await refundPaymentIntentAmount({
@@ -71,6 +82,15 @@ async function runRefundReconciliation() {
             `Refund: preorder ฿${refundAmount}`,
         });
         summary.bookings.succeeded.push({ id: b._id, kind: 'admin_cancel_preorder' });
+        await recordAdminAudit(null, {
+          action: 'refund.reconciled',
+          bookingId: b._id.toString(),
+          previousStatus: 'refund_pending',
+          newStatus: b.status,
+          metadata: { kind: 'admin_cancel_preorder', refundAmount },
+          actorId: 'system',
+          actorUsername: 'system',
+        });
       } else {
         summary.bookings.skipped.push({
           id: b._id,
@@ -108,12 +128,37 @@ async function runRefundReconciliation() {
           `Refund total: ฿${intent.amountTotal}`,
       });
       summary.intents.succeeded.push({ id: intent._id });
+      await recordAdminAudit(null, {
+        action: 'refund.reconciled',
+        resourceType: 'booking_intent',
+        resourceId: intent._id.toString(),
+        bookingId: intent._id.toString(),
+        previousStatus: 'refund_pending',
+        newStatus: intent.status,
+        metadata: { kind: 'intent_conflict_refund', refundAmount: intent.amountTotal },
+        actorId: 'system',
+        actorUsername: 'system',
+      });
     } catch (err) {
       summary.intents.failed.push({
         id: intent._id,
         message: err.message || String(err),
       });
     }
+  }
+
+  info('refund_reconciliation_complete', {
+    bookingsSucceeded: summary.bookings.succeeded.length,
+    bookingsFailed: summary.bookings.failed.length,
+    intentsSucceeded: summary.intents.succeeded.length,
+    intentsFailed: summary.intents.failed.length,
+  });
+
+  if (summary.bookings.failed.length || summary.intents.failed.length) {
+    warn('refund_reconciliation_partial_failure', {
+      bookingsFailed: summary.bookings.failed.length,
+      intentsFailed: summary.intents.failed.length,
+    });
   }
 
   return summary;

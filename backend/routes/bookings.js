@@ -8,23 +8,31 @@ const {
   getMyBookings,
   cancelMyBooking,
 } = require('../controllers/bookingPaymentController');
-const { publicLimiter, writeLimiter } = require('../utils/security');
+const { publicLimiter, bookingLimiter } = require('../utils/security');
 const {
   validateBookingAvailabilityQuery,
   validateBookingCheckoutBody,
   validateBookingCancelBody,
+  validateMongoIdParam,
 } = require('../utils/validation');
 
 router.get('/availability', publicLimiter, validateBookingAvailabilityQuery, getAvailability);
 router.post(
   '/create-checkout-session',
-  writeLimiter,
+  bookingLimiter,
   authMiddleware,
   validateBookingCheckoutBody,
   createBookingCheckoutSession,
 );
 router.get('/my', authMiddleware, getMyBookings);
-router.post('/:bookingId/cancel', writeLimiter, authMiddleware, validateBookingCancelBody, cancelMyBooking);
+router.post(
+  '/:bookingId/cancel',
+  bookingLimiter,
+  authMiddleware,
+  validateMongoIdParam('bookingId'),
+  validateBookingCancelBody,
+  cancelMyBooking,
+);
 
 module.exports = router;
 

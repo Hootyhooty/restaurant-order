@@ -4,6 +4,7 @@ const fs = require('fs');
 const express = require('express');
 const { randomUUID } = require('crypto');
 const { recordApiLatency } = require('./utils/apiLatencyStore');
+const { info, warn } = require('./utils/logger');
 
 [path.join(__dirname, 'public', 'food_img'), path.join(__dirname, 'public', 'display')].forEach((dir) => {
   try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
@@ -25,6 +26,7 @@ const {
   helmetMiddleware,
   authLimiter,
   publicLimiter,
+  webhookLimiter,
 } = require('./utils/security');
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -69,17 +71,6 @@ app.use((req, res, next) => {
     const endedAt = process.hrtime.bigint();
     const durationMs = Number(endedAt - startedAt) / 1_000_000;
 
-    const logEntry = {
-      level: 'info',
-      type: 'api_request',
-      requestId,
-      method: req.method,
-      path: req.originalUrl,
-      status: res.statusCode,
-      duration_ms: Number(durationMs.toFixed(2)),
-      timestamp: new Date().toISOString(),
-    };
-
     recordApiLatency({
       method: req.method,
       path: req.originalUrl,
@@ -87,20 +78,27 @@ app.use((req, res, next) => {
       durationMs,
     });
 
-    console.log(JSON.stringify(logEntry));
+    info(
+      'api_request',
+      {
+        method: req.method,
+        path: req.originalUrl,
+        status: res.statusCode,
+        duration_ms: Number(durationMs.toFixed(2)),
+      },
+      req,
+    );
 
     if (res.statusCode === 401 || res.statusCode === 403 || res.statusCode === 429 || req.validationError) {
-      console.warn(
-        JSON.stringify({
-          level: 'warn',
-          type: 'security_event',
-          requestId,
+      warn(
+        'security_event',
+        {
           method: req.method,
           path: req.originalUrl,
           status: res.statusCode,
           validationError: req.validationError || null,
-          timestamp: new Date().toISOString(),
-        }),
+        },
+        req,
       );
     }
   });
@@ -120,7 +118,7 @@ const extraOrigins = (process.env.FRONTEND_ORIGIN || '')
   .map((o) => o.trim())
   .filter(Boolean);
 
-const allowedOrigins = [...localOrigins, ...extraOrigins];
+const allowedOrigins = isProduction ? extraOrigins : [...localOrigins, ...extraOrigins];
 
 // CORS configuration:
 // - production: only allow local+explicit FRONTEND_ORIGIN values
@@ -149,15 +147,17 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 204
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  exposedHeaders: ['X-Request-Id'],
+  maxAge: isProduction ? 600 : 0,
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Stripe webhook must be registered before JSON body parsing
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), webhookHandler);
+app.post('/api/stripe/webhook', webhookLimiter, express.raw({ type: 'application/json' }), webhookHandler);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

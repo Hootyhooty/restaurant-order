@@ -170,6 +170,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = user;
+    req.logContext = { ...(req.logContext || {}), userId: user._id.toString() };
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

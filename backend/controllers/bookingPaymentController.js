@@ -12,6 +12,8 @@ const {
   getUserCancellationCutoff,
 } = require('../utils/bookingRules');
 const { getStripe } = require('../utils/stripeClient');
+const { info, warn, error, setLogContext } = require('../utils/logger');
+const { recordBookingMetric } = require('../utils/opsMetricsStore');
 
 const isISODate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
 
@@ -33,13 +35,16 @@ const getAdminUserId = async () => {
 // POST /api/bookings/create-checkout-session
 // Body: { date, timeSlot, guestCount, tableId, redeemCode?, preOrderItems?: [{id, quantity}] }
 const createBookingCheckoutSession = async (req, res) => {
+  recordBookingMetric({ outcome: 'attempt' });
   try {
     const stripe = getStripe();
     if (!stripe) {
+      recordBookingMetric({ outcome: 'fail', reason: 'stripe_not_configured' });
       return res.status(500).json({ success: false, message: 'Stripe is not configured (missing STRIPE_SECRET_KEY).' });
     }
 
     const user = req.user;
+    setLogContext(req, { userId: user._id.toString() });
     const date = String(req.body?.date || '').trim();
     const timeSlot = String(req.body?.timeSlot || '').trim();
     const guestCount = Number(req.body?.guestCount);
@@ -62,6 +67,8 @@ const createBookingCheckoutSession = async (req, res) => {
       status: { $in: ['confirmed', 'checked_in', 'no_show'] },
     }).select('_id').lean();
     if (existingForUser) {
+      recordBookingMetric({ outcome: 'fail', reason: 'user_slot_taken' });
+      warn('booking_checkout_rejected', { reason: 'user_slot_taken', status: 409 }, req);
       return res.status(409).json({ success: false, message: 'You already have a reservation for this date/time.' });
     }
 
@@ -73,6 +80,8 @@ const createBookingCheckoutSession = async (req, res) => {
       status: { $in: ['confirmed', 'checked_in', 'no_show'] },
     }).select('_id').lean();
     if (existingForTable) {
+      recordBookingMetric({ outcome: 'fail', reason: 'table_taken' });
+      warn('booking_checkout_rejected', { reason: 'table_taken', status: 409 }, req);
       return res.status(409).json({ success: false, message: 'This table is already booked. Please pick another table.' });
     }
 
@@ -167,10 +176,28 @@ const createBookingCheckoutSession = async (req, res) => {
     intent.stripeCheckoutSessionId = session.id;
     await intent.save();
 
+    setLogContext(req, {
+      bookingIntentId: intent._id.toString(),
+      sessionId: session.id,
+    });
+    recordBookingMetric({ outcome: 'success' });
+    info(
+      'booking_checkout_session_created',
+      {
+        bookingIntentId: intent._id.toString(),
+        sessionId: session.id,
+        tableId,
+        date,
+        timeSlot,
+      },
+      req,
+    );
+
     return res.json({ success: true, url: session.url, sessionId: session.id, bookingIntentId: intent._id });
-  } catch (error) {
-    console.error('Create booking checkout session error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Failed to create booking checkout session' });
+  } catch (err) {
+    recordBookingMetric({ outcome: 'fail', reason: 'server_error' });
+    error('booking_checkout_session_error', { message: err.message || 'unknown' }, req);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to create booking checkout session' });
   }
 };
 
@@ -226,6 +253,9 @@ const cancelMyBooking = async (req, res) => {
 
     b.status = 'cancelled';
     await b.save();
+
+    setLogContext(req, { bookingId: b._id.toString(), userId: user._id.toString() });
+    info('booking_cancelled_by_user', { bookingId: b._id.toString() }, req);
 
     // Notify user via admin message (no refund)
     const adminId = await getAdminUserId();
