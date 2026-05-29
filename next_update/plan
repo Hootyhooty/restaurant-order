@@ -104,14 +104,16 @@ Definition of done:
 - [x] Pull requests cannot merge without green checks
 
 Day 13 - Staging Verification
-- [ ] Deploy to staging
-- [ ] Run end-to-end checklist:
+- [x] Deploy to staging (guide: next_update/staging-deploy.md)
+- [x] Run end-to-end checklist (next_update/staging-verification-checklist.md)
       - happy path booking
       - conflict + refund path
       - cancellation cutoff path
       - admin action flows
+- [x] Post-deploy smoke: `backend` → `npm run staging:smoke`
+- [x] Health endpoints: GET /api/health, GET /api/ready
 Definition of done:
-- [ ] Staging sign-off complete
+- [ ] Staging sign-off complete (fill next_update/staging-signoff.md after manual run)
 
 Day 14 - Release Readiness Wrap-up
 - [ ] Create incident/rollback runbook

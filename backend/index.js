@@ -168,6 +168,34 @@ const { syncSouvenirsDbToFile } = require('./utils/syncSouvenirs');
 
 app.use('/food_img', express.static(path.join(__dirname, 'public', 'food_img')));
 app.use('/display', express.static(path.join(__dirname, 'public', 'display')));
+
+// Liveness / readiness (staging & production deploy checks)
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'ok',
+    service: 'restaurant-backend',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/api/ready', (req, res) => {
+  const dbReady = mongoose.connection.readyState === 1;
+  if (!dbReady) {
+    return res.status(503).json({
+      success: false,
+      status: 'not_ready',
+      db: mongoose.connection.readyState,
+    });
+  }
+  return res.json({
+    success: true,
+    status: 'ready',
+    db: 'restaurant_db',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
