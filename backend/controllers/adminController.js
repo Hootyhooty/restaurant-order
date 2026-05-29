@@ -127,7 +127,7 @@ const appendMealToFile = (meal) => {
   const entry = `  },\n  {\n    id: ${newId},\n    name: '${escape(meal.name)}',\n    description: '${escape(meal.description)}',\n    price: ${meal.price},\n    image: '${escape(meal.image)}',\n    category: '${meal.category}',\n  },\n];`;
   let content = fs.readFileSync(mealsDataPath, 'utf8');
   // Match "  },\n];" - don't use $ as there's more content (function getMealBySlug...) after
-  content = content.replace(/  \},\s*\r?\n\];/, entry);
+  content = content.replace(/ {2}\},\s*\r?\n\];/, entry);
   fs.writeFileSync(mealsDataPath, content);
   return newId;
 };
@@ -700,7 +700,7 @@ const appendSouvenirToFile = (souvenir) => {
     newContent = content.slice(0, bracketOpen + 1) + '\n' + newBlock + content.slice(bracketClose);
   } else {
     const newBlock = `  },\n  {\n    id: ${newId},\n    name: '${escape(souvenir.name)}',\n    description: '${escape(souvenir.description)}',\n    price: ${souvenir.price},\n    image: '${escape(souvenir.image)}',\n    category: '${escape(souvenir.category)}',\n  },\n`;
-    content = content.replace(/  \},\s*\r?\n\];/, newBlock + '];');
+    content = content.replace(/ {2}\},\s*\r?\n\];/, newBlock + '];');
     newContent = content;
   }
   fs.writeFileSync(absPath, newContent, 'utf8');

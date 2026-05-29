@@ -413,6 +413,11 @@ Day 11 - Admin Audit Trail
 - [x] Admin check-in / no-show / cancel + refund reconciliation events
 - [x] `GET /api/admin/audit-logs` + Admin → Audit tab
 
+Day 12 - CI/CD Quality Gates
+- [x] GitHub Actions `.github/workflows/ci.yml` — frontend lint+build, backend lint+tests
+- [x] ESLint on root (`frontend/src`) and `backend/`
+- [x] Branch protection setup guide: `.github/BRANCH_PROTECTION.md`
+
 29 May 2026 (Days 8–9)
 
 4 May 2026

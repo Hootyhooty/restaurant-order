@@ -6,6 +6,7 @@
         "start": "node index.js",
         "dev": "nodemon index.js",
         "test": "node --test --test-concurrency=1",
+        "lint": "eslint . --quiet",
         "refund:reconcile": "node scripts/runRefundReconciliation.js"
     },
     "dependencies": {
@@ -23,6 +24,9 @@
         "uuid": "^10.0.0"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.4.0",
+        "globals": "^17.6.0",
         "mongodb-memory-server": "^10.1.4",
         "nodemon": "^3.0.1",
         "supertest": "^7.1.0"

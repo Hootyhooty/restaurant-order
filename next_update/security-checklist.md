@@ -62,4 +62,4 @@ Use this before production deploy. All items below are implemented in code unles
 - [ ] Account lockout after repeated failed logins
 - [ ] Email verification / password reset hardening
 - [ ] WAF or edge rate limiting in front of API (Cloudflare, etc.)
-- [ ] Automated dependency vulnerability scanning in CI
+- [ ] Automated dependency vulnerability scanning in CI (optional: add `npm audit --audit-level=high` to workflow later)

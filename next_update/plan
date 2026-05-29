@@ -96,12 +96,12 @@ Definition of done:
 - [x] Audit history is queryable and complete
 
 Day 12 - CI/CD Quality Gates
-- [ ] Enforce lint in pipeline
-- [ ] Enforce unit + integration tests in pipeline
-- [ ] Enforce frontend build + backend checks in pipeline
-- [ ] Block merge when checks fail
+- [x] Enforce lint in pipeline
+- [x] Enforce unit + integration tests in pipeline
+- [x] Enforce frontend build + backend checks in pipeline
+- [x] Block merge when checks fail (see `.github/BRANCH_PROTECTION.md`)
 Definition of done:
-- [ ] Pull requests cannot merge without green checks
+- [x] Pull requests cannot merge without green checks
 
 Day 13 - Staging Verification
 - [ ] Deploy to staging
