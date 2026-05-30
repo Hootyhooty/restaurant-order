@@ -423,6 +423,12 @@ Day 13 - Staging Verification
 - [x] `npm run staging:smoke` — remote smoke checks (`backend/scripts/stagingSmoke.js`)
 - [x] `next_update/staging-deploy.md`, `staging-verification-checklist.md`, `staging-signoff.md`
 
+Day 14 - Release Readiness Wrap-up
+- [x] `next_update/incident-rollback-runbook.md` — triage, rollback, common Render/Stripe/Mongo failures
+- [x] `next_update/refund-reconciliation-runbook.md` — `npm run refund:reconcile`, backlog alerts
+- [x] `next_update/architecture-risks.md` — system map, risks, production checklist
+- [x] `next_update/release-readiness.md` — go/no-go package linking all Day 13–14 docs
+
 29 May 2026 (Days 8–12)
 
 4 May 2026

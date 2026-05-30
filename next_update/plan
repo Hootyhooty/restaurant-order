@@ -116,11 +116,12 @@ Definition of done:
 - [ ] Staging sign-off complete (fill next_update/staging-signoff.md after manual run)
 
 Day 14 - Release Readiness Wrap-up
-- [ ] Create incident/rollback runbook
-- [ ] Create refund reconciliation runbook
-- [ ] Document architecture and known risks + mitigations
+- [x] Create incident/rollback runbook (next_update/incident-rollback-runbook.md)
+- [x] Create refund reconciliation runbook (next_update/refund-reconciliation-runbook.md)
+- [x] Document architecture and known risks + mitigations (next_update/architecture-risks.md)
+- [x] Release candidate package index (next_update/release-readiness.md)
 Definition of done:
-- [ ] Release candidate package is ready
+- [x] Release candidate package is ready (fill go/no-go in release-readiness.md before prod)
 
 ==================================================
 Definition of Done (End of 2 Weeks)

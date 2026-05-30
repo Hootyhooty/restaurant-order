@@ -32,7 +32,7 @@ Copy this file per release (e.g. `staging-signoff-2026-05-29.md`) or fill in pla
 
 ## Decision
 
-- [ ] **Signed off** — staging verified; proceed to Day 14 / production prep  
+- [ ] **Signed off** — staging verified; proceed to production (Day 14 runbooks ready)  
 - [ ] **Not signed off** — fix items above before release  
 
 **Signed:** __________________ **Date:** __________________
