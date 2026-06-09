@@ -49,7 +49,27 @@ export const AuthProvider = ({ children }) => {
       return { success: true, message: response.data.message };
     } catch (error) {
       console.error('Registration error:', error.response?.data?.message || error.message);
-      return { success: false, message: error.response?.data?.message || 'Registration failed' };
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registration failed',
+        emailSent: error.response?.data?.emailSent,
+      };
+    }
+  };
+
+  const resendVerification = async (email) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE}/api/auth/resend-verification`,
+        { email },
+        { headers: { 'Content-Type': 'application/json' } },
+      );
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Could not resend verification email',
+      };
     }
   };
 
@@ -73,7 +93,13 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: response.data.user };
     } catch (error) {
       console.error('Login error:', error.response?.data?.message || error.message);
-      return { success: false, message: error.response?.data?.message || 'Login failed' };
+      const data = error.response?.data || {};
+      return {
+        success: false,
+        message: data.message || 'Login failed',
+        code: data.code,
+        email: data.email,
+      };
     }
   };
 
@@ -89,7 +115,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, register, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, register, login, logout, updateUser, resendVerification }}>
       {children}
     </AuthContext.Provider>
   );

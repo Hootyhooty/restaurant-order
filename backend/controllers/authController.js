@@ -4,6 +4,31 @@
 const Customer = require('../models/Customer');
 const jwt = require('jsonwebtoken');
 const { decodeToken } = require('../utils/jwtUtils');
+const {
+  generateVerificationToken,
+  hashVerificationToken,
+  getVerificationExpiryDate,
+  buildVerificationUrl,
+} = require('../utils/emailVerification');
+const { sendVerificationEmailSafe } = require('../utils/emailService');
+const { warn } = require('../utils/logger');
+
+const RESEND_GENERIC_MESSAGE =
+  'If an account with that email exists and is not yet verified, a verification email has been sent.';
+
+async function issueVerificationEmail(customer) {
+  const rawToken = generateVerificationToken();
+  customer.email_verification_token = hashVerificationToken(rawToken);
+  customer.email_verification_expires = getVerificationExpiryDate();
+  await customer.save();
+
+  const verifyUrl = buildVerificationUrl(rawToken);
+  await sendVerificationEmailSafe({
+    to: customer.email,
+    username: customer.username,
+    verifyUrl,
+  });
+}
 
 // POST /api/auth/register
 const register = async (req, res) => {
@@ -32,9 +57,89 @@ const register = async (req, res) => {
     await customer.save();
     console.log('User saved to database:', customer._id);
 
-    res.status(201).json({ message: 'User registered successfully' });
+    try {
+      await issueVerificationEmail(customer);
+    } catch (emailError) {
+      warn('register_verification_email_failed', {
+        userId: customer._id,
+        error: emailError.message,
+      });
+      return res.status(201).json({
+        message:
+          'Account created, but we could not send the verification email. Use resend verification on the login page.',
+        emailSent: false,
+      });
+    }
+
+    res.status(201).json({
+      message: 'Account created. Please check your email to verify your address before logging in.',
+      emailSent: true,
+    });
   } catch (error) {
     console.error('Registration error:', error.message);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// POST /api/auth/verify-email
+const verifyEmail = async (req, res) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token is required' });
+    }
+
+    const hashed = hashVerificationToken(token);
+    const customer = await Customer.findOne({
+      email_verification_token: hashed,
+      email_verification_expires: { $gt: new Date() },
+    });
+
+    if (!customer) {
+      return res.status(400).json({
+        message: 'Invalid or expired verification link. Request a new verification email.',
+      });
+    }
+
+    customer.email_verified = true;
+    customer.email_verification_token = undefined;
+    customer.email_verification_expires = undefined;
+    await customer.save();
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully. You can now log in.',
+    });
+  } catch (error) {
+    console.error('Verify email error:', error.message);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// POST /api/auth/resend-verification
+const resendVerification = async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const customer = await Customer.findOne({ email });
+
+    if (customer && !customer.email_verified) {
+      try {
+        await issueVerificationEmail(customer);
+      } catch (emailError) {
+        warn('resend_verification_email_failed', {
+          userId: customer._id,
+          error: emailError.message,
+        });
+      }
+    }
+
+    res.json({ message: RESEND_GENERIC_MESSAGE });
+  } catch (error) {
+    console.error('Resend verification error:', error.message);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -73,6 +178,18 @@ const login = async (req, res) => {
       return res
         .status(401)
         .json({ message: 'Invalid username or password' });
+    }
+
+    if (
+      !customer.email_verified &&
+      customer.email_verification_token &&
+      customer.role !== 'ADMIN'
+    ) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in.',
+        code: 'EMAIL_NOT_VERIFIED',
+        email: customer.email,
+      });
     }
 
     const token = jwt.sign({ id: customer._id }, process.env.JWT_SECRET, {
@@ -216,7 +333,8 @@ const rolesRequired = (...allowedRoles) => {
 module.exports = {
   register,
   login,
+  verifyEmail,
+  resendVerification,
   authMiddleware,
   rolesRequired,
 };
-

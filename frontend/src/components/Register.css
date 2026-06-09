@@ -53,6 +53,23 @@
   border-color: #e31837;
 }
 
+.register-success {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.register-hint {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.success-message {
+  color: #198754;
+  font-weight: 500;
+}
+
 .error-message {
   color: #e31837;
   font-size: 0.9rem;

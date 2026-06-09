@@ -76,6 +76,24 @@ function validateLoginBody(req, res, next) {
   next();
 }
 
+function validateVerifyEmailBody(req, res, next) {
+  const token = req.body?.token;
+  if (!isNonEmptyString(token)) {
+    markValidationError(req, 'Verification token is required');
+    return badRequest(res, 'Verification token is required');
+  }
+  next();
+}
+
+function validateResendVerificationBody(req, res, next) {
+  const email = req.body?.email;
+  if (!isNonEmptyString(email) || !String(email).includes('@')) {
+    markValidationError(req, 'Valid email is required');
+    return badRequest(res, 'Valid email is required');
+  }
+  next();
+}
+
 function validateReviewListQuery(req, res, next) {
   const mealId = Number(req.query?.mealId);
   if (!Number.isFinite(mealId)) {
@@ -266,6 +284,8 @@ function validatePaginationQuery(req, res, next) {
 module.exports = {
   validateRegisterBody,
   validateLoginBody,
+  validateVerifyEmailBody,
+  validateResendVerificationBody,
   validateReviewListQuery,
   validateReviewCreateBody,
   validateBookingAvailabilityQuery,

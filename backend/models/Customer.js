@@ -79,6 +79,12 @@ const customerSchema = new mongoose.Schema(
     password_reset_expires: {
       type: Date
     },
+    email_verification_token: {
+      type: String
+    },
+    email_verification_expires: {
+      type: Date
+    },
 
     active: {
       type: Boolean,

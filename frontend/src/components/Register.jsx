@@ -1,6 +1,6 @@
 // src/components/Register.jsx
 import { useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Register.css';
 
@@ -10,9 +10,9 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const { register, login } = useContext(AuthContext);
+  const [success, setSuccess] = useState('');
+  const { register } = useContext(AuthContext);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const validateInputs = () => {
     if (username.length < 3 || username.length > 20) {
@@ -23,8 +23,8 @@ const Register = () => {
       setError('Please enter a valid email address');
       return false;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return false;
     }
     return true;
@@ -33,20 +33,15 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     if (!validateInputs()) return;
 
-    console.log('Attempting to register:', { username, email, phone });
     const result = await register(username, email, password, phone);
-    console.log('Registration result:', result);
     if (result.success) {
-      // Auto-login after successful registration, then go to profile page
-      const loginResult = await login(username, password);
-      if (loginResult.success) {
-        navigate('/profile', { replace: true });
-      } else {
-        const from = location.state?.from || '/login';
-        navigate(from, { replace: true });
-      }
+      setSuccess(
+        result.message ||
+          'Account created. Check your email to verify your address before logging in.',
+      );
     } else {
       setError(result.message || 'Registration failed. Please try again.');
     }
@@ -57,58 +52,76 @@ const Register = () => {
       <div className="container">
         <div className="register-content">
           <h2 className="register-title">Create Account</h2>
-          <form onSubmit={handleSubmit} className="register-form">
-            <div className="form-group">
-              <label htmlFor="username">Username</label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="form-input"
-              />
+          {success ? (
+            <div className="register-success">
+              <p className="success-message">{success}</p>
+              <p className="register-hint">
+                After you verify via the link in your email, you can log in.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary register-btn"
+                onClick={() => navigate('/login', { state: { email, registered: true } })}
+              >
+                Go to Login
+              </button>
             </div>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="form-input"
-              />
+          ) : (
+            <form onSubmit={handleSubmit} className="register-form">
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="phone">Phone (optional)</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              {error && <p className="error-message">{error}</p>}
+              <button type="submit" className="btn btn-primary register-btn">
+                Create Account
+              </button>
+            </form>
+          )}
+          {!success && (
+            <div className="form-footer">
+              <p>Already have an account? <a href="/login">Log in</a></p>
             </div>
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="phone">Phone (optional)</label>
-              <input
-                type="tel"
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="form-input"
-              />
-            </div>
-            {error && <p className="error-message">{error}</p>}
-            <button type="submit" className="btn btn-primary register-btn">
-              Create Account
-            </button>
-          </form>
-          <div className="form-footer">
-            <p>Already have an account? <a href="/login">Log in</a></p>
-          </div>
+          )}
         </div>
       </div>
     </section>

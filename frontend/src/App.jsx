@@ -9,6 +9,7 @@ import Menu from './components/Menu';
 import Store from './components/Store';
 import Login from './components/Login';
 import Register from './components/Register';
+import VerifyEmail from './components/VerifyEmail';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
 import ReviewPage from './components/ReviewPage';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/store" element={<Store />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile/edit" element={<EditProfile />} />

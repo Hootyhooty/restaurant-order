@@ -99,7 +99,8 @@ const createUser = async (req, res) => {
       email,
       password,
       phone,
-      role: role === 'ADMIN' ? 'ADMIN' : 'USER'
+      role: role === 'ADMIN' ? 'ADMIN' : 'USER',
+      email_verified: true,
     });
 
     await customer.save();
