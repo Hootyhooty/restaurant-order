@@ -23,6 +23,8 @@ Copy this file per release (e.g. `staging-signoff-2026-05-29.md`) or fill in pla
 | Admin check-in / no-show / cancel | ☐ Pass ☐ Fail | | |
 | Audit log entries | ☐ Pass ☐ Fail | | |
 | Security spot checks | ☐ Pass ☐ Fail | | |
+| Email verification | ☐ Pass ☐ Fail | | |
+| Password reset | ☐ Pass ☐ Fail | | |
 
 ## Open defects (blocking production)
 

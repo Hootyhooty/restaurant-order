@@ -1,6 +1,6 @@
 // src/components/Login.jsx
 import { useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Login.css';
 
@@ -78,6 +78,9 @@ const Login = () => {
                 required
                 className="form-input"
               />
+              <Link to="/forgot-password" className="forgot-password-link">
+                Forgot password?
+              </Link>
             </div>
             {info && <p className="info-message">{info}</p>}
             {error && <p className="error-message">{error}</p>}

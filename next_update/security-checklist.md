@@ -21,6 +21,7 @@ Use this before production deploy. All items below are implemented in code unles
 ## Input validation
 
 - [x] Auth register/login bodies
+- [x] Email verification + password reset flows
 - [x] Booking availability, checkout, cancel
 - [x] Reviews, messages, pagination queries
 - [x] Stripe cart checkout items
@@ -60,6 +61,7 @@ Use this before production deploy. All items below are implemented in code unles
 ## Remaining high-risk gaps (manual / future)
 
 - [ ] Account lockout after repeated failed logins
-- [ ] Email verification / password reset hardening
+- [x] Email verification (register → verify link → login)
+- [x] Password reset (forgot → reset link → new password)
 - [ ] WAF or edge rate limiting in front of API (Cloudflare, etc.)
 - [ ] Automated dependency vulnerability scanning in CI (optional: add `npm audit --audit-level=high` to workflow later)

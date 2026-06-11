@@ -93,9 +93,37 @@ Use a confirmed booking with Stripe test payment (has `payment_intent`).
 
 ---
 
+## 6. Email verification
+
+Use a **new test email** (or delete the user in MongoDB first). Check Mailtrap inbox (sandbox) or real inbox if `EMAIL_MODE=production`.
+
+| Step | Action | Expected | Pass? |
+|------|--------|----------|-------|
+| 6.1 | Register at `/register` with new email | Success message; verification email received | ☐ |
+| 6.2 | Try login before verifying | Blocked with “verify your email” message | ☐ |
+| 6.3 | Click link in email → `/verify-email?token=…` | “Email verified successfully” | ☐ |
+| 6.4 | Log in with verified account | Login succeeds | ☐ |
+| 6.5 | Resend verification (login page) for unverified user | Generic success message; new email received | ☐ |
+
+---
+
+## 7. Password reset
+
+| Step | Action | Expected | Pass? |
+|------|--------|----------|-------|
+| 7.1 | Log out; open `/forgot-password`, enter verified account email | Generic success message; reset email received | ☐ |
+| 7.2 | Click link → `/reset-password?token=…` | Reset form loads | ☐ |
+| 7.3 | Set new password (≥ 8 chars), submit | Success message | ☐ |
+| 7.4 | Log in with **new** password | Login succeeds | ☐ |
+| 7.5 | Log in with **old** password | 401 invalid credentials | ☐ |
+| 7.6 | Reuse same reset link | Error: invalid or expired link | ☐ |
+
+---
+
 ## Sign-off
 
 - [ ] All critical paths (sections 1–4) passed  
+- [ ] Auth flows (sections 6–7) passed  
 - [ ] Smoke script passed  
 - [ ] Known issues logged below  
 

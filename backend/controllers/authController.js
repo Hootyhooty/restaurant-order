@@ -10,11 +10,18 @@ const {
   getVerificationExpiryDate,
   buildVerificationUrl,
 } = require('../utils/emailVerification');
-const { sendVerificationEmailSafe } = require('../utils/emailService');
+const {
+  getPasswordResetExpiryDate,
+  buildPasswordResetUrl,
+} = require('../utils/passwordReset');
+const { sendVerificationEmailSafe, sendPasswordResetEmailSafe } = require('../utils/emailService');
 const { warn } = require('../utils/logger');
 
 const RESEND_GENERIC_MESSAGE =
   'If an account with that email exists and is not yet verified, a verification email has been sent.';
+
+const FORGOT_PASSWORD_GENERIC_MESSAGE =
+  'If an account with that email exists, a password reset link has been sent.';
 
 async function issueVerificationEmail(customer) {
   const rawToken = generateVerificationToken();
@@ -140,6 +147,90 @@ const resendVerification = async (req, res) => {
     res.json({ message: RESEND_GENERIC_MESSAGE });
   } catch (error) {
     console.error('Resend verification error:', error.message);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// POST /api/auth/forgot-password
+const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const customer = await Customer.findOne({ email });
+
+    if (
+      customer &&
+      customer.active !== false &&
+      customer.is_active !== false &&
+      customer.is_deleted !== true
+    ) {
+      const rawToken = generateVerificationToken();
+      customer.password_reset_token = hashVerificationToken(rawToken);
+      customer.password_reset_expires = getPasswordResetExpiryDate();
+      await customer.save();
+
+      const resetUrl = buildPasswordResetUrl(rawToken);
+      try {
+        await sendPasswordResetEmailSafe({
+          to: customer.email,
+          username: customer.username,
+          resetUrl,
+        });
+      } catch (emailError) {
+        warn('forgot_password_email_failed', {
+          userId: customer._id,
+          error: emailError.message,
+        });
+      }
+    }
+
+    res.json({ message: FORGOT_PASSWORD_GENERIC_MESSAGE });
+  } catch (error) {
+    console.error('Forgot password error:', error.message);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+};
+
+// POST /api/auth/reset-password
+const resetPassword = async (req, res) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    const password = String(req.body?.password || '');
+
+    if (!token) {
+      return res.status(400).json({ message: 'Reset token is required' });
+    }
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+
+    const hashed = hashVerificationToken(token);
+    const customer = await Customer.findOne({
+      password_reset_token: hashed,
+      password_reset_expires: { $gt: new Date() },
+    });
+
+    if (!customer) {
+      return res.status(400).json({
+        message: 'Invalid or expired reset link. Request a new password reset email.',
+      });
+    }
+
+    customer.password = password;
+    customer.password_changed_at = new Date();
+    customer.password_reset_token = undefined;
+    customer.password_reset_expires = undefined;
+    await customer.save();
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully. You can now log in.',
+    });
+  } catch (error) {
+    console.error('Reset password error:', error.message);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -335,6 +426,8 @@ module.exports = {
   login,
   verifyEmail,
   resendVerification,
+  forgotPassword,
+  resetPassword,
   authMiddleware,
   rolesRequired,
 };

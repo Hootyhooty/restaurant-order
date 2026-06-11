@@ -94,6 +94,29 @@ function validateResendVerificationBody(req, res, next) {
   next();
 }
 
+function validateForgotPasswordBody(req, res, next) {
+  const email = req.body?.email;
+  if (!isNonEmptyString(email) || !String(email).includes('@')) {
+    markValidationError(req, 'Valid email is required');
+    return badRequest(res, 'Valid email is required');
+  }
+  next();
+}
+
+function validateResetPasswordBody(req, res, next) {
+  const token = req.body?.token;
+  const password = req.body?.password;
+  if (!isNonEmptyString(token)) {
+    markValidationError(req, 'Reset token is required');
+    return badRequest(res, 'Reset token is required');
+  }
+  if (!isNonEmptyString(password) || String(password).length < 8) {
+    markValidationError(req, 'Password must be at least 8 characters');
+    return badRequest(res, 'Password must be at least 8 characters');
+  }
+  next();
+}
+
 function validateReviewListQuery(req, res, next) {
   const mealId = Number(req.query?.mealId);
   if (!Number.isFinite(mealId)) {
@@ -286,6 +309,8 @@ module.exports = {
   validateLoginBody,
   validateVerifyEmailBody,
   validateResendVerificationBody,
+  validateForgotPasswordBody,
+  validateResetPasswordBody,
   validateReviewListQuery,
   validateReviewCreateBody,
   validateBookingAvailabilityQuery,

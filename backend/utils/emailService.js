@@ -99,6 +99,7 @@ function buildVerificationEmailHtml({ username, verifyUrl }) {
 }
 
 let lastSentVerificationForTest = null;
+let lastSentPasswordResetForTest = null;
 
 function getLastSentVerificationForTest() {
   return lastSentVerificationForTest;
@@ -106,6 +107,26 @@ function getLastSentVerificationForTest() {
 
 function clearLastSentVerificationForTest() {
   lastSentVerificationForTest = null;
+}
+
+function getLastSentPasswordResetForTest() {
+  return lastSentPasswordResetForTest;
+}
+
+function clearLastSentPasswordResetForTest() {
+  lastSentPasswordResetForTest = null;
+}
+
+function buildPasswordResetEmailHtml({ username, resetUrl }) {
+  const safeName = String(username || 'there').replace(/[<>]/g, '');
+  return `
+    <p>Hi ${safeName},</p>
+    <p>We received a request to reset your Picha account password. Click the link below to choose a new password:</p>
+    <p><a href="${resetUrl}">Reset my password</a></p>
+    <p>Or copy this URL into your browser:</p>
+    <p>${resetUrl}</p>
+    <p>This link expires in 1 hour. If you did not request a password reset, you can ignore this email.</p>
+  `;
 }
 
 async function sendVerificationEmail({ to, username, verifyUrl }) {
@@ -140,11 +161,48 @@ async function sendVerificationEmailSafe(payload) {
   }
 }
 
+async function sendPasswordResetEmail({ to, username, resetUrl }) {
+  if (process.env.EMAIL_SKIP_SEND === 'true') {
+    lastSentPasswordResetForTest = { to, username, resetUrl };
+    info('email_skip_send_password_reset', { to, resetUrl });
+    return { skipped: true };
+  }
+
+  const subject = 'Reset your Picha password';
+  const html = buildPasswordResetEmailHtml({ username, resetUrl });
+
+  const transporter = getTransporter();
+  await transporter.sendMail({
+    from: getFromAddress(),
+    to,
+    subject,
+    html,
+    text: `Hi ${username || 'there'},\n\nReset your password: ${resetUrl}\n\nThis link expires in 1 hour.`,
+  });
+
+  info('password_reset_email_sent', { to, mode: process.env.EMAIL_MODE || 'sandbox' });
+  return { sent: true };
+}
+
+async function sendPasswordResetEmailSafe(payload) {
+  try {
+    return await sendPasswordResetEmail(payload);
+  } catch (err) {
+    warn('password_reset_email_failed', { to: payload.to, error: err.message });
+    throw err;
+  }
+}
+
 module.exports = {
   sendVerificationEmail,
   sendVerificationEmailSafe,
   buildVerificationEmailHtml,
+  buildPasswordResetEmailHtml,
+  sendPasswordResetEmail,
+  sendPasswordResetEmailSafe,
   getFromAddress,
   getLastSentVerificationForTest,
   clearLastSentVerificationForTest,
+  getLastSentPasswordResetForTest,
+  clearLastSentPasswordResetForTest,
 };

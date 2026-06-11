@@ -72,6 +72,18 @@
     flex-direction: column;
     gap: 10px;
   }
+
+  .forgot-password-link {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #0d6efd;
+    text-decoration: none;
+    align-self: flex-end;
+  }
+
+  .forgot-password-link:hover {
+    text-decoration: underline;
+  }
   
   .login-btn {
     padding: 12px;
