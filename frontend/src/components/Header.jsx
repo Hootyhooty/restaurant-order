@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
+import { userHasAddress } from '../utils/profileUtils';
+import AddressRequiredModal from './AddressRequiredModal';
 import './Header.css';
 
 const Header = () => {
@@ -15,6 +17,7 @@ const Header = () => {
   const { items, updateQuantity, removeFromCart, clearCart, getTotalCount, getTotalPrice } = useCart();
   const navigate = useNavigate();
   const [isPaying, setIsPaying] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -63,6 +66,10 @@ const Header = () => {
       }
       if (items.length === 0) {
         alert('Your cart is empty.');
+        return;
+      }
+      if (!userHasAddress(user)) {
+        setShowAddressModal(true);
         return;
       }
       const token = localStorage.getItem('token');
@@ -267,6 +274,10 @@ const Header = () => {
           </button>
         </div>
       </div>
+      <AddressRequiredModal
+        open={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+      />
     </header>
   );
 };

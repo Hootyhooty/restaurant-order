@@ -2,6 +2,8 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE } from '../apiConfig';
+import { userHasAddress } from '../utils/profileUtils';
+import AddressRequiredModal from './AddressRequiredModal';
 import './Booking.css';
 
 const TIME_SLOTS = [
@@ -41,7 +43,7 @@ const tomorrowISO = () => {
 const formatSlot = (slot) => slot.replace('-', '–');
 
 const Booking = () => {
-  const { isLoggedIn } = useContext(AuthContext);
+  const { isLoggedIn, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState('');
@@ -90,6 +92,7 @@ const Booking = () => {
   const [wantsPreOrder, setWantsPreOrder] = useState(null);
   const [redeemCode, setRedeemCode] = useState('');
   const [isPaying, setIsPaying] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   const [meals, setMeals] = useState([]);
   const [categories, setCategories] = useState([{ id: 'all', name: 'All' }]);
@@ -199,12 +202,16 @@ const Booking = () => {
   const startPayment = async () => {
     try {
       if (!selectedTableId || !canLoadTables) return;
-      setIsPaying(true);
       const token = localStorage.getItem('token');
       if (!token) {
         navigate('/login', { state: { from: '/booking' } });
         return;
       }
+      if (!userHasAddress(user)) {
+        setShowAddressModal(true);
+        return;
+      }
+      setIsPaying(true);
       const payload = {
         date: selectedDate,
         timeSlot: selectedSlot,
@@ -553,6 +560,11 @@ const Booking = () => {
           </div>
         </div>
       )}
+
+      <AddressRequiredModal
+        open={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+      />
     </section>
   );
 };

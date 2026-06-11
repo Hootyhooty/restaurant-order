@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
+import { isReputationGreen } from '../utils/profileUtils';
 import './Profile.css';
 
 const Profile = () => {
@@ -262,8 +263,7 @@ const Profile = () => {
         ? DEFAULT_AVATAR
         : `${API_BASE}/api/users/uploads/${profileUser.photo}`;
 
-  const reputationIsGreen =
-    profileUser?.role === 'ADMIN' || (profileUser?.email_verified && profileUser?.phone_verified);
+  const reputationIsGreen = isReputationGreen(profileUser);
 
   return (
     <section className="profile-section">
