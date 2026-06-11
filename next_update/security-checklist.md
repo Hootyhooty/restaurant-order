@@ -8,7 +8,7 @@ Use this before production deploy. All items below are implemented in code unles
 - [x] Admin routes require `ADMIN` role (`rolesRequired`)
 - [x] Production requires `JWT_SECRET` length ≥ 32 characters
 - [x] Auth endpoints rate-limited (`RATE_LIMIT_AUTH_*`, default 20 / 15 min)
-- [ ] Manual: rotate `JWT_SECRET` if it was ever committed or shared
+- [X] Manual: rotate `JWT_SECRET` if it was ever committed or shared
 
 ## Rate limiting
 
@@ -38,12 +38,12 @@ Use this before production deploy. All items below are implemented in code unles
 - [x] Production: only `FRONTEND_ORIGIN` values (no localhost fallback)
 - [x] Non-production: explicit origins or dev fallback when unset
 - [x] `FRONTEND_ORIGIN` required in production at startup
-- [ ] Manual: set `FRONTEND_ORIGIN` to exact deployed frontend URL(s) only
+- [x] Manual: set `FRONTEND_ORIGIN` to exact deployed frontend URL(s) only
 
 ## Secrets & Stripe
 
-- [ ] Manual: all secrets in host env (Render/etc.), never in repo
-- [ ] Manual: `STRIPE_WEBHOOK_SECRET` configured for production webhook endpoint
+- [x] Manual: all secrets in host env (Render/etc.), never in repo
+- [x] Manual: `STRIPE_WEBHOOK_SECRET` configured for production webhook endpoint
 - [x] Webhook signature verification before processing
 
 ## Monitoring (Day 9)

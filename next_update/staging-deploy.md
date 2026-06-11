@@ -4,10 +4,10 @@ Deploy **backend** and **frontend** as separate services (e.g. Render). Use a de
 
 ## Prerequisites
 
-- [ ] CI green on `main` (GitHub Actions)
-- [ ] Stripe **test** keys (`sk_test_…`, `whsec_…` for staging webhook URL)
-- [ ] MongoDB URI for staging database
-- [ ] `JWT_SECRET` ≥ 32 characters (unique per environment)
+- [x] CI green on `main` (GitHub Actions)
+- [x] Stripe **test** keys (`sk_test_…`, `whsec_…` for staging webhook URL)
+- [x] MongoDB URI for staging database
+- [x] `JWT_SECRET` ≥ 32 characters (unique per environment)
 
 ## Backend (Render Web Service)
 

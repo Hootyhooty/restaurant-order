@@ -1,5 +1,7 @@
 # Staging Sign-Off Record
 
+**Who fills this in?** You, after completing the manual steps in [staging-verification-checklist.md](./staging-verification-checklist.md). Mark Pass/Fail per scenario and sign off when ready for production.
+
 Copy this file per release (e.g. `staging-signoff-2026-05-29.md`) or fill in place.
 
 | Field | Value |

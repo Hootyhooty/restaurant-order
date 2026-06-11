@@ -1,5 +1,7 @@
 # Staging E2E Verification Checklist (Day 13)
 
+**Who fills this in?** You (or whoever runs staging QA). Check each box manually as you test — this is not automated. When done, copy results into [staging-signoff.md](./staging-signoff.md).
+
 Run on **staging** URLs after deploy. Use Stripe **test mode** card `4242 4242 4242 4242`, any future expiry, any CVC.
 
 **Staging backend:** `________________________`  

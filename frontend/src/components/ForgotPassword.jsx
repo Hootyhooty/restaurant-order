@@ -56,7 +56,12 @@ const ForgotPassword = () => {
               </button>
             </form>
           ) : (
-            <p className="info-message">{status}</p>
+            <>
+              <p className="info-message">{status}</p>
+              <p className="forgot-password-next-step">
+                Check your inbox and open the reset link. That page lets you enter a new password.
+              </p>
+            </>
           )}
           <div className="forgot-password-actions">
             <Link to="/login" className="btn btn-secondary">

@@ -6,7 +6,7 @@ import './ResetPassword.css';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') || '';
+  const tokenFromUrl = searchParams.get('token') || '';
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,8 +18,8 @@ const ResetPassword = () => {
     e.preventDefault();
     setError('');
 
-    if (!token) {
-      setError('Missing reset token. Use the link from your email or request a new one.');
+    if (!tokenFromUrl) {
+      setError('Missing reset token. Open the link from your email or request a new one.');
       return;
     }
     if (password.length < 8) {
@@ -34,7 +34,7 @@ const ResetPassword = () => {
     try {
       const response = await axios.post(
         `${API_BASE}/api/auth/reset-password`,
-        { token, password },
+        { token: tokenFromUrl, password },
         { headers: { 'Content-Type': 'application/json' } },
       );
       setSuccess(true);
@@ -47,21 +47,16 @@ const ResetPassword = () => {
     }
   };
 
-  if (!token && !success) {
+  if (success) {
     return (
       <section className="reset-password-section">
         <div className="container">
           <div className="reset-password-content">
             <h2 className="reset-password-title">Reset Password</h2>
-            <p className="error-message">
-              Missing reset token. Check the link in your email or request a new one.
-            </p>
+            <p className="success-message">{message}</p>
             <div className="reset-password-actions">
-              <Link to="/forgot-password" className="btn btn-primary">
-                Request new link
-              </Link>
-              <Link to="/login" className="btn btn-secondary">
-                Back to Login
+              <Link to="/login" className="btn btn-primary">
+                Go to Login
               </Link>
             </div>
           </div>
@@ -75,47 +70,59 @@ const ResetPassword = () => {
       <div className="container">
         <div className="reset-password-content">
           <h2 className="reset-password-title">Reset Password</h2>
-          {success ? (
-            <>
-              <p className="success-message">{message}</p>
-              <div className="reset-password-actions">
-                <Link to="/login" className="btn btn-primary">
-                  Go to Login
-                </Link>
-              </div>
-            </>
-          ) : (
-            <form onSubmit={handleSubmit} className="reset-password-form">
-              <div className="form-group">
-                <label htmlFor="password">New password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  className="form-input"
-                />
-              </div>
-              {error && <p className="error-message">{error}</p>}
-              <button type="submit" className="btn btn-primary">
-                Update password
-              </button>
-            </form>
+          <p className="reset-password-hint">
+            Choose a new password for your account.
+          </p>
+          {!tokenFromUrl && (
+            <p className="reset-password-warning">
+              No reset token found. Use the link in your email, or{' '}
+              <Link to="/forgot-password">request a new reset link</Link>.
+            </p>
           )}
+          <form onSubmit={handleSubmit} className="reset-password-form">
+            <div className="form-group">
+              <label htmlFor="password">New password</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className="form-input"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className="form-input"
+              />
+            </div>
+            {error && <p className="error-message">{error}</p>}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!tokenFromUrl}
+            >
+              Update password
+            </button>
+          </form>
+          <div className="reset-password-actions">
+            <Link to="/forgot-password" className="btn btn-secondary">
+              Request new link
+            </Link>
+            <Link to="/login" className="btn btn-secondary">
+              Back to Login
+            </Link>
+          </div>
         </div>
       </div>
     </section>
