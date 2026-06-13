@@ -10,7 +10,7 @@ If not recognized, use full path once:
 
 3) Test deployed backend (what you want now)
 $env:TEST_TARGET="deployed"
-$env:BASE_URL="https://picha-restaunrant-backend.onrender.com"
+$env:BASE_URL="https://api.picha-restaurant.com"
 k6 run k6/local-and-deployed-public.js
 
 4) Read results (important lines)
@@ -33,7 +33,7 @@ k6 run k6/local-and-deployed-public.js
 Start small, then increase gradually.
 If you paste your first k6 output here, I’ll read it and tell you exactly whether your deployed backend is healthy or where the bottleneck is.
 $env:TEST_TARGET="deployed"
-$env:BASE_URL="https://picha-restaunrant-backend.onrender.com"
+$env:BASE_URL="https://api.picha-restaurant.com"
 $env:K6_STAGE1_VUS="8"
 $env:K6_STAGE2_VUS="20"
 k6 run k6/local-and-deployed-public.js

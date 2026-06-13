@@ -6,14 +6,14 @@
  * Examples:
  *   k6 run k6/local-and-deployed-public.js
  *   TEST_TARGET=local BASE_URL=http://localhost:5000 k6 run k6/local-and-deployed-public.js
- *   TEST_TARGET=deployed BASE_URL=https://picha-restaunrant-backend.onrender.com k6 run k6/local-and-deployed-public.js
- *   TARGET_ENDPOINT=meals TEST_TARGET=deployed BASE_URL=https://picha-restaunrant-backend.onrender.com k6 run k6/local-and-deployed-public.js
+ *   TEST_TARGET=deployed BASE_URL=https://api.picha-restaurant.com k6 run k6/local-and-deployed-public.js
+ *   TARGET_ENDPOINT=meals TEST_TARGET=deployed BASE_URL=https://api.picha-restaurant.com k6 run k6/local-and-deployed-public.js
  */
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 const target = (__ENV.TEST_TARGET || 'deployed').toLowerCase();
-const baseUrl = (__ENV.BASE_URL || 'https://picha-restaunrant-backend.onrender.com').replace(/\/$/, '');
+const baseUrl = (__ENV.BASE_URL || 'https://api.picha-restaurant.com').replace(/\/$/, '');
 const targetEndpoint = (__ENV.TARGET_ENDPOINT || 'all').toLowerCase();
 const litePayload = String(__ENV.K6_LITE_PAYLOAD || '1').toLowerCase() !== '0';
 

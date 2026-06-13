@@ -57,7 +57,7 @@ const Footer = () => {
             <h3 className="footer-title">Contact Us</h3>
             <div className="contact-info">
               <p>Phone: 02-123-4567</p>
-              <p>Email: info@picha.co.th</p>
+              <p>Email: info@picha-restaurant.com</p>
               <p>Address: Bangkok, Thailand</p>
             </div>
             <div className="app-downloads">

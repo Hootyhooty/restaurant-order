@@ -6,6 +6,15 @@ Release candidate checklist tying together the 2-week production-grade plan.
 **Target date:** __________________  
 **Owner:** __________________
 
+## Production URLs
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://picha-restaurant.com (+ https://www.picha-restaurant.com) |
+| Backend API | https://api.picha-restaurant.com |
+| Stripe webhook | https://api.picha-restaurant.com/api/stripe/webhook |
+| Email sender (Resend) | noreply@picha-restaurant.com |
+
 ---
 
 ## 1. Quality gates (Week 1)
@@ -63,9 +72,13 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | `NODE_ENV=production` | ☐ | |
 | `MONGODB_URI` | ☐ | Production cluster, not staging |
 | `JWT_SECRET` (≥32 chars) | ☐ | Unique; never in repo |
-| `FRONTEND_ORIGIN` | ☐ | Exact frontend URL |
+| `FRONTEND_ORIGIN` | ☐ | `https://picha-restaurant.com,https://www.picha-restaurant.com` |
+| `FRONTEND_URL` | ☐ | `https://picha-restaurant.com` (used in verification/reset email links) |
 | `STRIPE_SECRET_KEY` | ☐ | `sk_live_…` |
-| `STRIPE_WEBHOOK_SECRET` | ☐ | Live webhook endpoint |
+| `STRIPE_WEBHOOK_SECRET` | ☐ | Live webhook endpoint (`api.picha-restaurant.com`) |
+| `EMAIL_MODE=production` | ☐ | Switches to Resend SMTP |
+| `EMAIL_FROM` | ☐ | `Picha <noreply@picha-restaurant.com>` (verified domain) |
+| `SMTP_HOST/PORT/USER/PASS` | ☐ | Resend: `smtp.resend.com` / `587` / `resend` / `<API key>` |
 | Alert thresholds | ☐ | Optional; defaults in `.env.example` |
 
 **Health check path:** `/api/health`  
@@ -76,7 +89,7 @@ Release candidate checklist tying together the 2-week production-grade plan.
 
 | Variable | Set? | Notes |
 |----------|------|-------|
-| `VITE_API_BASE_URL` | ☐ | Production backend URL |
+| `VITE_API_BASE_URL` | ☐ | `https://api.picha-restaurant.com` (rebuild frontend after changing) |
 
 **Build:** `npm install && npm run build`  
 **Publish:** `dist`

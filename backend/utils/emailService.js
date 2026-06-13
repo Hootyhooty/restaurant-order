@@ -3,10 +3,17 @@ const { warn, info } = require('./logger');
 
 /**
  * Email transport modes:
- * - sandbox (default): Mailtrap Email Testing — messages stay in your Mailtrap inbox.
- * - production: real delivery to the user's mailbox (code below; uncomment when your sending domain is verified).
+ * - sandbox (default): Mailtrap Email Testing — messages stay in your Mailtrap inbox (never reach real users).
+ * - production: real delivery to the user's mailbox via SMTP (Resend).
  *
- * Set EMAIL_MODE=production and uncomment the production transporter when ready.
+ * To go live with Resend:
+ *   1. Add picha-restaurant.com in the Resend dashboard and add the SPF/DKIM DNS records it gives you.
+ *   2. Create a Resend API key.
+ *   3. Set EMAIL_MODE=production and:
+ *        SMTP_HOST=smtp.resend.com  SMTP_PORT=587  SMTP_USER=resend  SMTP_PASS=<your Resend API key>
+ *
+ * The production transporter is generic SMTP, so any provider (Resend, Mailtrap Sending,
+ * SendGrid, Brevo, SES, Postmark) works by swapping the SMTP_* values.
  */
 
 function createSandboxTransporter() {
@@ -28,62 +35,39 @@ function createSandboxTransporter() {
   });
 }
 
-/*
- * --- Production (real user delivery) ---
- * Uncomment this block and switch getTransporter() when your sending domain is verified
- * (Mailtrap Email Sending, SendGrid, etc.).
- *
- * function createProductionTransporter() {
- *   const host = process.env.MAILTRAP_SENDING_HOST || 'live.smtp.mailtrap.io';
- *   const port = Number(process.env.MAILTRAP_SENDING_PORT || 587);
- *   const user = process.env.MAILTRAP_SENDING_USER;
- *   const pass = process.env.MAILTRAP_SENDING_PASS;
- *
- *   if (!user || !pass) {
- *     throw new Error(
- *       'Production SMTP credentials missing. Set MAILTRAP_SENDING_USER and MAILTRAP_SENDING_PASS.',
- *     );
- *   }
- *
- *   return nodemailer.createTransport({
- *     host,
- *     port,
- *     secure: port === 465,
- *     auth: { user, pass },
- *   });
- * }
- *
- * Alternative: HTTP API (e.g. Resend) instead of SMTP:
- *
- * const { Resend } = require('resend');
- * const resend = new Resend(process.env.RESEND_API_KEY);
- *
- * async function sendViaResend({ to, subject, html }) {
- *   await resend.emails.send({
- *     from: process.env.EMAIL_FROM,
- *     to,
- *     subject,
- *     html,
- *   });
- * }
- */
+function createProductionTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !user || !pass) {
+    throw new Error(
+      'Production SMTP credentials missing. Set SMTP_HOST, SMTP_USER, and SMTP_PASS in backend/.env ' +
+        '(get these from your verified email provider, e.g. Mailtrap Email Sending, SendGrid, Brevo, or SES).',
+    );
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // 465 = implicit TLS; 587 = STARTTLS
+    auth: { user, pass },
+  });
+}
 
 function getTransporter() {
   const mode = (process.env.EMAIL_MODE || 'sandbox').toLowerCase();
 
   if (mode === 'production') {
-    // return createProductionTransporter();
-    throw new Error(
-      'EMAIL_MODE=production is set but the production transporter is still commented out in emailService.js. ' +
-        'Uncomment createProductionTransporter() or switch EMAIL_MODE back to sandbox.',
-    );
+    return createProductionTransporter();
   }
 
   return createSandboxTransporter();
 }
 
 function getFromAddress() {
-  return process.env.EMAIL_FROM || 'Picha <noreply@picha.co.th>';
+  return process.env.EMAIL_FROM || 'Picha <noreply@picha-restaurant.com>';
 }
 
 function buildVerificationEmailHtml({ username, verifyUrl }) {
