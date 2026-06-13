@@ -227,5 +227,13 @@ if (require.main === module) {
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    const emailMode = (process.env.EMAIL_MODE || 'sandbox').toLowerCase();
+    console.log(
+      `Email config: mode=${emailMode} from="${process.env.EMAIL_FROM || '(default)'}" ` +
+        `skipSend=${process.env.EMAIL_SKIP_SEND === 'true'} ` +
+        (emailMode === 'production'
+          ? `smtpHost=${process.env.SMTP_HOST || '(unset)'} smtpUser=${process.env.SMTP_USER || '(unset)'} smtpPass=${process.env.SMTP_PASS ? 'set' : '(unset)'}`
+          : 'using Mailtrap sandbox (emails do NOT reach real inboxes)'),
+    );
   });
 }
