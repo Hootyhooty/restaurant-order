@@ -66,6 +66,25 @@ function getTransporter() {
   return createSandboxTransporter();
 }
 
+// Verifies SMTP connectivity + credentials without sending a message.
+// Surfaces auth/host errors that would otherwise be hidden behind a generic send failure.
+async function verifyTransport() {
+  const transporter = getTransporter();
+  await transporter.verify();
+  return { ok: true, mode: (process.env.EMAIL_MODE || 'sandbox').toLowerCase() };
+}
+
+// Pulls the useful diagnostic fields off a nodemailer/SMTP error.
+function describeEmailError(err) {
+  return {
+    error: err?.message,
+    code: err?.code,
+    command: err?.command,
+    responseCode: err?.responseCode,
+    response: err?.response,
+  };
+}
+
 function getFromAddress() {
   return process.env.EMAIL_FROM || 'Picha <noreply@picha-restaurant.com>';
 }
@@ -140,7 +159,7 @@ async function sendVerificationEmailSafe(payload) {
   try {
     return await sendVerificationEmail(payload);
   } catch (err) {
-    warn('verification_email_failed', { to: payload.to, error: err.message });
+    warn('verification_email_failed', { to: payload.to, ...describeEmailError(err) });
     throw err;
   }
 }
@@ -172,7 +191,7 @@ async function sendPasswordResetEmailSafe(payload) {
   try {
     return await sendPasswordResetEmail(payload);
   } catch (err) {
-    warn('password_reset_email_failed', { to: payload.to, error: err.message });
+    warn('password_reset_email_failed', { to: payload.to, ...describeEmailError(err) });
     throw err;
   }
 }
@@ -185,6 +204,8 @@ module.exports = {
   sendPasswordResetEmail,
   sendPasswordResetEmailSafe,
   getFromAddress,
+  verifyTransport,
+  describeEmailError,
   getLastSentVerificationForTest,
   clearLastSentVerificationForTest,
   getLastSentPasswordResetForTest,

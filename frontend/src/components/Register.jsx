@@ -40,7 +40,7 @@ const Register = () => {
     if (result.success) {
       setSuccess(
         result.message ||
-          'Account created. Check your email to verify your address before logging in.',
+          'We sent a verification link to your email. Click it to activate your account.',
       );
     } else {
       setError(result.message || 'Registration failed. Please try again.');
@@ -56,7 +56,8 @@ const Register = () => {
             <div className="register-success">
               <p className="success-message">{success}</p>
               <p className="register-hint">
-                After you verify via the link in your email, you can log in.
+                Your account is created only after you click the verification link in
+                your email. Then you can log in.
               </p>
               <button
                 type="button"

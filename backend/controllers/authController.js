@@ -1,7 +1,9 @@
 // src/backend/controllers/authController.js
 // Authentication handlers (register and login) and auth-related middleware
 
+const bcrypt = require('bcrypt');
 const Customer = require('../models/Customer');
+const PendingRegistration = require('../models/PendingRegistration');
 const jwt = require('jsonwebtoken');
 const { decodeToken } = require('../utils/jwtUtils');
 const {
@@ -23,6 +25,8 @@ const RESEND_GENERIC_MESSAGE =
 const FORGOT_PASSWORD_GENERIC_MESSAGE =
   'If an account with that email exists, a password reset link has been sent.';
 
+// Legacy helper: re-issue a verification email for an already-created (pre-deferred-flow)
+// unverified Customer. New registrations never create a Customer until verified.
 async function issueVerificationEmail(customer) {
   const rawToken = generateVerificationToken();
   customer.email_verification_token = hashVerificationToken(rawToken);
@@ -37,49 +41,92 @@ async function issueVerificationEmail(customer) {
   });
 }
 
+// Sends the verification email for a pending registration with a fresh raw token.
+async function sendPendingVerificationEmail(pending, rawToken) {
+  const verifyUrl = buildVerificationUrl(rawToken);
+  await sendVerificationEmailSafe({
+    to: pending.email,
+    username: pending.username,
+    verifyUrl,
+  });
+}
+
 // POST /api/auth/register
+// Does NOT create a Customer. It stores a PendingRegistration and emails a verification
+// link. The real account is created only when the link is verified.
 const register = async (req, res) => {
   try {
-    const { username, email, password, phone } = req.body;
+    const { username, password, phone } = req.body;
+    const email = String(req.body?.email || '').trim().toLowerCase();
     console.log('Received registration request:', { username, email, phone });
 
     if (!username || !email || !password) {
-      console.log('Validation failed: Missing required fields');
       return res
         .status(400)
         .json({ message: 'Username, email, and password are required' });
     }
 
+    // Reject if a real account already uses this email/username.
     const existingUser = await Customer.findOne({
       $or: [{ email }, { username }],
     });
     if (existingUser) {
-      console.log('User already exists:', { username, email });
       return res
         .status(400)
         .json({ message: 'Username or email already exists' });
     }
 
-    const customer = new Customer({ username, email, password, phone });
-    await customer.save();
-    console.log('User saved to database:', customer._id);
+    // Reject if phone is already taken by a real account (unique index).
+    if (phone) {
+      const phoneTaken = await Customer.findOne({ phone });
+      if (phoneTaken) {
+        return res.status(400).json({ message: 'Phone number already in use' });
+      }
+    }
+
+    // Username reserved by a different pending registration.
+    const usernamePending = await PendingRegistration.findOne({ username });
+    if (usernamePending && usernamePending.email !== email) {
+      return res
+        .status(400)
+        .json({ message: 'Username or email already exists' });
+    }
+
+    // Replace any earlier pending attempt for this email (fresh token + data).
+    await PendingRegistration.deleteOne({ email });
+
+    const rawToken = generateVerificationToken();
+    const passwordHash = await bcrypt.hash(password, 10);
+    const expiry = getVerificationExpiryDate();
+
+    const pending = await PendingRegistration.create({
+      username,
+      email,
+      password_hash: passwordHash,
+      phone: phone ? String(phone).trim() : undefined,
+      verification_token: hashVerificationToken(rawToken),
+      verification_expires: expiry,
+      expires_at: expiry,
+    });
 
     try {
-      await issueVerificationEmail(customer);
+      await sendPendingVerificationEmail(pending, rawToken);
     } catch (emailError) {
       warn('register_verification_email_failed', {
-        userId: customer._id,
+        email,
         error: emailError.message,
       });
-      return res.status(201).json({
+      // Keep the pending record so the user can use "Resend verification".
+      return res.status(502).json({
         message:
-          'Account created, but we could not send the verification email. Use resend verification on the login page.',
+          'We could not send the verification email right now. Please try "Resend verification" on the login page in a moment.',
         emailSent: false,
       });
     }
 
     res.status(201).json({
-      message: 'Account created. Please check your email to verify your address before logging in.',
+      message:
+        'We sent a verification link to your email. Click it to activate your account — no account is created until you verify.',
       emailSent: true,
     });
   } catch (error) {
@@ -89,6 +136,8 @@ const register = async (req, res) => {
 };
 
 // POST /api/auth/verify-email
+// Creates the real Customer from the matching PendingRegistration (new flow), or marks
+// an existing unverified Customer verified (legacy flow / backward compatibility).
 const verifyEmail = async (req, res) => {
   try {
     const token = String(req.body?.token || '').trim();
@@ -97,28 +146,75 @@ const verifyEmail = async (req, res) => {
     }
 
     const hashed = hashVerificationToken(token);
+
+    // New flow: pending registration -> create the account now.
+    const pending = await PendingRegistration.findOne({
+      verification_token: hashed,
+      verification_expires: { $gt: new Date() },
+    });
+
+    if (pending) {
+      // Someone may have taken the username/email between register and verify.
+      const conflict = await Customer.findOne({
+        $or: [{ email: pending.email }, { username: pending.username }],
+      });
+      if (conflict) {
+        await PendingRegistration.deleteOne({ _id: pending._id });
+        return res.status(409).json({
+          message:
+            'This username or email is already registered. Please log in or register again.',
+        });
+      }
+
+      const customer = new Customer({
+        username: pending.username,
+        email: pending.email,
+        phone: pending.phone || undefined,
+        email_verified: true,
+      });
+      // Reuse the already-hashed password; do not re-hash.
+      customer.password = pending.password_hash;
+      customer.$locals.skipPasswordHash = true;
+      await customer.save();
+
+      await PendingRegistration.deleteOne({ _id: pending._id });
+
+      return res.json({
+        success: true,
+        message: 'Email verified successfully. Your account is now active — you can log in.',
+      });
+    }
+
+    // Legacy flow: unverified Customer that already exists.
     const customer = await Customer.findOne({
       email_verification_token: hashed,
       email_verification_expires: { $gt: new Date() },
     });
 
-    if (!customer) {
-      return res.status(400).json({
-        message: 'Invalid or expired verification link. Request a new verification email.',
+    if (customer) {
+      customer.email_verified = true;
+      customer.email_verification_token = undefined;
+      customer.email_verification_expires = undefined;
+      await customer.save();
+
+      return res.json({
+        success: true,
+        message: 'Email verified successfully. You can now log in.',
       });
     }
 
-    customer.email_verified = true;
-    customer.email_verification_token = undefined;
-    customer.email_verification_expires = undefined;
-    await customer.save();
-
-    res.json({
-      success: true,
-      message: 'Email verified successfully. You can now log in.',
+    return res.status(400).json({
+      message: 'Invalid or expired verification link. Request a new verification email.',
     });
   } catch (error) {
     console.error('Verify email error:', error.message);
+    // Duplicate key (race on unique email/username/phone) -> friendly message.
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message:
+          'This username or email is already registered. Please log in or register again.',
+      });
+    }
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
@@ -131,16 +227,33 @@ const resendVerification = async (req, res) => {
       return res.status(400).json({ message: 'Email is required' });
     }
 
-    const customer = await Customer.findOne({ email });
+    // New flow: pending registration -> regenerate token + resend.
+    const pending = await PendingRegistration.findOne({ email });
+    if (pending) {
+      const rawToken = generateVerificationToken();
+      const expiry = getVerificationExpiryDate();
+      pending.verification_token = hashVerificationToken(rawToken);
+      pending.verification_expires = expiry;
+      pending.expires_at = expiry;
+      await pending.save();
 
-    if (customer && !customer.email_verified) {
       try {
-        await issueVerificationEmail(customer);
+        await sendPendingVerificationEmail(pending, rawToken);
       } catch (emailError) {
-        warn('resend_verification_email_failed', {
-          userId: customer._id,
-          error: emailError.message,
-        });
+        warn('resend_verification_email_failed', { email, error: emailError.message });
+      }
+    } else {
+      // Legacy flow: unverified Customer.
+      const customer = await Customer.findOne({ email });
+      if (customer && !customer.email_verified) {
+        try {
+          await issueVerificationEmail(customer);
+        } catch (emailError) {
+          warn('resend_verification_email_failed', {
+            userId: customer._id,
+            error: emailError.message,
+          });
+        }
       }
     }
 

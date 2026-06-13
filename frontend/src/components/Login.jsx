@@ -11,7 +11,9 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState(
-    location.state?.registered ? 'Account created. Verify your email, then log in.' : '',
+    location.state?.registered
+      ? 'Check your email and click the verification link to activate your account, then log in.'
+      : '',
   );
   const [resendEmail, setResendEmail] = useState(location.state?.email || '');
   const [resendStatus, setResendStatus] = useState('');

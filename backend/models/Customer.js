@@ -176,7 +176,9 @@ customerSchema.pre('save', async function (next) {
   if (!this._id) {
     this._id = generateUUID();
   }
-  if (this.isModified('password')) {
+  // Allow callers to store an already-hashed password (e.g. activating a verified
+  // PendingRegistration) by setting doc.$locals.skipPasswordHash = true.
+  if (this.isModified('password') && !this.$locals.skipPasswordHash) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   next();

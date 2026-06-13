@@ -10,6 +10,7 @@ const {
 } = require('../../utils/emailVerification');
 
 const Customer = require('../../models/Customer');
+const PendingRegistration = require('../../models/PendingRegistration');
 const { getLastSentVerificationForTest, clearLastSentVerificationForTest } = require('../../utils/emailService');
 
 let app;
@@ -43,7 +44,7 @@ describe('Email verification integration', () => {
     await mongoose.connection.dropDatabase();
   });
 
-  test('register creates unverified user and issues verification token', async () => {
+  test('register creates a pending registration and NO Customer yet', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({
@@ -56,13 +57,17 @@ describe('Email verification integration', () => {
     assert.equal(res.body.emailSent, true);
     assert.ok(getLastSentVerificationForTest()?.verifyUrl?.includes('token='));
 
+    // No real account exists before verification.
     const user = await Customer.findOne({ email: 'newuser@test.local' });
-    assert.equal(user.email_verified, false);
-    assert.ok(user.email_verification_token);
-    assert.ok(user.email_verification_expires);
+    assert.equal(user, null);
+
+    const pending = await PendingRegistration.findOne({ email: 'newuser@test.local' });
+    assert.ok(pending);
+    assert.ok(pending.verification_token);
+    assert.ok(pending.password_hash);
   });
 
-  test('login blocked until email is verified', async () => {
+  test('login fails before verification because the account does not exist yet', async () => {
     await request(app).post('/api/auth/register').send({
       username: 'blocked',
       email: 'blocked@test.local',
@@ -74,21 +79,33 @@ describe('Email verification integration', () => {
       password: 'password12',
     });
 
-    assert.equal(loginRes.status, 403);
-    assert.equal(loginRes.body.code, 'EMAIL_NOT_VERIFIED');
+    assert.equal(loginRes.status, 401);
+
+    const user = await Customer.findOne({ email: 'blocked@test.local' });
+    assert.equal(user, null);
   });
 
-  test('verify-email marks user verified and allows login', async () => {
+  test('verify-email creates the account and allows login', async () => {
     await request(app).post('/api/auth/register').send({
       username: 'verifyme',
       email: 'verifyme@test.local',
       password: 'password12',
+      phone: '0810000001',
     });
+
+    // No account yet.
+    assert.equal(await Customer.findOne({ email: 'verifyme@test.local' }), null);
 
     const token = new URL(getLastSentVerificationForTest().verifyUrl).searchParams.get('token');
     const verifyRes = await request(app).post('/api/auth/verify-email').send({ token });
     assert.equal(verifyRes.status, 200);
     assert.equal(verifyRes.body.success, true);
+
+    // Account now exists, verified, and the pending record is gone.
+    const user = await Customer.findOne({ email: 'verifyme@test.local' });
+    assert.ok(user);
+    assert.equal(user.email_verified, true);
+    assert.equal(await PendingRegistration.findOne({ email: 'verifyme@test.local' }), null);
 
     const loginRes = await request(app).post('/api/auth/login').send({
       username: 'verifyme',
@@ -97,6 +114,30 @@ describe('Email verification integration', () => {
     assert.equal(loginRes.status, 200);
     assert.ok(loginRes.body.token);
     assert.equal(loginRes.body.user.email_verified, true);
+  });
+
+  test('resend-verification regenerates token for a pending registration', async () => {
+    await request(app).post('/api/auth/register').send({
+      username: 'pendingresend',
+      email: 'pendingresend@test.local',
+      password: 'password12',
+    });
+    const firstToken = new URL(getLastSentVerificationForTest().verifyUrl).searchParams.get('token');
+
+    clearLastSentVerificationForTest();
+
+    const res = await request(app)
+      .post('/api/auth/resend-verification')
+      .send({ email: 'pendingresend@test.local' });
+    assert.equal(res.status, 200);
+
+    const secondToken = new URL(getLastSentVerificationForTest().verifyUrl).searchParams.get('token');
+    assert.notEqual(firstToken, secondToken);
+
+    // The newest token verifies and creates the account.
+    const verifyRes = await request(app).post('/api/auth/verify-email').send({ token: secondToken });
+    assert.equal(verifyRes.status, 200);
+    assert.ok(await Customer.findOne({ email: 'pendingresend@test.local' }));
   });
 
   test('legacy user without verification token can still log in', async () => {
