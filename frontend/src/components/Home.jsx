@@ -2,7 +2,7 @@
 import './Home.css';
 import { Link } from 'react-router-dom';
 
-const CLOUD_BASE = 'https://res.cloudinary.com/dpfypv35h/image/upload';
+const CLOUD_BASE = 'https://res.cloudinary.com/dpfypv35h/image';
 const LOGO_URL = `${CLOUD_BASE}/home/restaurant/food/Picha.png`;
 const HERO_BG_URL = `${CLOUD_BASE}/home/restaurant/display/restaurant-interior_btdm4z.jpg`;
 
