@@ -46,7 +46,11 @@ export const AuthProvider = ({ children }) => {
         }
       );
       console.log('Registration response:', response.data);
-      return { success: true, message: response.data.message };
+      return {
+        success: true,
+        message: response.data.message,
+        emailSent: response.data.emailSent,
+      };
     } catch (error) {
       console.error('Registration error:', error.response?.data?.message || error.message);
       return {

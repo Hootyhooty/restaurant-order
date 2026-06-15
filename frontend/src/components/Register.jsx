@@ -36,7 +36,7 @@ const Register = () => {
 
     const result = await register(username, email, password, phone);
     if (result.success) {
-      navigate('/verify-pending', { state: { email } });
+      navigate('/verify-pending', { state: { email, emailSent: result.emailSent } });
     } else {
       setError(result.message || 'Registration failed. Please try again.');
     }

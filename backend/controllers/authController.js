@@ -16,7 +16,11 @@ const {
   getPasswordResetExpiryDate,
   buildPasswordResetUrl,
 } = require('../utils/passwordReset');
-const { sendVerificationEmailSafe, sendPasswordResetEmailSafe } = require('../utils/emailService');
+const {
+  sendVerificationEmailSafe,
+  sendPasswordResetEmailSafe,
+  describeEmailError,
+} = require('../utils/emailService');
 const { warn } = require('../utils/logger');
 
 const RESEND_GENERIC_MESSAGE =
@@ -109,25 +113,24 @@ const register = async (req, res) => {
       expires_at: expiry,
     });
 
+    // Don't block registration on email delivery. We keep the pending record either way
+    // and send the user to the waiting room, where they can resend the link.
+    let emailSent = true;
     try {
       await sendPendingVerificationEmail(pending, rawToken);
     } catch (emailError) {
+      emailSent = false;
       warn('register_verification_email_failed', {
         email,
-        error: emailError.message,
-      });
-      // Keep the pending record so the user can use "Resend verification".
-      return res.status(502).json({
-        message:
-          'We could not send the verification email right now. Please try "Resend verification" on the login page in a moment.',
-        emailSent: false,
+        ...describeEmailError(emailError),
       });
     }
 
     res.status(201).json({
-      message:
-        'We sent a verification link to your email. Click it to activate your account — no account is created until you verify.',
-      emailSent: true,
+      message: emailSent
+        ? 'We sent a verification link to your email. Click it to activate your account — no account is created until you verify.'
+        : 'Your registration is pending, but we could not send the verification email just yet. Use "Resend" on the next page in a moment.',
+      emailSent,
     });
   } catch (error) {
     console.error('Registration error:', error.message);

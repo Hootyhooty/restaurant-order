@@ -45,6 +45,17 @@
   margin-bottom: 24px;
 }
 
+.verify-pending-warning {
+  font-size: 0.92rem;
+  color: #8a3b12;
+  background: #fbe9dd;
+  border: 1px solid #f0c4a8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
 .verify-pending-form {
   display: flex;
   flex-direction: column;

@@ -7,6 +7,7 @@ import './VerifyPending.css';
 const VerifyPending = () => {
   const location = useLocation();
   const emailFromState = location.state?.email || '';
+  const initialSendFailed = location.state?.emailSent === false;
   const [email, setEmail] = useState(emailFromState);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -60,10 +61,17 @@ const VerifyPending = () => {
             ) : null}
             . Open it to activate your account, then log in.
           </p>
-          <p className="verify-pending-hint">
-            Didn&rsquo;t get it? It can take a minute to arrive &mdash; also check your spam or
-            junk folder. You can resend the link below.
-          </p>
+          {initialSendFailed ? (
+            <p className="verify-pending-warning">
+              We had trouble sending the first email. Please click &ldquo;Resend verification
+              email&rdquo; below.
+            </p>
+          ) : (
+            <p className="verify-pending-hint">
+              Didn&rsquo;t get it? It can take a minute to arrive &mdash; also check your spam or
+              junk folder. You can resend the link below.
+            </p>
+          )}
 
           <form onSubmit={handleResend} className="verify-pending-form">
             {!emailFromState && (
