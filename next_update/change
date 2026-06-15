@@ -1,0 +1,8 @@
+- Check sceenshot 2026-06-15
+- I want to you to fix the front page and theme color to look like this.
+- buttons under the headline seem disappear so better fix it with darker color and darker text
+- better scale down 'Why Picha?' part. Make all box stay in the same row.
+- dont think 'Ready to dine with us?' necessary
+- I stored a restuarant logo cloudinary inside home/restaurant/food/Picha (not sure what file type might be png)
+- Also use this file restaurant-interior_btdm4z.jpg inside cloudinary(home/restaurant/display/) as a background of the headling (behind 'Great food, Great memories' section). Is it too dark?
+- Can we optimize everything for mobile?
