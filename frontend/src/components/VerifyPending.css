@@ -1,0 +1,101 @@
+.verify-pending-section {
+  padding: 80px 0;
+  background-color: #faf4ea;
+  min-height: calc(100vh - 70px);
+}
+
+.verify-pending-content {
+  max-width: 440px;
+  margin: 0 auto;
+  background-color: #fffdf8;
+  padding: 36px 30px;
+  border-radius: 16px;
+  border: 1px solid #e3d2a8;
+  box-shadow: 0 8px 28px rgba(107, 68, 35, 0.12);
+  text-align: center;
+}
+
+.verify-pending-icon {
+  font-size: 2.6rem;
+  margin-bottom: 8px;
+}
+
+.verify-pending-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #4a3b28;
+  margin-bottom: 12px;
+}
+
+.verify-pending-text {
+  font-size: 1rem;
+  color: #5b4a33;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+
+.verify-pending-text strong {
+  color: #4a3b28;
+}
+
+.verify-pending-hint {
+  font-size: 0.9rem;
+  color: #7a6a52;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.verify-pending-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.verify-pending-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.verify-pending-form label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4a3b28;
+  margin-bottom: 8px;
+}
+
+.verify-pending-form .form-input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #e3d2a8;
+  border-radius: 6px;
+  outline: none;
+}
+
+.verify-pending-form .form-input:focus {
+  border-color: #c0892f;
+}
+
+.verify-pending-form .btn-primary {
+  width: 100%;
+}
+
+.verify-pending-content .info-message {
+  color: #2f7d32;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.verify-pending-content .error-message {
+  color: #b3471f;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.verify-pending-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
+}

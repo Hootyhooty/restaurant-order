@@ -10,7 +10,6 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -33,15 +32,11 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     if (!validateInputs()) return;
 
     const result = await register(username, email, password, phone);
     if (result.success) {
-      setSuccess(
-        result.message ||
-          'We sent a verification link to your email. Click it to activate your account.',
-      );
+      navigate('/verify-pending', { state: { email } });
     } else {
       setError(result.message || 'Registration failed. Please try again.');
     }
@@ -52,22 +47,6 @@ const Register = () => {
       <div className="container">
         <div className="register-content">
           <h2 className="register-title">Create Account</h2>
-          {success ? (
-            <div className="register-success">
-              <p className="success-message">{success}</p>
-              <p className="register-hint">
-                Your account is created only after you click the verification link in
-                your email. Then you can log in.
-              </p>
-              <button
-                type="button"
-                className="btn btn-primary register-btn"
-                onClick={() => navigate('/login', { state: { email, registered: true } })}
-              >
-                Go to Login
-              </button>
-            </div>
-          ) : (
             <form onSubmit={handleSubmit} className="register-form">
               <div className="form-group">
                 <label htmlFor="username">Username</label>
@@ -117,12 +96,9 @@ const Register = () => {
                 Create Account
               </button>
             </form>
-          )}
-          {!success && (
-            <div className="form-footer">
-              <p>Already have an account? <a href="/login">Log in</a></p>
-            </div>
-          )}
+          <div className="form-footer">
+            <p>Already have an account? <a href="/login">Log in</a></p>
+          </div>
         </div>
       </div>
     </section>

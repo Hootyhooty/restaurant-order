@@ -4,9 +4,16 @@
   flex-direction: column;
 }
 
-/* Lets the footer sit at the bottom even on short pages (mirrors the sticky header) */
+/* Footer is fixed to the viewport bottom, so reserve space so content isn't hidden behind it */
 .app-main {
   flex: 1 0 auto;
+  padding-bottom: 80px;
+}
+
+@media (max-width: 600px) {
+  .app-main {
+    padding-bottom: 150px;
+  }
 }
 
 /* Responsive design */
