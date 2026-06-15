@@ -5,9 +5,9 @@
  *   node scripts/emailTest.js you@example.com
  *   npm run email:test -- you@example.com
  *
- * It prints the active EMAIL_MODE, From address, verifies the SMTP connection/auth,
- * then attempts a send and prints the exact provider error if it fails. Use this to
- * diagnose why Resend (or any provider) is not delivering verification emails.
+ * It prints the active EMAIL_MODE, From address, verifies the active transport (Resend
+ * HTTP API in production, Mailtrap SMTP in sandbox), then attempts a send and prints the
+ * exact provider error if it fails. Use this to diagnose email delivery problems.
  */
 require('dotenv').config();
 
@@ -27,10 +27,11 @@ const {
   console.log('EMAIL_FROM      :', getFromAddress());
   console.log('EMAIL_SKIP_SEND :', process.env.EMAIL_SKIP_SEND || '(unset)');
   if (mode === 'production') {
-    console.log('SMTP_HOST       :', process.env.SMTP_HOST || '(unset)');
-    console.log('SMTP_PORT       :', process.env.SMTP_PORT || '(unset)');
-    console.log('SMTP_USER       :', process.env.SMTP_USER || '(unset)');
-    console.log('SMTP_PASS       :', process.env.SMTP_PASS ? '(set)' : '(unset)');
+    console.log('TRANSPORT       :', 'Resend HTTP API (https://api.resend.com/emails)');
+    console.log(
+      'RESEND_API_KEY  :',
+      process.env.RESEND_API_KEY || process.env.SMTP_PASS ? '(set)' : '(unset)',
+    );
   }
   console.log('To              :', to || '(missing)');
   console.log('-------------------------');
@@ -42,9 +43,9 @@ const {
 
   try {
     await verifyTransport();
-    console.log('✓ SMTP connection + auth OK');
+    console.log('✓ Transport config OK');
   } catch (err) {
-    console.error('✗ SMTP verify FAILED:', describeEmailError(err));
+    console.error('✗ Transport verify FAILED:', describeEmailError(err));
     process.exit(1);
   }
 

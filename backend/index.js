@@ -232,7 +232,7 @@ if (require.main === module) {
       `Email config: mode=${emailMode} from="${process.env.EMAIL_FROM || '(default)'}" ` +
         `skipSend=${process.env.EMAIL_SKIP_SEND === 'true'} ` +
         (emailMode === 'production'
-          ? `smtpHost=${process.env.SMTP_HOST || '(unset)'} smtpUser=${process.env.SMTP_USER || '(unset)'} smtpPass=${process.env.SMTP_PASS ? 'set' : '(unset)'}`
+          ? `transport=resend-http-api apiKey=${process.env.RESEND_API_KEY || process.env.SMTP_PASS ? 'set' : '(unset)'}`
           : 'using Mailtrap sandbox (emails do NOT reach real inboxes)'),
     );
   });
