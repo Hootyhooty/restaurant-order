@@ -2,9 +2,9 @@
 import './Home.css';
 import { Link } from 'react-router-dom';
 
-const CLOUD_BASE = 'https://res.cloudinary.com/dpfypv35h/image';
-const LOGO_URL = `${CLOUD_BASE}/home/restaurant/food/Picha.png`;
-const HERO_BG_URL = `${CLOUD_BASE}/home/restaurant/display/restaurant-interior_btdm4z.jpg`;
+const CLOUD_BASE = 'https://res.cloudinary.com/dpfypv35h/image/upload';
+const LOGO_URL = `${CLOUD_BASE}/v1771868611/restaurant/food/food_img/Picha.png`;
+const HERO_BG_URL = `${CLOUD_BASE}/v1781508544/restaurant-interior_btdm4z.jpg`;
 
 const STATS = [
   { value: '50+', label: 'Years of flavor' },
