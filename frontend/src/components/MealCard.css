@@ -75,7 +75,7 @@
 .price-amount {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #e31837;
+  color: #c0892f;
 }
 
 .meal-actions {
@@ -112,7 +112,7 @@
 }
 
 .quantity-btn:hover:not(:disabled) {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
   transform: scale(1.1);
 }
@@ -131,7 +131,7 @@
 }
 
 .add-to-cart-btn {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
   border: none;
   padding: 12px 20px;
@@ -145,9 +145,9 @@
 }
 
 .add-to-cart-btn:hover {
-  background-color: #c41230;
+  background-color: #a9741f;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(227, 24, 55, 0.3);
+  box-shadow: 0 4px 15px rgba(192, 137, 47, 0.3);
 }
 
 .review-btn {
@@ -167,7 +167,7 @@
 .review-btn:hover {
   background-color: #e9ecef;
   border-color: #adb5bd;
-  color: #e31837;
+  color: #c0892f;
 }
 
 .meal-card-login-btn {
@@ -179,16 +179,16 @@
   font-weight: 600;
   text-decoration: none;
   color: white;
-  background-color: #e31837;
+  background-color: #c0892f;
   border: none;
   transition: all 0.3s ease;
 }
 
 .meal-card-login-btn:hover {
-  background-color: #c41230;
+  background-color: #a9741f;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(227, 24, 55, 0.3);
+  box-shadow: 0 4px 15px rgba(192, 137, 47, 0.3);
 }
 
 @media (max-width: 768px) {

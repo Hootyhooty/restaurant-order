@@ -21,7 +21,7 @@
 .admin-topbar-link {
   border: none;
   background: transparent;
-  color: #e31837;
+  color: #c0892f;
   font-weight: 600;
   cursor: pointer;
   padding: 4px 8px;
@@ -31,7 +31,7 @@
 
 .admin-topbar-link.active,
 .admin-topbar-link:hover {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: #ffffff;
 }
 
@@ -63,9 +63,9 @@
 }
 
 .admin-sidebar .list-group-item {
-  border: 2px solid #e31837;
+  border: 2px solid #c0892f;
   background-color: transparent;
-  color: #e31837;
+  color: #c0892f;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -77,12 +77,12 @@
 }
 
 .admin-sidebar .list-group-item:hover {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
 }
 
 .admin-sidebar .list-group-item.active {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
 }
 
@@ -138,7 +138,7 @@
 .stats-number {
   font-size: 32px;
   font-weight: 700;
-  color: #e31837;
+  color: #c0892f;
   margin: 0;
 }
 
@@ -346,7 +346,7 @@
 }
 
 .admin-add-menu-image-area:hover {
-  border-color: #e31837;
+  border-color: #c0892f;
   background: #fff5f6;
 }
 
@@ -372,8 +372,8 @@
 
 .admin-add-menu-image-url:focus {
   outline: none;
-  border-color: #e31837;
-  box-shadow: 0 0 0 2px rgba(227, 24, 55, 0.2);
+  border-color: #c0892f;
+  box-shadow: 0 0 0 2px rgba(192, 137, 47, 0.2);
 }
 
 .admin-add-menu-field {
@@ -402,7 +402,7 @@
 .admin-add-menu-field textarea:focus,
 .admin-add-menu-field select:focus {
   outline: none;
-  border-color: #e31837;
+  border-color: #c0892f;
 }
 
 .admin-add-menu-field textarea {

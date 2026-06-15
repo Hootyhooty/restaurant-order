@@ -21,7 +21,7 @@
   height: 72px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e31837;
+  border: 2px solid #c0892f;
 }
 
 .profile-header-info {
@@ -121,7 +121,7 @@
 }
 
 .profile-tab.active {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: #ffffff;
 }
 

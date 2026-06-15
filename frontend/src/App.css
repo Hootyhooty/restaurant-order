@@ -4,6 +4,11 @@
   flex-direction: column;
 }
 
+/* Lets the footer sit at the bottom even on short pages (mirrors the sticky header) */
+.app-main {
+  flex: 1 0 auto;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .container {

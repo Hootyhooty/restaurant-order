@@ -49,9 +49,9 @@
 
 .category-btn {
   padding: 15px 20px;
-  border: 2px solid #e31837;
+  border: 2px solid #c0892f;
   background-color: transparent;
-  color: #e31837;
+  color: #c0892f;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -62,13 +62,13 @@
 }
 
 .category-btn:hover {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
   transform: translateX(5px);
 }
 
 .category-btn.active {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
   transform: translateX(5px);
 }
@@ -84,7 +84,7 @@
   gap: 15px;
   margin-bottom: 30px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #e31837;
+  border-bottom: 2px solid #c0892f;
 }
 
 .menu-title {
@@ -96,12 +96,12 @@
 
 .menu-category {
   font-size: 1.1rem;
-  color: #e31837;
+  color: #c0892f;
   font-weight: 600;
-  background-color: rgba(227, 24, 55, 0.1);
+  background-color: rgba(192, 137, 47, 0.1);
   padding: 8px 16px;
   border-radius: 20px;
-  border: 1px solid #e31837;
+  border: 1px solid #c0892f;
 }
 
 .meals-grid {
@@ -113,7 +113,7 @@
 .souvenir-section {
   margin-top: 60px;
   padding-top: 40px;
-  border-top: 2px solid #e31837;
+  border-top: 2px solid #c0892f;
 }
 
 .souvenir-section-title {

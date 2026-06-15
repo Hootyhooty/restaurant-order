@@ -1289,7 +1289,7 @@ const AdminDashboard = () => {
       .join(' ');
   };
 
-  const renderSparkline = (values, color = '#e31837') => {
+  const renderSparkline = (values, color = '#c0892f') => {
     const points = buildSparklinePoints(values);
     if (!points) {
       return <div className="analysis-empty">No data</div>;

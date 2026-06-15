@@ -14,7 +14,7 @@
 
 .review-back-link {
   display: inline-block;
-  color: #e31837;
+  color: #c0892f;
   font-weight: 600;
   text-decoration: none;
 }
@@ -51,9 +51,9 @@
 .review-sidebar .category-btn {
   display: block;
   padding: 12px 16px;
-  border: 2px solid #e31837;
+  border: 2px solid #c0892f;
   background-color: transparent;
-  color: #e31837;
+  color: #c0892f;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -63,7 +63,7 @@
 }
 
 .review-sidebar .category-btn:hover {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
 }
 
@@ -146,7 +146,7 @@
 }
 
 .review-quantity .quantity-btn:hover:not(:disabled) {
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
 }
 
@@ -167,7 +167,7 @@
   width: 100%;
   max-width: 280px;
   padding: 14px 24px;
-  background-color: #e31837;
+  background-color: #c0892f;
   color: white;
   border: none;
   border-radius: 8px;
@@ -180,9 +180,9 @@
 }
 
 .review-item-block .add-to-cart-btn:hover {
-  background-color: #c41230;
+  background-color: #a9741f;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(227, 24, 55, 0.3);
+  box-shadow: 0 4px 15px rgba(192, 137, 47, 0.3);
 }
 
 .review-section {
@@ -229,7 +229,7 @@
   display: inline-block;
   margin-bottom: 20px;
   font-size: 14px;
-  color: #e31837;
+  color: #c0892f;
   text-decoration: none;
 }
 
@@ -254,8 +254,8 @@
 
 .review-write-area:focus {
   outline: none;
-  border-color: #e31837;
-  box-shadow: 0 0 0 2px rgba(227, 24, 55, 0.2);
+  border-color: #c0892f;
+  box-shadow: 0 0 0 2px rgba(192, 137, 47, 0.2);
 }
 
 .review-submit-btn {
@@ -273,7 +273,7 @@
 }
 
 .review-submit-btn:hover {
-  background-color: #e31837;
+  background-color: #c0892f;
 }
 
 @media (max-width: 768px) {

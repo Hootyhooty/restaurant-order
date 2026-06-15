@@ -132,7 +132,7 @@ const Header = () => {
         <div className="header-content">
           <div className="logo">
             <img
-              src="https://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migrated/https://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migratedhttps://res.cloudinary.com/dpfypv35h/image/upload/v1771853657/restaurant/migrated/food_img/Picha.png"
+              src="https://res.cloudinary.com/dpfypv35h/image/upload/v1771868611/restaurant/food/food_img/Picha.png"
               alt="Picha"
               className="logo-img"
             />

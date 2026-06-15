@@ -32,6 +32,7 @@ function App() {
           <div className="App">
             <Header />
             <ScrollToTop />
+          <main className="app-main">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
@@ -52,6 +53,7 @@ function App() {
             <Route path="/booking/payment/success" element={<BookingPaymentSuccess />} />
             <Route path="/booking/payment/cancel" element={<BookingPaymentCancel />} />
           </Routes>
+          </main>
           <Footer />
           </div>
         </Router>

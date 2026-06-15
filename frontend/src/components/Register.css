@@ -50,7 +50,7 @@
 }
 
 .form-input:focus {
-  border-color: #e31837;
+  border-color: #c0892f;
 }
 
 .register-success {
@@ -71,7 +71,7 @@
 }
 
 .error-message {
-  color: #e31837;
+  color: #c0892f;
   font-size: 0.9rem;
   text-align: center;
   margin: 0;
@@ -92,7 +92,7 @@
 }
 
 .form-footer a {
-  color: #e31837;
+  color: #c0892f;
   text-decoration: none;
 }
 
