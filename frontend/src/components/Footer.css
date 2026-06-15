@@ -1,178 +1,56 @@
+/* Minimal footer — warm cream/gold theme */
 .footer {
-  background-color: #1a1a1a;
-  color: white;
-  padding: 60px 0 20px;
-  margin-top: auto;
+  background: #f6eeda;
+  border-top: 1px solid #e3d2a8;
 }
 
-.footer-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 40px;
-  margin-bottom: 40px;
-}
-
-.footer-section {
+.footer-inner {
   display: flex;
-  flex-direction: column;
-}
-
-.footer-logo-img {
-  height: 40px;
-  width: auto;
-  margin-bottom: 15px;
-}
-
-.footer-description {
-  color: #ccc;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.social-links {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.social-link {
-  color: #ccc;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.social-link:hover {
-  color: #e31837;
-}
-
-.footer-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: white;
-}
-
-.footer-links {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.footer-links li {
-  margin-bottom: 10px;
-}
-
-.footer-link {
-  color: #ccc;
-  text-decoration: none;
-  transition: color 0.3s ease;
-  font-size: 14px;
-}
-
-.footer-link:hover {
-  color: #e31837;
-}
-
-.contact-info p {
-  color: #ccc;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.app-downloads h4 {
-  margin-bottom: 15px;
-  color: white;
-  font-size: 1rem;
-}
-
-.app-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.app-btn {
-  background-color: #333;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.app-btn:hover {
-  background-color: #e31837;
-}
-
-.footer-bottom {
-  border-top: 1px solid #333;
-  padding-top: 20px;
-}
-
-.footer-bottom-content {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 22px;
+  padding-bottom: 22px;
 }
 
-.footer-bottom-content p {
-  color: #ccc;
-  font-size: 14px;
-  margin: 0;
+.footer-brand {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #c0892f;
 }
 
-.footer-bottom-links {
+.footer-social {
   display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 22px;
 }
 
-.footer-bottom-link {
-  color: #ccc;
+.footer-social-link {
+  color: #4a3b28;
+  font-size: 0.9rem;
+  font-weight: 600;
   text-decoration: none;
-  font-size: 14px;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
 }
 
-.footer-bottom-link:hover {
-  color: #e31837;
+.footer-social-link:hover {
+  color: #c0892f;
 }
 
-@media (max-width: 768px) {
-  .footer {
-    padding: 40px 0 20px;
-  }
+.footer-copy {
+  margin: 0;
+  color: #7a6a52;
+  font-size: 0.85rem;
+}
 
-  .footer-content {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 30px;
-  }
-
-  .footer-bottom-content {
+@media (max-width: 600px) {
+  .footer-inner {
     flex-direction: column;
     text-align: center;
+    gap: 12px;
   }
 
-  .footer-bottom-links {
-    justify-content: center;
+  .footer-social {
+    gap: 18px;
   }
 }
-
-@media (max-width: 480px) {
-  .footer-content {
-    grid-template-columns: 1fr;
-    gap: 25px;
-  }
-
-  .social-links {
-    justify-content: center;
-  }
-
-  .app-buttons {
-    justify-content: center;
-  }
-} 
