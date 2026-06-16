@@ -715,3 +715,101 @@ default ✓ [======================================] 00/12 VUs  1m20s
   - Improvement: `~19.36%` faster p95
   - `http_req_failed`: `0.00%` (still passing)
 
+15 June 2026
+
+==================================================
+Auth, Email & Account Activation
+==================================================
+
+Email verification
+- [x] POST `/api/auth/verify-email` — token-based email verification
+- [x] POST `/api/auth/resend-verification` — resend link for pending/unverified accounts
+- [x] Frontend: `/verify-email` landing page (auto-verifies from link token)
+- [x] Frontend: `/verify-pending` verification waiting room after registration
+  - Shows registered email, spam-folder hint, and "Resend verification email" button
+  - Redirects here from Register on success (even if first send fails)
+  - Warning banner when `emailSent: false`
+
+Deferred account creation
+- [x] `PendingRegistration` model — holds username/email/password until verified
+- [x] TTL index on `expires_at` for automatic cleanup of expired pending records
+- [x] `Customer` created only when verification link is clicked (not at register time)
+- [x] `Customer` pre-save hook: `skipPasswordHash` flag to avoid double-hashing on activation
+- [x] Integration tests updated for new register → verify → login flow
+
+Password reset
+- [x] POST `/api/auth/forgot-password` and POST `/api/auth/reset-password`
+- [x] `password_reset_token` / `password_reset_expires` on Customer model
+- [x] Frontend: `/forgot-password` and `/reset-password` pages
+- [x] `public/_redirects` (`/* /index.html 200`) for SPA deep links on Render
+
+Profile & checkout guards
+- [x] Reputation status green when `email_verified` (or admin) — phone no longer required
+- [x] `AddressRequiredModal` — blocks checkout/booking if user has no `address_line1`
+- [x] Wired into Header (Buy) and Booking payment flows
+
+==================================================
+Email Delivery (Resend + Custom Domain)
+==================================================
+
+Production email provider
+- [x] Custom domain `picha-restaurant.com` verified in Resend (SPF/DKIM DNS)
+- [x] `EMAIL_FROM=Picha <noreply@picha-restaurant.com>`
+- [x] Migrated from Mailtrap sandbox to Resend for production delivery
+
+Render SMTP fix → Resend HTTP API
+- [x] Root cause: Render blocks outbound SMTP (ports 25/465/587) → `ETIMEDOUT` on `CONN`
+- [x] Production now sends via Resend HTTP API (`https://api.resend.com/emails`, port 443)
+- [x] Sandbox/local still uses Mailtrap SMTP when `EMAIL_MODE=sandbox`
+- [x] New env: `RESEND_API_KEY` (falls back to legacy `SMTP_PASS` for same `re_...` key)
+- [x] `backend/utils/emailService.js` — `sendViaResendApi()`, `deliver()`, fast SMTP timeouts in sandbox
+- [x] Startup log: `transport=resend-http-api apiKey=set|(unset)`
+- [x] `npm run email:test` — diagnostics script for transport + send test
+
+Registration resilience
+- [x] Register returns `201` with `emailSent: true|false` instead of `502` on send failure
+- [x] Pending record kept either way; user can resend from waiting room
+- [x] Structured logs: `register_verification_email_failed` with SMTP/API error detail
+
+==================================================
+Deployment & Custom Domains
+==================================================
+
+- [x] Frontend: `picha-restaurant.com` (Render Static Site)
+- [x] Backend API: `api.picha-restaurant.com` (Render Web Service)
+- [x] Updated `FRONTEND_ORIGIN`, `FRONTEND_URL`, `VITE_API_BASE_URL` for new domains
+- [x] `next_update/release-readiness.md` — production URLs table + env var guide
+- [x] `next_update/staging-verification-checklist.md` — email verification + password reset scenarios
+- [x] `next_update/staging-signoff.md` — sign-off rows for auth flows
+- [x] `next_update/security-checklist.md` — email verification + password reset marked implemented
+- [x] k6 scripts default `BASE_URL` → `https://api.picha-restaurant.com`
+
+==================================================
+Frontend UI — Cream/Gold Theme Redesign
+==================================================
+
+Home page
+- [x] Rebuilt `Home.jsx` / `Home.css` — hero ("Good food, great memories"), stats row, "Why Picha?"
+- [x] Cloudinary hero background (`restaurant-interior_btdm4z.jpg`) and logo (`Picha.png`)
+- [x] Removed "Ready to dine with us?" section; responsive mobile layout
+- [x] Padding tweaks for `home-badge` and `home-stats`
+
+Header & Footer
+- [x] Header: cream background (`#f6eeda`), gold accents (`#c0892f`), warm brown nav text
+- [x] Fixed logo URL (was malformed migrated Cloudinary path)
+- [x] Footer: minimal design (PICHA brand, social links, copyright) — `Footer.jsx` + `Footer.css`
+- [x] Footer fixed to viewport bottom (`position: fixed`); `app-main` padding-bottom so content not hidden
+
+Global theme
+- [x] `index.css` — page background cream (`#faf4ea`), buttons brown/gold
+- [x] Red accent `#e31837` → gold `#c0892f` across Login, Register, Profile, Store, Meals, Admin, Review pages
+
+==================================================
+Known Issues / Ops Notes
+==================================================
+
+- Resend "delivered" but inbox empty → usually spam filtering on new sending domain; check junk + add DMARC
+- Resend DKIM/return-path CNAME records must be DNS-only (grey cloud) in Cloudflare — not proxied
+- Cloudflare proxy on API is optional; does not affect outbound email; use SSL Full (strict) if proxied
+- Render: set `RESEND_API_KEY` on redeploy; remove unused `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`
+
