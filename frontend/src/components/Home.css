@@ -22,6 +22,9 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  /* Pull hero under the sticky header so the transparent bar overlays the photo */
+  margin-top: -72px;
+  padding-top: 72px;
 }
 
 /* Light wash over the photo so the cream look + dark text stay readable (not too dark) */

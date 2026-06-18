@@ -1,0 +1,158 @@
+.contact-page {
+  background: #faf4ea;
+  padding: 48px 0 80px;
+  min-height: calc(100vh - 70px);
+}
+
+.contact-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 28px;
+}
+
+.contact-info-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.contact-info-chip {
+  background: #fffdf8;
+  border: 1px solid #e3d2a8;
+  border-radius: 12px;
+  padding: 12px 18px;
+  min-width: 140px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+a.contact-info-chip:hover {
+  border-color: #c0892f;
+  box-shadow: 0 4px 14px rgba(107, 68, 35, 0.1);
+}
+
+.contact-info-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #c0892f;
+  margin-bottom: 4px;
+}
+
+.contact-info-value {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4a3b28;
+}
+
+.contact-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #2c2113;
+  margin: 0 0 10px;
+}
+
+.contact-subtitle {
+  color: #7a6a52;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin: 0 0 28px;
+}
+
+.contact-form {
+  text-align: left;
+  background: #fffdf8;
+  border: 1px solid #e3d2a8;
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 8px 28px rgba(107, 68, 35, 0.08);
+}
+
+.contact-field {
+  margin-bottom: 18px;
+}
+
+.contact-field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a3b28;
+  margin-bottom: 8px;
+}
+
+.contact-input,
+.contact-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 1rem;
+  border: 1px solid #e3d2a8;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: #2c2113;
+  font-family: inherit;
+}
+
+.contact-input:focus,
+.contact-textarea:focus {
+  border-color: #c0892f;
+}
+
+.contact-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.contact-error {
+  color: #b3471f;
+  font-size: 0.9rem;
+  margin: 0 0 12px;
+}
+
+.contact-success {
+  color: #2f7d32;
+  font-size: 0.9rem;
+  margin: 0 0 12px;
+}
+
+.contact-submit-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.contact-submit {
+  min-width: 110px;
+}
+
+@media (max-width: 600px) {
+  .contact-page {
+    padding: 32px 0 64px;
+  }
+
+  .contact-form {
+    padding: 22px 18px;
+  }
+
+  .contact-info-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .contact-info-chip {
+    min-width: unset;
+  }
+}

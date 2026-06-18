@@ -304,6 +304,36 @@ function validatePaginationQuery(req, res, next) {
   next();
 }
 
+function validateContactBody(req, res, next) {
+  const name = String(req.body?.name || '').trim();
+  const email = String(req.body?.email || '').trim();
+  const phone = String(req.body?.phone || '').trim();
+  const message = String(req.body?.message || '').trim();
+
+  if (name.length < 2 || name.length > 100) {
+    markValidationError(req, 'Name must be between 2 and 100 characters');
+    return badRequest(res, 'Name must be between 2 and 100 characters');
+  }
+  if (!isNonEmptyString(email) || !email.includes('@')) {
+    markValidationError(req, 'Valid email is required');
+    return badRequest(res, 'Valid email is required');
+  }
+  if (phone.length > 30) {
+    markValidationError(req, 'Phone number is too long');
+    return badRequest(res, 'Phone number is too long');
+  }
+  if (message.length < 10 || message.length > 2000) {
+    markValidationError(req, 'Message must be between 10 and 2000 characters');
+    return badRequest(res, 'Message must be between 10 and 2000 characters');
+  }
+
+  req.body.name = name;
+  req.body.email = email;
+  req.body.phone = phone;
+  req.body.message = message;
+  next();
+}
+
 module.exports = {
   validateRegisterBody,
   validateLoginBody,
@@ -311,6 +341,7 @@ module.exports = {
   validateResendVerificationBody,
   validateForgotPasswordBody,
   validateResetPasswordBody,
+  validateContactBody,
   validateReviewListQuery,
   validateReviewCreateBody,
   validateBookingAvailabilityQuery,

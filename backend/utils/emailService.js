@@ -232,6 +232,54 @@ async function sendPasswordResetEmailSafe(payload) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function getContactInbox() {
+  return process.env.CONTACT_INBOX || 'info@picha-restaurant.com';
+}
+
+function buildContactFormEmailHtml({ name, email, phone, message }) {
+  return `
+    <p><strong>New contact form submission</strong></p>
+    <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+    <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+    <p><strong>Phone:</strong> ${escapeHtml(phone || '—')}</p>
+    <p><strong>Message:</strong></p>
+    <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+  `;
+}
+
+async function sendContactFormEmail({ name, email, phone, message }) {
+  if (process.env.EMAIL_SKIP_SEND === 'true') {
+    info('email_skip_send_contact', { email });
+    return { skipped: true };
+  }
+
+  const subject = `Contact form: ${String(name).slice(0, 60)}`;
+  const html = buildContactFormEmailHtml({ name, email, phone, message });
+  const text = `Name: ${name}\nEmail: ${email}\nPhone: ${phone || '—'}\n\n${message}`;
+
+  await deliver({ to: getContactInbox(), subject, html, text });
+
+  info('contact_form_email_sent', { from: email, mode: process.env.EMAIL_MODE || 'sandbox' });
+  return { sent: true };
+}
+
+async function sendContactFormEmailSafe(payload) {
+  try {
+    return await sendContactFormEmail(payload);
+  } catch (err) {
+    warn('contact_form_email_failed', { from: payload.email, ...describeEmailError(err) });
+    throw err;
+  }
+}
+
 module.exports = {
   sendVerificationEmail,
   sendVerificationEmailSafe,
@@ -239,7 +287,10 @@ module.exports = {
   buildPasswordResetEmailHtml,
   sendPasswordResetEmail,
   sendPasswordResetEmailSafe,
+  sendContactFormEmail,
+  sendContactFormEmailSafe,
   getFromAddress,
+  getContactInbox,
   verifyTransport,
   describeEmailError,
   getLastSentVerificationForTest,

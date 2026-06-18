@@ -1,6 +1,6 @@
   // src/components/Header.jsx
 import { useState, useContext, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
@@ -16,6 +16,9 @@ const Header = () => {
   const { isLoggedIn, user, logout } = useContext(AuthContext);
   const { items, updateQuantity, removeFromCart, clearCart, getTotalCount, getTotalPrice } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [headerScrolled, setHeaderScrolled] = useState(false);
+  const isHomePage = location.pathname === '/';
   const [isPaying, setIsPaying] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
@@ -47,6 +50,23 @@ const Header = () => {
       window.removeEventListener('focus', resetPaying);
     };
   }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setHeaderScrolled(window.scrollY > 24);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [location.pathname]);
+
+  const headerClassName = [
+    'header',
+    isHomePage && !headerScrolled ? 'header--transparent' : '',
+    isHomePage && headerScrolled ? 'header--solid' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const handleAuthAction = () => {
     if (isLoggedIn) {
@@ -127,7 +147,7 @@ const Header = () => {
         : `${API_BASE}/api/users/uploads/${user.photo}`;
 
   return (
-    <header className="header">
+    <header className={headerClassName}>
       <div className="container">
         <div className="header-content">
           <div className="logo">
@@ -152,10 +172,10 @@ const Header = () => {
                 <Link to="/store" className="nav-link">Stores</Link>
               </li>
               <li className="nav-item">
-                <Link to="#about" className="nav-link">About Us</Link>
+                <Link to="/about" className="nav-link">About Us</Link>
               </li>
               <li className="nav-item">
-                <Link to="#contact" className="nav-link">Contact</Link>
+                <Link to="/contact" className="nav-link">Contact</Link>
               </li>
             </ul>
           </nav>
