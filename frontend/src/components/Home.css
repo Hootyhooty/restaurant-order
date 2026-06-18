@@ -4,10 +4,11 @@
   --cream-soft: #f6eeda;
   --card: #efe3c6;
   --card-border: #e3d2a8;
-  --gold: #c0892f;
+  --gold: #EFB94F;
   --gold-dark: #a9741f;
   --brown: #4a3b28;
-  --heading: #2c2113;
+  --white:#F5EFE0;
+  --heading: #FAF4EA;
   --muted: #7a6a52;
   --btn-primary: #6b4423;
   --btn-primary-hover: #543419;
@@ -33,9 +34,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(250, 244, 234, 0.2) 0%,
-    rgba(250, 244, 234, 0.24) 60%,
-    rgba(246, 238, 218, 0.28) 100%
+    rgba(250, 244, 234, 0.04) 0%,
+    rgba(250, 244, 234, 0.08) 60%,
+    rgba(246, 238, 218, 0.12) 100%
   );
 }
 
@@ -83,7 +84,7 @@
 
 .home-hero-subtitle {
   max-width: 620px;
-  color: var(--brown);
+  color: var(--white);
   font-size: 1.15rem;
   line-height: 1.6;
   margin: 0 auto 30px;
