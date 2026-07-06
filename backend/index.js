@@ -30,6 +30,7 @@ const {
   helmetMiddleware,
   authLimiter,
   publicLimiter,
+  operationalLimiter,
   webhookLimiter,
 } = require('./utils/security');
 
@@ -209,8 +210,8 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/staff', staffRoutes);
-app.use('/api/kitchen', kitchenRoutes);
+app.use('/api/staff', operationalLimiter, staffRoutes);
+app.use('/api/kitchen', operationalLimiter, kitchenRoutes);
 app.use('/api/promotions', publicLimiter, promotionRoutes);
 app.use('/api/contact', publicLimiter, contactRoutes);
 

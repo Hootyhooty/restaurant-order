@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { rolesRequired } = require('../controllers/authController');
+const { writeLimiter } = require('../utils/security');
 const {
   getStaffBookings,
   getStaffBookingDetail,
@@ -25,12 +26,13 @@ router.get(
 );
 router.post(
   '/bookings/:bookingId/check-in',
+  writeLimiter,
   rolesRequired('STAFF'),
   validateMongoIdParam('bookingId'),
   checkInStaffBooking,
 );
 router.get('/menu', rolesRequired('STAFF'), getStaffMenu);
 router.get('/orders', rolesRequired('STAFF'), validateStaffOrdersQuery, getStaffOrders);
-router.post('/orders', rolesRequired('STAFF'), validateStaffCreateOrderBody, createStaffOrder);
+router.post('/orders', writeLimiter, rolesRequired('STAFF'), validateStaffCreateOrderBody, createStaffOrder);
 
 module.exports = router;

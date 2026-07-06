@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { rolesRequired } = require('../controllers/authController');
+const { writeLimiter } = require('../utils/security');
 const {
   getKitchenOrders,
   getKitchenReservations,
@@ -25,14 +26,15 @@ router.get('/reservations', kitchenOrAdmin, validateKitchenOrdersQuery, getKitch
 router.get('/orders/:id', kitchenOrAdmin, validateMongoIdParam('id'), getKitchenOrder);
 router.patch(
   '/orders/:id/lines',
+  writeLimiter,
   kitchenOnly,
   validateMongoIdParam('id'),
   validateKitchenPatchLinesBody,
   patchKitchenOrderLines,
 );
-router.patch('/orders/:id', kitchenOnly, validateMongoIdParam('id'), patchKitchenOrder);
+router.patch('/orders/:id', writeLimiter, kitchenOnly, validateMongoIdParam('id'), patchKitchenOrder);
 router.get('/stock', kitchenOrAdmin, getKitchenStock);
-router.patch('/stock/:mealFileId', kitchenOnly, patchKitchenStock);
+router.patch('/stock/:mealFileId', writeLimiter, kitchenOnly, patchKitchenStock);
 router.get('/stream', rolesRequired('KITCHEN', 'ADMIN', 'STAFF'), streamKitchenEvents);
 
 module.exports = router;

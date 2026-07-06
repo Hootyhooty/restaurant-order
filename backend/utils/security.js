@@ -74,6 +74,15 @@ const bookingLimiter = rateLimit({
   message: jsonError('Too many booking requests. Please try again in a moment.'),
 });
 
+/** Staff/kitchen dashboards — polling + SSE; looser than auth, tighter than anonymous public reads. */
+const operationalLimiter = rateLimit({
+  windowMs: envNumber('RATE_LIMIT_OPERATIONAL_WINDOW_MS', 60 * 1000),
+  limit: envNumber('RATE_LIMIT_OPERATIONAL_MAX', 180),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonError('Too many requests. Please slow down and try again.'),
+});
+
 /** Stripe webhook — allow bursts but block floods. */
 const webhookLimiter = rateLimit({
   windowMs: envNumber('RATE_LIMIT_WEBHOOK_WINDOW_MS', 60 * 1000),
@@ -89,5 +98,6 @@ module.exports = {
   writeLimiter,
   publicLimiter,
   bookingLimiter,
+  operationalLimiter,
   webhookLimiter,
 };
