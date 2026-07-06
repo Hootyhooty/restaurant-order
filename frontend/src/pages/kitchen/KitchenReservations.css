@@ -1,0 +1,100 @@
+.kitchen-reservations-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.kitchen-reservations-toolbar h2 {
+  color: #6b4423;
+  margin: 0;
+}
+
+.kitchen-reservations-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.kitchen-reservations-controls .form-control {
+  max-width: 180px;
+}
+
+.kitchen-reservations-hint {
+  color: #5c4a32;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.kitchen-reservations-msg {
+  color: #5c4a32;
+}
+
+.kitchen-reservations-error {
+  color: #a33;
+}
+
+.kitchen-reservations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.kitchen-reservation-card {
+  border: 2px dashed #c9b07a;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fffdf8;
+}
+
+.kitchen-reservation-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.kitchen-reservation-time {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #4a3070;
+}
+
+.kitchen-reservation-table,
+.kitchen-reservation-guests {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5c4a32;
+  background: #f5efe3;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.kitchen-reservation-customer {
+  font-weight: 600;
+  color: #6b4423;
+  margin-bottom: 10px;
+}
+
+.kitchen-reservation-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kitchen-reservation-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0e6d4;
+  font-size: 0.95rem;
+}
+
+.kitchen-reservation-qty {
+  font-weight: 700;
+  color: #6b4423;
+}

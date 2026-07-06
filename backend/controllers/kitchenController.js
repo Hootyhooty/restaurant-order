@@ -1,4 +1,6 @@
 const KitchenOrder = require('../models/KitchenOrder');
+const Booking = require('../models/Booking');
+const Customer = require('../models/Customer');
 const AppError = require('../utils/appError');
 const { getBangkokDateString } = require('../utils/bangkokDate');
 const {
@@ -16,19 +18,31 @@ const SOURCE_LABELS = {
   online: 'Online',
 };
 
-const mapKitchenOrder = (order) => ({
-  id: order._id,
-  ticketNumber: order.ticketNumber,
-  serviceDate: order.serviceDate,
-  source: order.source,
-  sourceLabel: SOURCE_LABELS[order.source] || order.source,
-  tableId: order.tableId ?? null,
-  customerName: order.customerName,
-  status: order.status,
-  lines: normalizeLines(order.lines || []),
-  createdAt: order.createdAt,
-  updatedAt: order.updatedAt,
-});
+const mapKitchenOrder = (order) => {
+  const isReservation = order.source === 'booking_preorder';
+  return {
+    id: order._id,
+    ticketNumber: order.ticketNumber ?? null,
+    reservedTicketNumber: order.reservedTicketNumber ?? null,
+    visitTimeSlot: order.visitTimeSlot ?? null,
+    displayNumber: isReservation ? order.reservedTicketNumber : order.ticketNumber,
+    displayNumberLabel: isReservation ? 'Reserved' : '#',
+    serviceDate: order.serviceDate,
+    source: order.source,
+    sourceLabel: SOURCE_LABELS[order.source] || order.source,
+    tableId: order.tableId ?? null,
+    customerName: order.customerName,
+    status: order.status,
+    lines: normalizeLines(order.lines || []),
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  };
+};
+
+const formatCustomerName = (customer) => {
+  const full = [customer?.first_name, customer?.last_name].filter(Boolean).join(' ').trim();
+  return full || customer?.username || 'Guest';
+};
 
 // GET /api/kitchen/orders?date=&status=
 const getKitchenOrders = async (req, res) => {
@@ -40,7 +54,7 @@ const getKitchenOrders = async (req, res) => {
     if (status) filter.status = status;
 
     const orders = await KitchenOrder.find(filter)
-      .sort({ ticketNumber: 1 })
+      .sort({ createdAt: 1 })
       .lean();
 
     const payload = {
@@ -60,6 +74,58 @@ const getKitchenOrders = async (req, res) => {
   } catch (error) {
     console.error('Kitchen get orders error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load orders' });
+  }
+};
+
+// GET /api/kitchen/reservations?date=
+const getKitchenReservations = async (req, res) => {
+  try {
+    const date = String(req.query.date || getBangkokDateString()).trim();
+
+    const bookings = await Booking.find({
+      date,
+      status: 'confirmed',
+      'preOrderItems.0': { $exists: true },
+    })
+      .sort({ timeSlot: 1 })
+      .lean();
+
+    if (!bookings.length) {
+      return res.json({ success: true, date, items: [] });
+    }
+
+    const bookingIds = bookings.map((b) => b._id.toString());
+    const existingOrders = await KitchenOrder.find({ bookingId: { $in: bookingIds } })
+      .select('bookingId')
+      .lean();
+    const checkedInIds = new Set(existingOrders.map((o) => o.bookingId));
+
+    const pending = bookings.filter((b) => !checkedInIds.has(b._id.toString()));
+
+    const userIds = [...new Set(pending.map((b) => b.userId))];
+    const customers = await Customer.find({ _id: { $in: userIds } })
+      .select('username first_name last_name')
+      .lean();
+    const customerById = new Map(customers.map((c) => [c._id.toString(), c]));
+
+    const items = pending.map((b) => ({
+      id: b._id.toString(),
+      tableId: b.tableId,
+      customerName: formatCustomerName(customerById.get(b.userId)),
+      date: b.date,
+      timeSlot: b.timeSlot,
+      guestCount: b.guestCount,
+      preOrderLines: (b.preOrderItems || []).map((item) => ({
+        mealId: item.mealId,
+        name: item.name,
+        quantity: item.quantity,
+      })),
+    }));
+
+    return res.json({ success: true, date, items });
+  } catch (error) {
+    console.error('Kitchen get reservations error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load reservations' });
   }
 };
 
@@ -222,6 +288,7 @@ const streamKitchenEvents = async (req, res) => {
 
 module.exports = {
   getKitchenOrders,
+  getKitchenReservations,
   getKitchenOrder,
   patchKitchenOrderLines,
   patchKitchenOrder,

@@ -77,7 +77,7 @@ const StaffBookings = () => {
       setConfirmBooking(null);
       await fetchBookings();
     } catch (err) {
-      alert(err.message || 'Check-in failed');
+      alert(err.message || 'Show up failed');
     } finally {
       setCheckInSubmitting(false);
     }
@@ -205,7 +205,7 @@ const StaffBookings = () => {
                           setConfirmBooking(b);
                         }}
                       >
-                        Check in &amp; refund deposit
+                        Show up &amp; refund deposit
                       </button>
                     ) : (
                       <span className="staff-status-label" title={b.source === 'intent' ? 'Awaiting payment confirmation' : ''}>
@@ -228,7 +228,7 @@ const StaffBookings = () => {
         <div className="staff-modal-overlay" onClick={() => !checkInSubmitting && setConfirmBooking(null)}>
           <div className="staff-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="staff-modal-header">
-              <h3>Confirm check-in</h3>
+              <h3>Confirm show up</h3>
               <button
                 type="button"
                 className="staff-modal-close"
@@ -240,7 +240,7 @@ const StaffBookings = () => {
             </div>
             <div className="staff-modal-body">
               <p>
-                Check in <strong>{confirmBooking.customerName}</strong> at table{' '}
+                Show up <strong>{confirmBooking.customerName}</strong> at table{' '}
                 <strong>{confirmBooking.table ?? confirmBooking.tableId}</strong>?
               </p>
               <p className="staff-modal-warning">
@@ -262,7 +262,7 @@ const StaffBookings = () => {
                 onClick={handleCheckIn}
                 disabled={checkInSubmitting}
               >
-                {checkInSubmitting ? 'Processing…' : 'Confirm check-in'}
+                {checkInSubmitting ? 'Processing…' : 'Confirm show up'}
               </button>
             </div>
           </div>

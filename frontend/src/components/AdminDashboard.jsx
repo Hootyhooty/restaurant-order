@@ -1266,7 +1266,7 @@ const AdminDashboard = () => {
 
   const bookingAction = async (bookingId, action) => {
     if (!bookingId) return;
-    const label = action === 'check-in' ? 'Check In' : action === 'no-show' ? 'No show' : 'Cancel';
+    const label = action === 'check-in' ? 'Show Up' : action === 'no-show' ? 'No show' : 'Cancel';
     if (!window.confirm(`${label} this booking?`)) return;
     try {
       await fetchJSON(`/api/admin/bookings/${bookingId}/${action}`, { method: 'POST' });
@@ -1421,7 +1421,7 @@ const AdminDashboard = () => {
                           disabled={b.status !== 'confirmed'}
                           onClick={() => bookingAction(b.id, 'check-in')}
                         >
-                          Check In
+                          Show Up
                         </button>
                         <button
                           className="btn btn-outline-warning"

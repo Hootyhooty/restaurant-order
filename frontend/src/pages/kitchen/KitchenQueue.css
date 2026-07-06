@@ -85,6 +85,12 @@
   color: #5c4a32;
 }
 
+.kitchen-ticket-time {
+  font-size: 0.85rem;
+  color: #5c4a32;
+  margin: 0 0 6px;
+}
+
 .kitchen-ticket-customer {
   font-weight: 600;
   margin-bottom: 12px;

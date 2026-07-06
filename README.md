@@ -125,9 +125,18 @@ cd backend
 npm run migrate:staffs
 ```
 
+### Kitchen reserved ticket migration
+
+After deploying Phase 4 kitchen reservation numbering, run once (drops legacy index and backfills `reservedTicketNumber` / `visitTimeSlot` on existing pre-order tickets):
+
+```bash
+cd backend
+npm run migrate:kitchen-reserved
+```
+
 ### Pre-order kitchen timing
 
-Booking pre-orders create a kitchen ticket when the guest is **checked in** (staff or admin), not at payment time. This keeps the kitchen queue focused on guests who are on-site.
+Booking pre-orders create a kitchen ticket when the guest is **shown up** (staff or admin), not at payment time. Kitchen staff see upcoming pre-orders under **Kitchen → Reservations** until show up.
 
 ### Kitchen stock
 

@@ -7,6 +7,25 @@ import './KitchenQueue.css';
 const POLL_MS = 8000;
 const TERMINAL = new Set(['served', 'cancelled']);
 
+const formatBangkokTime = (isoString) => {
+  if (!isoString) return '—';
+  try {
+    return new Date(isoString).toLocaleTimeString('en-GB', {
+      timeZone: 'Asia/Bangkok',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  } catch {
+    return '—';
+  }
+};
+
+const formatTimeSlot = (timeSlot) => {
+  if (!timeSlot) return '—';
+  return String(timeSlot).replace('-', '–');
+};
+
 const KitchenQueue = () => {
   const [orders, setOrders] = useState([]);
   const [date, setDate] = useState(getBangkokDateString);
@@ -144,10 +163,17 @@ const KitchenQueue = () => {
           const hasPreparing = (order.lines || []).some((l) => l.lineStatus === 'preparing');
           const hasReady = (order.lines || []).some((l) => l.lineStatus === 'ready');
           const allTerminal = (order.lines || []).every((l) => TERMINAL.has(l.lineStatus));
+          const isReservation = order.source === 'booking_preorder';
+          const ticketLabel = isReservation
+            ? `Reserved #${order.reservedTicketNumber ?? order.displayNumber ?? '—'}`
+            : `#${order.ticketNumber ?? order.displayNumber ?? '—'}`;
+          const timeLabel = isReservation
+            ? `Visit ${formatTimeSlot(order.visitTimeSlot)} · Arrived ${formatBangkokTime(order.createdAt)}`
+            : `Ordered ${formatBangkokTime(order.createdAt)}`;
           return (
             <article key={order.id} className="kitchen-ticket">
               <header className="kitchen-ticket-header">
-                <span className="kitchen-ticket-number">#{order.ticketNumber}</span>
+                <span className="kitchen-ticket-number">{ticketLabel}</span>
                 <span className={`kitchen-ticket-badge kitchen-ticket-badge--${order.source}`}>
                   {order.sourceLabel}
                 </span>
@@ -155,6 +181,7 @@ const KitchenQueue = () => {
                   <span className="kitchen-ticket-table">Table {order.tableId}</span>
                 )}
               </header>
+              <p className="kitchen-ticket-time">{timeLabel}</p>
               <p className="kitchen-ticket-customer">{order.customerName}</p>
               <ul className="kitchen-ticket-lines">
                 {(order.lines || []).map((line, idx) => {

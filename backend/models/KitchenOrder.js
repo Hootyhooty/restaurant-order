@@ -20,7 +20,9 @@ const kitchenOrderSchema = new mongoose.Schema(
   {
     _id: { type: String, default: generateUUID },
 
-    ticketNumber: { type: Number, required: true, min: 1 },
+    ticketNumber: { type: Number, min: 1 },
+    reservedTicketNumber: { type: Number, min: 1 },
+    visitTimeSlot: { type: String, trim: true },
     serviceDate: { type: String, required: true, trim: true, index: true },
 
     source: {
@@ -51,6 +53,24 @@ const kitchenOrderSchema = new mongoose.Schema(
   }
 );
 
-kitchenOrderSchema.index({ serviceDate: 1, ticketNumber: 1 }, { unique: true });
+kitchenOrderSchema.pre('validate', function validateTicketFields(next) {
+  if (this.source === 'booking_preorder') {
+    if (!this.reservedTicketNumber) {
+      this.invalidate('reservedTicketNumber', 'reservedTicketNumber is required for booking_preorder');
+    }
+  } else if (!this.ticketNumber) {
+    this.invalidate('ticketNumber', 'ticketNumber is required');
+  }
+  next();
+});
+
+kitchenOrderSchema.index(
+  { serviceDate: 1, ticketNumber: 1 },
+  { unique: true, partialFilterExpression: { source: { $ne: 'booking_preorder' } } }
+);
+kitchenOrderSchema.index(
+  { serviceDate: 1, reservedTicketNumber: 1 },
+  { unique: true, partialFilterExpression: { source: 'booking_preorder' } }
+);
 
 module.exports = mongoose.model('KitchenOrder', kitchenOrderSchema);

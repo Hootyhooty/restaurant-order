@@ -3,6 +3,7 @@ const router = express.Router();
 const { rolesRequired } = require('../controllers/authController');
 const {
   getKitchenOrders,
+  getKitchenReservations,
   getKitchenOrder,
   patchKitchenOrderLines,
   patchKitchenOrder,
@@ -20,6 +21,7 @@ const kitchenOrAdmin = rolesRequired('KITCHEN', 'ADMIN');
 const kitchenOnly = rolesRequired('KITCHEN');
 
 router.get('/orders', kitchenOrAdmin, validateKitchenOrdersQuery, getKitchenOrders);
+router.get('/reservations', kitchenOrAdmin, validateKitchenOrdersQuery, getKitchenReservations);
 router.get('/orders/:id', kitchenOrAdmin, validateMongoIdParam('id'), getKitchenOrder);
 router.patch(
   '/orders/:id/lines',

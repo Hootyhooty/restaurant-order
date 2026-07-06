@@ -1,6 +1,7 @@
 const KitchenOrder = require('../models/KitchenOrder');
 const { expandOrderLines } = require('../utils/expandOrderLines');
-const { nextTicketNumber } = require('./kitchenTicketNumber');
+const { nextReservedTicketNumber } = require('./reservedTicketNumber');
+const { emitKitchenEvent } = require('../utils/kitchenEventHub');
 
 /**
  * Create a kitchen ticket from booking pre-order items (idempotent per bookingId).
@@ -17,10 +18,11 @@ async function createKitchenOrderFromBooking(booking, customerName) {
   if (!lines.length) return null;
 
   const serviceDate = booking.date;
-  const ticketNumber = await nextTicketNumber(serviceDate);
+  const reservedTicketNumber = await nextReservedTicketNumber(serviceDate);
 
-  return KitchenOrder.create({
-    ticketNumber,
+  const order = await KitchenOrder.create({
+    reservedTicketNumber,
+    visitTimeSlot: booking.timeSlot,
     serviceDate,
     source: 'booking_preorder',
     bookingId,
@@ -29,6 +31,11 @@ async function createKitchenOrderFromBooking(booking, customerName) {
     lines,
     status: 'pending',
   });
+
+  emitKitchenEvent('orders_updated', { orderId: order._id.toString(), date: serviceDate });
+  emitKitchenEvent('reservations_updated', { date: serviceDate });
+
+  return order;
 }
 
 module.exports = { createKitchenOrderFromBooking };

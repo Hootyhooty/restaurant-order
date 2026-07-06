@@ -50,6 +50,14 @@ const KitchenLayout = () => {
             Queue
           </NavLink>
           <NavLink
+            to="/kitchen/reservations"
+            className={({ isActive }) =>
+              `kitchen-nav-tab${isActive ? ' kitchen-nav-tab--active' : ''}`
+            }
+          >
+            Reservations
+          </NavLink>
+          <NavLink
             to="/kitchen/stock"
             className={({ isActive }) =>
               `kitchen-nav-tab${isActive ? ' kitchen-nav-tab--active' : ''}`

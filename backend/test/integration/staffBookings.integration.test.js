@@ -175,7 +175,8 @@ describe('Staff bookings API', () => {
     assert.ok(kitchenOrder.lines.every((line) => line.quantity === 1));
     assert.equal(kitchenOrder.lines.filter((line) => line.mealId === 1).length, 3);
     assert.equal(kitchenOrder.lines.filter((line) => line.mealId === 2).length, 1);
-    assert.equal(kitchenOrder.ticketNumber, 1);
+    assert.equal(kitchenOrder.reservedTicketNumber, 1);
+    assert.equal(kitchenOrder.visitTimeSlot, '17:00-19:00');
   });
 
   test('duplicate check-in returns 400', async () => {

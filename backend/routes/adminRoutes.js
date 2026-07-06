@@ -40,6 +40,7 @@ const {
 } = require('../controllers/promotionController');
 const {
   getKitchenOrders,
+  getKitchenReservations,
   getKitchenStock,
 } = require('../controllers/kitchenController');
 const {
@@ -109,6 +110,7 @@ router.post(
 );
 
 router.get('/kitchen/orders', rolesRequired('ADMIN'), validateKitchenOrdersQuery, getKitchenOrders);
+router.get('/kitchen/reservations', rolesRequired('ADMIN'), validateKitchenOrdersQuery, getKitchenReservations);
 router.get('/kitchen/stock', rolesRequired('ADMIN'), getKitchenStock);
 router.get('/promotions', rolesRequired('ADMIN'), listAdminPromotions);
 router.post('/promotions', rolesRequired('ADMIN'), createPromotion);

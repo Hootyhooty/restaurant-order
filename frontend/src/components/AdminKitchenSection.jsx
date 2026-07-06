@@ -3,6 +3,7 @@ import { API_BASE } from '../apiConfig';
 import { getBangkokDateString } from '../utils/bangkokDate';
 import { useKitchenStream } from '../hooks/useKitchenStream';
 import KitchenQueue from '../pages/kitchen/KitchenQueue';
+import KitchenReservations from '../pages/kitchen/KitchenReservations';
 import './AdminKitchenSection.css';
 
 const AdminKitchenSection = () => {
@@ -51,6 +52,13 @@ const AdminKitchenSection = () => {
         </button>
         <button
           type="button"
+          className={view === 'reservations' ? 'active' : ''}
+          onClick={() => setView('reservations')}
+        >
+          Reservations
+        </button>
+        <button
+          type="button"
           className={view === 'stock' ? 'active' : ''}
           onClick={() => setView('stock')}
         >
@@ -59,6 +67,8 @@ const AdminKitchenSection = () => {
       </div>
       {view === 'queue' ? (
         <KitchenQueue />
+      ) : view === 'reservations' ? (
+        <KitchenReservations apiBasePath="/api/admin/kitchen/reservations" />
       ) : (
         <div className="admin-kitchen-stock">
           <p className="text-muted small">Today: {getBangkokDateString()}</p>
