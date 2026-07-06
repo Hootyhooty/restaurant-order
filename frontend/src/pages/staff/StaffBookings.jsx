@@ -1,17 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE } from '../../apiConfig';
+import { getDefaultStaffBookingDate } from '../../utils/bangkokDate';
 import './StaffBookings.css';
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 const StaffBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [date, setDate] = useState(todayISO);
+  const [date, setDate] = useState(getDefaultStaffBookingDate);
   const [confirmBooking, setConfirmBooking] = useState(null);
   const [checkInSubmitting, setCheckInSubmitting] = useState(false);
 
@@ -164,7 +161,7 @@ const StaffBookings = () => {
                   </td>
                   <td>{formatCost(b.reservationCost ?? b.amountTotal)}</td>
                   <td>
-                    {b.status === 'confirmed' ? (
+                    {b.canCheckIn ? (
                       <button
                         type="button"
                         className="btn btn-primary btn-sm staff-checkin-btn"
@@ -173,7 +170,13 @@ const StaffBookings = () => {
                         Check in &amp; refund deposit
                       </button>
                     ) : (
-                      <span className="staff-status-label">{b.status || '—'}</span>
+                      <span className="staff-status-label" title={b.source === 'intent' ? 'Awaiting payment confirmation' : ''}>
+                        {b.status === 'payment_pending'
+                          ? 'Awaiting payment'
+                          : b.status === 'payment_processing'
+                            ? 'Payment processing'
+                            : b.status || '—'}
+                      </span>
                     )}
                   </td>
                 </tr>

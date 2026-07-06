@@ -11,6 +11,7 @@ const {
 } = require('../../utils/stripeClient');
 const Customer = require('../../models/Customer');
 const Booking = require('../../models/Booking');
+const BookingIntent = require('../../models/BookingIntent');
 const KitchenOrder = require('../../models/KitchenOrder');
 const { getBangkokDateString } = require('../../utils/bangkokDate');
 
@@ -109,10 +110,45 @@ describe('Staff bookings API', () => {
 
     const item = res.body.items[0];
     assert.equal(item.id, booking._id.toString());
+    assert.equal(item.source, 'booking');
     assert.equal(item.customerName, 'Jane Doe');
     assert.equal(item.reservationCost, 200);
     assert.equal(item.hasPreOrder, true);
     assert.equal(item.preOrderSummary, 'Pad Thai x3, Spring Rolls x1');
+    assert.equal(item.canCheckIn, true);
+  });
+
+  test('staff list includes pending booking_intent rows for the same date', async () => {
+    const { user, staffToken, today } = await seedStaffScenario();
+
+    const intent = await BookingIntent.create({
+      userId: user._id.toString(),
+      tableId: 3,
+      date: today,
+      timeSlot: '19:00-21:00',
+      guestCount: 2,
+      reservationFee: 100,
+      reservationCost: 200,
+      preOrderItems: [],
+      preOrderTotal: 0,
+      amountTotal: 200,
+      status: 'pending',
+      stripeCheckoutSessionId: 'cs_test_pending_intent',
+    });
+
+    const res = await request(app)
+      .get(`/api/staff/bookings?date=${today}`)
+      .set('Authorization', `Bearer ${staffToken}`);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.items.length, 2);
+
+    const intentRow = res.body.items.find((row) => row.id === intent._id.toString());
+    assert.ok(intentRow);
+    assert.equal(intentRow.source, 'intent');
+    assert.equal(intentRow.status, 'payment_pending');
+    assert.equal(intentRow.canCheckIn, false);
+    assert.equal(intentRow.tableId, 3);
   });
 
   test('staff check-in creates KitchenOrder with expanded lines', async () => {
