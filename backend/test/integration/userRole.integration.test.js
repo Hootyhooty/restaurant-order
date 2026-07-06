@@ -115,4 +115,37 @@ describe('User role management', () => {
       (err) => err.message.includes('last active admin'),
     );
   });
+
+  test('GET /api/admin/users splits customers and staff by audience', async () => {
+    const user = await Customer.create({
+      username: 'list_user',
+      email: 'list_user@test.local',
+      password: 'password12',
+      role: 'USER',
+      email_verified: true,
+    });
+    await Staff.create({
+      username: 'list_staff',
+      email: 'list_staff@test.local',
+      password: 'password12',
+      role: 'STAFF',
+      email_verified: true,
+    });
+
+    const customersRes = await request(app)
+      .get('/api/admin/users?audience=customers')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(customersRes.status, 200);
+    assert.equal(customersRes.body.audience, 'customers');
+    assert.equal(customersRes.body.items.length, 1);
+    assert.equal(customersRes.body.items[0].id, user._id.toString());
+
+    const staffRes = await request(app)
+      .get('/api/admin/users?audience=staff')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(staffRes.status, 200);
+    assert.equal(staffRes.body.audience, 'staff');
+    assert.ok(staffRes.body.items.length >= 2);
+    assert.ok(staffRes.body.items.some((row) => row.username === 'list_staff'));
+  });
 });

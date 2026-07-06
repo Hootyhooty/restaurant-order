@@ -53,6 +53,32 @@
   font-weight: 500;
 }
 
+.admin-users-subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 8px;
+}
+
+.admin-users-subtab {
+  border: 1px solid #dee2e6;
+  background: #ffffff;
+  color: #495057;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 8px 8px 0 0;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-users-subtab.active,
+.admin-users-subtab:hover {
+  background-color: #c0892f;
+  border-color: #c0892f;
+  color: #ffffff;
+}
+
 .admin-sidebar {
   background-color: white;
   border-radius: 12px;

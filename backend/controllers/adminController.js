@@ -22,14 +22,57 @@ const { uploadImageBuffer } = require('../utils/cloudinary');
 const { changeUserRole, normalizeRole } = require('../services/userRoleService');
 const { OPS_ROLES } = require('../services/resolvePrincipal');
 
-// Get all users (admin only) — customers with effective role + standalone staff
+// Get users or staff (admin only) — ?audience=customers|staff (default customers)
 const getUsers = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
+    const limit = parseInt(req.query.limit, 10) || 100;
+    const audience = String(req.query.audience || 'customers').toLowerCase();
+
+    if (audience === 'staff') {
+      const staffList = await Staff.find()
+        .select('-password')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+
+      const linkedCustomerIds = staffList
+        .map((s) => s.customerId)
+        .filter(Boolean);
+      const linkedCustomers = linkedCustomerIds.length
+        ? await Customer.find({ _id: { $in: linkedCustomerIds } })
+            .select('username email phone first_name last_name active')
+            .lean()
+        : [];
+      const customerById = Object.fromEntries(
+        linkedCustomers.map((c) => [c._id.toString(), c]),
+      );
+
+      const items = staffList.map((s) => {
+        const linked = s.customerId ? customerById[s.customerId] : null;
+        return {
+          id: s._id,
+          profileId: s.customerId || s._id,
+          staffId: s._id,
+          customerId: s.customerId || null,
+          username: s.username || linked?.username,
+          email: s.email || linked?.email,
+          phone: s.phone || linked?.phone,
+          role: s.role,
+          accountType: s.customerId ? 'staff-linked' : 'staff-only',
+          active: s.active !== false,
+          first_name: s.first_name || linked?.first_name,
+          last_name: s.last_name || linked?.last_name,
+          created_at: s.createdAt,
+        };
+      });
+
+      return res.json({ success: true, audience: 'staff', items });
+    }
+
     const customers = await Customer.find()
       .select('-password -password_reset_token')
       .sort({ createdAt: -1 })
-      .limit(limit);
+      .limit(limit * 2);
 
     const customerIds = customers.map((c) => c._id.toString());
     const linkedStaff = await Staff.find({ customerId: { $in: customerIds } }).lean();
@@ -37,53 +80,25 @@ const getUsers = async (req, res) => {
       linkedStaff.map((s) => [s.customerId, s]),
     );
 
-    const customerRows = customers.map((u) => {
-      const staff = staffByCustomerId[u._id.toString()];
-      return {
+    const items = customers
+      .filter((u) => !staffByCustomerId[u._id.toString()])
+      .slice(0, limit)
+      .map((u) => ({
         id: u._id,
         profileId: u._id,
         username: u.username,
         email: u.email,
         phone: u.phone,
-        role: staff?.role || 'USER',
-        staffId: staff?._id || null,
-        accountType: staff ? 'staff-linked' : 'customer',
-        active: (u.active !== false) && (staff ? staff.active !== false : true),
+        role: 'USER',
+        staffId: null,
+        accountType: 'customer',
+        active: u.active !== false,
         first_name: u.first_name,
         last_name: u.last_name,
         created_at: u.createdAt,
-      };
-    });
-
-    const standaloneStaff = await Staff.find({
-      $or: [{ customerId: { $exists: false } }, { customerId: null }, { customerId: '' }],
-    })
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const standaloneRows = standaloneStaff
-      .filter((s) => !customerIds.includes(s._id.toString()))
-      .map((s) => ({
-        id: s._id,
-        profileId: s.customerId || s._id,
-        username: s.username,
-        email: s.email,
-        phone: s.phone,
-        role: s.role,
-        staffId: s._id,
-        accountType: 'staff-only',
-        active: s.active !== false,
-        first_name: s.first_name,
-        last_name: s.last_name,
-        created_at: s.createdAt,
       }));
 
-    const merged = [...customerRows, ...standaloneRows]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, limit);
-
-    res.json({ success: true, items: merged });
+    res.json({ success: true, audience: 'customers', items });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -98,6 +113,9 @@ const toggleUserActive = async (req, res) => {
     let staff = await Staff.findOne({ customerId: userId });
     if (!customer && !staff) {
       staff = await Staff.findById(userId);
+      if (staff?.customerId) {
+        customer = await Customer.findById(staff.customerId);
+      }
     }
     if (!customer && !staff) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -132,16 +150,20 @@ const toggleUserActive = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const customer = await Customer.findById(userId);
-    const linkedStaff = await Staff.findOne({ customerId: userId });
-    const staffOnly = !customer ? await Staff.findById(userId) : null;
+    let customer = await Customer.findById(userId);
+    let linkedStaff = await Staff.findOne({ customerId: userId });
+    if (!customer && !linkedStaff) {
+      linkedStaff = await Staff.findById(userId);
+      if (linkedStaff?.customerId) {
+        customer = await Customer.findById(linkedStaff.customerId);
+      }
+    }
 
-    if (!customer && !linkedStaff && !staffOnly) {
+    if (!customer && !linkedStaff) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     if (linkedStaff) await Staff.findByIdAndDelete(linkedStaff._id);
-    if (staffOnly) await Staff.findByIdAndDelete(staffOnly._id);
     if (customer) await Customer.findByIdAndDelete(customer._id);
 
     res.json({ success: true });

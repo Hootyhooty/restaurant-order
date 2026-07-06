@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('users');
+  const [usersAudience, setUsersAudience] = useState('customers');
   const [sectionData, setSectionData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
@@ -135,6 +136,28 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadUsersSection = async (audience = usersAudience) => {
+    setLoading(true);
+    try {
+      const data = await fetchJSON(`/api/admin/users?limit=100&audience=${encodeURIComponent(audience)}`);
+      setUsersAudience(audience);
+      setSectionData(data.items);
+      setTotal(data.items?.length || 0);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      alert(`Failed to load users: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+    scrollToTop();
+  };
+
+  const switchUsersAudience = (audience) => {
+    if (audience === usersAudience && activeSection === 'users' && sectionData) return;
+    setUsersAudience(audience);
+    loadUsersSection(audience);
+  };
+
   const loadSection = async (section, options = {}) => {
     const { initialMealId } = options;
     setActiveSection(section);
@@ -144,7 +167,7 @@ const AdminDashboard = () => {
     setTotal(0);
     try {
       if (section === 'users') {
-        const data = await fetchJSON('/api/admin/users?limit=100');
+        const data = await fetchJSON(`/api/admin/users?limit=100&audience=${encodeURIComponent(usersAudience)}`);
         setSectionData(data.items);
         setTotal(data.items?.length || 0);
       } else if (section === 'menu') {
@@ -289,7 +312,7 @@ const AdminDashboard = () => {
     try {
       const data = await fetchJSON(`/api/admin/users/${userId}/toggle`, { method: 'POST' });
       // Reload users
-      loadSection('users');
+      loadUsersSection(usersAudience);
     } catch (error) {
       alert(`Failed to toggle user: ${error.message}`);
     }
@@ -299,7 +322,7 @@ const AdminDashboard = () => {
     if (!window.confirm('Delete this user?')) return;
     try {
       await fetchJSON(`/api/admin/users/${userId}`, { method: 'DELETE' });
-      loadSection('users');
+      loadUsersSection(usersAudience);
     } catch (error) {
       alert(`Failed to delete user: ${error.message}`);
     }
@@ -320,8 +343,13 @@ const AdminDashboard = () => {
         body: JSON.stringify({ username, email, phone, role, password }),
       });
       setShowAddUserModal(false);
-      setAddUserForm({ username: '', email: '', phone: '', password: '', role: 'USER' });
-      loadSection('users');
+      const defaultRole = usersAudience === 'staff' ? 'STAFF' : 'USER';
+      setAddUserForm({ username: '', email: '', phone: '', password: '', role: defaultRole });
+      const reloadAudience = role === 'USER' ? 'customers' : 'staff';
+      if (reloadAudience !== usersAudience) {
+        setUsersAudience(reloadAudience);
+      }
+      loadUsersSection(reloadAudience);
     } catch (error) {
       alert(`Failed to create user: ${error.message}`);
     } finally {
@@ -339,7 +367,11 @@ const AdminDashboard = () => {
         method: 'PATCH',
         body: JSON.stringify({ role: newRole }),
       });
-      loadSection('users');
+      const reloadAudience = newRole === 'USER' ? 'customers' : 'staff';
+      if (reloadAudience !== usersAudience) {
+        setUsersAudience(reloadAudience);
+      }
+      loadUsersSection(reloadAudience);
     } catch (error) {
       alert(`Failed to update role: ${error.message}`);
     } finally {
@@ -672,9 +704,31 @@ const AdminDashboard = () => {
     }
   };
 
-  const renderUsersTable = () => {
+  const renderUsersSection = () => (
+    <>
+      <div className="admin-users-subtabs">
+        <button
+          type="button"
+          className={`admin-users-subtab ${usersAudience === 'customers' ? 'active' : ''}`}
+          onClick={() => switchUsersAudience('customers')}
+        >
+          User
+        </button>
+        <button
+          type="button"
+          className={`admin-users-subtab ${usersAudience === 'staff' ? 'active' : ''}`}
+          onClick={() => switchUsersAudience('staff')}
+        >
+          Staffs
+        </button>
+      </div>
+      {usersAudience === 'staff' ? renderStaffTable() : renderCustomersTable()}
+    </>
+  );
+
+  const renderCustomersTable = () => {
     if (!sectionData || sectionData.length === 0) {
-      return <div className="alert alert-info">No users found.</div>;
+      return <div className="alert alert-info">No customer accounts found.</div>;
     }
 
     return (
@@ -691,7 +745,7 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {sectionData.map(u => (
+            {sectionData.map((u) => (
               <tr key={u.id}>
                 <td>
                   <button
@@ -701,9 +755,6 @@ const AdminDashboard = () => {
                   >
                     {u.username || '-'}
                   </button>
-                  {u.accountType && u.accountType !== 'customer' && (
-                    <div className="small text-muted">{u.accountType}</div>
-                  )}
                 </td>
                 <td>{u.email || '-'}</td>
                 <td>{u.phone || '-'}</td>
@@ -753,6 +804,100 @@ const AdminDashboard = () => {
         </table>
       </div>
     );
+  };
+
+  const renderStaffTable = () => {
+    if (!sectionData || sectionData.length === 0) {
+      return <div className="alert alert-info">No staff accounts found.</div>;
+    }
+
+    return (
+      <div className="table-responsive">
+        <table className="table table-bordered table-hover text-center admin-table">
+          <thead className="table-dark">
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Account</th>
+              <th>Active</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sectionData.map((u) => (
+              <tr key={u.id}>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-link p-0"
+                    onClick={() => navigate(`/profile/${u.profileId || u.id}`)}
+                  >
+                    {u.username || '-'}
+                  </button>
+                </td>
+                <td>{u.email || '-'}</td>
+                <td>{u.phone || '-'}</td>
+                <td>
+                  <select
+                    className="form-select form-select-sm admin-role-select"
+                    value={u.role || 'STAFF'}
+                    disabled={roleUpdatingId === u.id}
+                    onChange={(e) => handleRoleChange(u, e.target.value)}
+                  >
+                    <option value="USER">USER</option>
+                    <option value="STAFF">STAFF</option>
+                    <option value="KITCHEN">KITCHEN</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </td>
+                <td>
+                  <span className="badge bg-secondary">
+                    {u.accountType === 'staff-linked' ? 'Linked customer' : 'Staff only'}
+                  </span>
+                </td>
+                <td>{u.active ? 'Yes' : 'No'}</td>
+                <td>
+                  <div className="btn-group btn-group-sm">
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => handleToggleUserActive(u.id)}
+                    >
+                      {u.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    {u.customerId && (
+                      <button
+                        className="btn btn-outline-primary"
+                        onClick={() => {
+                          setSendMessageTarget({ ...u, id: u.customerId });
+                          setSendMessageSubject('');
+                          setSendMessageBody('');
+                        }}
+                      >
+                        Send Message
+                      </button>
+                    )}
+                    <button
+                      className="btn btn-outline-danger"
+                      onClick={() => handleDeleteUser(u.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const openAddUserModal = () => {
+    const defaultRole = usersAudience === 'staff' ? 'STAFF' : 'USER';
+    setAddUserForm({ username: '', email: '', phone: '', password: '', role: defaultRole });
+    setShowAddUserModal(true);
   };
 
   const renderMenuTable = () => {
@@ -1643,7 +1788,7 @@ const AdminDashboard = () => {
             <div className="section-header">
               <h4>
                 {activeSection === 'users'
-                  ? 'Users'
+                  ? (usersAudience === 'staff' ? 'Staffs' : 'Users')
                   : activeSection === 'menu'
                   ? 'Menu Items'
                   : activeSection === 'souvenir'
@@ -1662,9 +1807,9 @@ const AdminDashboard = () => {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={() => setShowAddUserModal(true)}
+                  onClick={openAddUserModal}
                 >
-                  Add User
+                  {usersAudience === 'staff' ? 'Add Staff' : 'Add User'}
                 </button>
               )}
               {activeSection === 'menu' && (
@@ -1694,7 +1839,7 @@ const AdminDashboard = () => {
               {loading ? (
                 <div className="alert alert-info">Loading...</div>
               ) : activeSection === 'users' ? (
-                renderUsersTable()
+                renderUsersSection()
               ) : activeSection === 'menu' ? (
                 renderMenuTable()
               ) : activeSection === 'souvenir' ? (
@@ -2064,7 +2209,7 @@ const AdminDashboard = () => {
         <div className="admin-modal-overlay" onClick={() => !addUserSubmitting && setShowAddUserModal(false)}>
           <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-header">
-              <h5>Add User</h5>
+              <h5>{usersAudience === 'staff' ? 'Add Staff' : 'Add User'}</h5>
               <button
                 type="button"
                 className="admin-modal-close"
@@ -2107,10 +2252,15 @@ const AdminDashboard = () => {
                   value={addUserForm.role}
                   onChange={(e) => setAddUserForm((prev) => ({ ...prev, role: e.target.value }))}
                 >
-                  <option value="USER">USER</option>
-                  <option value="STAFF">STAFF</option>
-                  <option value="KITCHEN">KITCHEN</option>
-                  <option value="ADMIN">ADMIN</option>
+                  {usersAudience === 'staff' ? (
+                    <>
+                      <option value="STAFF">STAFF</option>
+                      <option value="KITCHEN">KITCHEN</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </>
+                  ) : (
+                    <option value="USER">USER</option>
+                  )}
                 </select>
               </div>
               <div className="admin-add-menu-field">
@@ -2133,7 +2283,7 @@ const AdminDashboard = () => {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={addUserSubmitting}>
-                  {addUserSubmitting ? 'Creating…' : 'Create User'}
+                  {addUserSubmitting ? 'Creating…' : (usersAudience === 'staff' ? 'Create Staff' : 'Create User')}
                 </button>
               </div>
             </form>
