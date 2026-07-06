@@ -2,6 +2,7 @@
 import { useState, useContext } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { getHomeRouteForRole } from '../utils/roleRoutes';
 import './Login.css';
 
 const Login = () => {
@@ -26,12 +27,12 @@ const Login = () => {
     setResendStatus('');
     const result = await login(username, password);
     if (result.success) {
-      const from = location.state?.from || '/menu';
-
-      if (result.user && result.user.role === 'ADMIN') {
-        navigate('/admin');
+      const role = result.user?.role;
+      const roleHome = getHomeRouteForRole(role);
+      if (role === 'ADMIN' || role === 'STAFF') {
+        navigate(roleHome);
       } else {
-        navigate(from);
+        navigate(location.state?.from || roleHome);
       }
     } else if (result.code === 'EMAIL_NOT_VERIFIED') {
       setError(result.message);

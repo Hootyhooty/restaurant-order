@@ -22,6 +22,7 @@ const reviewRoutes = require('./routes/reviews');
 const messageRoutes = require('./routes/messages');
 const bookingRoutes = require('./routes/bookings');
 const contactRoutes = require('./routes/contact');
+const staffRoutes = require('./routes/staff');
 const { webhookHandler } = require('./controllers/stripeController');
 const {
   helmetMiddleware,
@@ -206,6 +207,7 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/staff', authLimiter, staffRoutes);
 app.use('/api/contact', publicLimiter, contactRoutes);
 
 const PORT = process.env.PORT || 5000;

@@ -180,6 +180,24 @@ const Header = () => {
             </ul>
           </nav>
           <div className="header-actions">
+            {isLoggedIn && user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                className="btn btn-secondary header-dashboard-btn"
+                onClick={() => navigate('/admin')}
+              >
+                Admin
+              </button>
+            )}
+            {isLoggedIn && user?.role === 'STAFF' && (
+              <button
+                type="button"
+                className="btn btn-secondary header-dashboard-btn"
+                onClick={() => navigate('/staff/bookings')}
+              >
+                Staff
+              </button>
+            )}
             {isLoggedIn && (
               <button
                 type="button"

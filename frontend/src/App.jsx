@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import './App.css';
@@ -26,6 +26,8 @@ import ScrollToTop from './components/ScrollToTop';
 import Booking from './components/Booking';
 import BookingPaymentSuccess from './components/BookingPaymentSuccess';
 import BookingPaymentCancel from './components/BookingPaymentCancel';
+import StaffLayout from './pages/staff/StaffLayout';
+import StaffBookings from './pages/staff/StaffBookings';
 
 function App() {
   return (
@@ -52,6 +54,10 @@ function App() {
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/staff" element={<Navigate to="/staff/bookings" replace />} />
+            <Route path="/staff/bookings" element={<StaffLayout />}>
+              <Route index element={<StaffBookings />} />
+            </Route>
             <Route path="/review/:menuSlug" element={<ReviewPage />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/cancel" element={<PaymentCancel />} />

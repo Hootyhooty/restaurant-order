@@ -304,6 +304,20 @@ function validatePaginationQuery(req, res, next) {
   next();
 }
 
+function validateStaffBookingsQuery(req, res, next) {
+  const date = req.query?.date;
+  if (date != null && date !== '' && !isISODate(date)) {
+    markValidationError(req, 'Invalid date. Expected YYYY-MM-DD.');
+    return badRequest(res, 'Invalid date. Expected YYYY-MM-DD.');
+  }
+  const status = req.query?.status;
+  if (status != null && status !== '' && typeof status !== 'string') {
+    markValidationError(req, 'Invalid status.');
+    return badRequest(res, 'Invalid status.');
+  }
+  next();
+}
+
 function validateContactBody(req, res, next) {
   const name = String(req.body?.name || '').trim();
   const email = String(req.body?.email || '').trim();
@@ -352,6 +366,7 @@ module.exports = {
   validateMongoIdParam,
   validateAdminBookingsQuery,
   validateAuditLogsQuery,
+  validateStaffBookingsQuery,
   validatePaginationQuery,
   isUuid,
 };

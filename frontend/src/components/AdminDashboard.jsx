@@ -301,7 +301,7 @@ const AdminDashboard = () => {
     const email = prompt('Email');
     if (!email) return;
     const phone = prompt('Phone (optional)');
-    const role = prompt('Role (USER/ADMIN)', 'USER');
+    const role = prompt('Role (USER/STAFF/ADMIN)', 'USER');
     const password = prompt('Password', 'changeme123');
 
     try {
@@ -672,7 +672,19 @@ const AdminDashboard = () => {
                 </td>
                 <td>{u.email || '-'}</td>
                 <td>{u.phone || '-'}</td>
-                <td><span className={`badge ${u.role === 'ADMIN' ? 'bg-danger' : 'bg-secondary'}`}>{u.role}</span></td>
+                <td>
+                  <span
+                    className={`badge ${
+                      u.role === 'ADMIN'
+                        ? 'bg-danger'
+                        : u.role === 'STAFF'
+                          ? 'bg-warning'
+                          : 'bg-secondary'
+                    }`}
+                  >
+                    {u.role}
+                  </span>
+                </td>
                 <td>{u.active ? 'Yes' : 'No'}</td>
                 <td>
                   <div className="btn-group btn-group-sm">

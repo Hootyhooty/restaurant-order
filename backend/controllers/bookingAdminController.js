@@ -3,6 +3,8 @@ const Message = require('../models/Message');
 const Customer = require('../models/Customer');
 const { refundPaymentIntentAmount } = require('../utils/stripeRefundPayment');
 const { recordAdminAudit } = require('../utils/auditLog');
+const AppError = require('../utils/appError');
+const { performBookingCheckIn } = require('../services/bookingCheckIn');
 
 const getAdminUserId = async () => {
   const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
@@ -87,74 +89,12 @@ const getBookings = async (req, res) => {
 const checkInBooking = async (req, res) => {
   try {
     const bookingId = String(req.params.bookingId || '').trim();
-    const b = await Booking.findById(bookingId);
-    if (!b) return res.status(404).json({ success: false, message: 'Booking not found.' });
-    if (b.status !== 'confirmed') {
-      return res.status(400).json({ success: false, message: 'Only confirmed bookings can be checked in.' });
-    }
-
-    const previousStatus = b.status;
-
-    try {
-      await refundPaymentIntentAmount({
-        paymentIntentId: b.stripePaymentIntentId,
-        amountMajor: b.reservationCost,
-      });
-      b.refundedAmount = Number(b.refundedAmount || 0) + Number(b.reservationCost || 0);
-      b.refundReason = 'Checked in: refund reservation cost';
-      b.status = 'checked_in';
-      await b.save();
-
-      await recordAdminAudit(req, {
-        action: 'booking.check_in',
-        bookingId: b._id.toString(),
-        previousStatus,
-        newStatus: b.status,
-        metadata: {
-          refundAmount: b.reservationCost,
-          refundStatus: 'processed',
-        },
-      });
-
-      await sendAdminMessage({
-        recipientId: b.userId,
-        subject: 'Reservation Check-in (Refund)',
-        body:
-          `Checked in confirmed.\n\n` +
-          `Table: ${b.tableId}\n` +
-          `Date: ${b.date}\n` +
-          `Time: ${String(b.timeSlot || '').replace('-', '–')}\n\n` +
-          `Refund processed: reservation cost ฿${b.reservationCost}`,
-      });
-    } catch (refundErr) {
-      b.status = 'refund_pending';
-      b.refundReason = `Check-in refund failed: ${refundErr.message || 'unknown error'}`;
-      await b.save();
-
-      await recordAdminAudit(req, {
-        action: 'booking.check_in_refund_pending',
-        bookingId: b._id.toString(),
-        previousStatus,
-        newStatus: b.status,
-        metadata: {
-          refundAmount: b.reservationCost,
-          refundStatus: 'pending',
-          error: refundErr.message || 'unknown',
-        },
-      });
-
-      await sendAdminMessage({
-        recipientId: b.userId,
-        subject: 'Reservation Check-in (Refund Pending)',
-        body:
-          `Checked in confirmed.\n\n` +
-          `Refund is pending. Admin will process it manually.\n\n` +
-          `Table: ${b.tableId}\nDate: ${b.date}\nTime: ${String(b.timeSlot || '').replace('-', '–')}\n`,
-      });
-    }
-
+    await performBookingCheckIn(bookingId, req);
     return res.json({ success: true });
   } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     console.error('Admin check-in booking error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to check in booking' });
   }

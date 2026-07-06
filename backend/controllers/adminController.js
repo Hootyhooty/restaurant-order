@@ -99,7 +99,9 @@ const createUser = async (req, res) => {
       email,
       password,
       phone,
-      role: role === 'ADMIN' ? 'ADMIN' : 'USER',
+      role: ['USER', 'STAFF', 'ADMIN'].includes(String(role || '').toUpperCase())
+        ? String(role).toUpperCase()
+        : 'USER',
       email_verified: true,
     });
 
