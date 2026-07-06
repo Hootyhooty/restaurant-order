@@ -26,6 +26,8 @@ const Profile = () => {
   const [sendSubject, setSendSubject] = useState('');
   const [sendBody, setSendBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [promotions, setPromotions] = useState([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(false);
 
   const isOwnProfile = !routeUserId || (authUser && authUser.id === routeUserId);
 
@@ -52,6 +54,19 @@ const Profile = () => {
       console.error('Load messages error:', err);
     } finally {
       setMessagesLoading(false);
+    }
+  };
+
+  const loadPromotions = async () => {
+    setPromotionsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/promotions`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.items) setPromotions(data.items);
+    } catch (err) {
+      console.error('Load promotions error:', err);
+    } finally {
+      setPromotionsLoading(false);
     }
   };
 
@@ -119,6 +134,9 @@ const Profile = () => {
     loadHistory();
     loadBookings();
     loadMessages(1, messagesLimit);
+    if (isOwnProfile) {
+      loadPromotions();
+    }
   }, [isLoggedIn, authUser, routeUserId, isOwnProfile, navigate]);
 
   const bookingStartAt = (b) => {
@@ -640,10 +658,22 @@ const Profile = () => {
             {activeTab === 'promotion' && (
               <div>
                 <h3 className="profile-tab-title">Promotion</h3>
-                <p className="profile-text">
-                  Promotion content coming soon. You can list personalized deals
-                  and coupons for this user.
-                </p>
+                {promotionsLoading && <p className="profile-text">Loading promotions…</p>}
+                {!promotionsLoading && promotions.length === 0 && (
+                  <p className="profile-text">No active promotions right now. Check back soon.</p>
+                )}
+                <div className="profile-promo-list">
+                  {promotions.map((promo) => (
+                    <article key={promo.id} className="profile-promo-card">
+                      <h4>{promo.title}</h4>
+                      {promo.description && <p>{promo.description}</p>}
+                      {promo.code && <p><strong>Code:</strong> {promo.code}</p>}
+                      {promo.discountPercent != null && (
+                        <p><strong>Discount:</strong> {promo.discountPercent}% off</p>
+                      )}
+                    </article>
+                  ))}
+                </div>
               </div>
             )}
             {activeTab === 'social' && (

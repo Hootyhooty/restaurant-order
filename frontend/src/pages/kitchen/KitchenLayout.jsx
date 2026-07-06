@@ -49,9 +49,14 @@ const KitchenLayout = () => {
           >
             Queue
           </NavLink>
-          <span className="kitchen-nav-tab kitchen-nav-tab--disabled" title="Coming in Phase 3">
+          <NavLink
+            to="/kitchen/stock"
+            className={({ isActive }) =>
+              `kitchen-nav-tab${isActive ? ' kitchen-nav-tab--active' : ''}`
+            }
+          >
             Stock
-          </span>
+          </NavLink>
         </nav>
 
         <div className="kitchen-content">

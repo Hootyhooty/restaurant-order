@@ -1,0 +1,22 @@
+.kitchen-stock-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.kitchen-stock-msg {
+  color: #6c757d;
+}
+
+.kitchen-stock-error {
+  color: #dc3545;
+}
+
+.kitchen-stock-row--low {
+  background-color: #fff3cd;
+}
+
+.kitchen-stock-table input {
+  max-width: 100px;
+}

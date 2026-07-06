@@ -40,7 +40,7 @@ async function createKitchenOrderFromTransaction(tx) {
   const ticketNumber = await nextTicketNumber(serviceDate);
   const customerName = await resolveCustomerName(tx);
 
-  return KitchenOrder.create({
+  const order = await KitchenOrder.create({
     ticketNumber,
     serviceDate,
     source: 'online',
@@ -49,6 +49,9 @@ async function createKitchenOrderFromTransaction(tx) {
     lines,
     status: 'pending',
   });
+  const { emitKitchenEvent } = require('../utils/kitchenEventHub');
+  emitKitchenEvent('orders_updated', { orderId: order._id.toString(), date: serviceDate });
+  return order;
 }
 
 module.exports = { createKitchenOrderFromTransaction };

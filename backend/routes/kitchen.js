@@ -6,6 +6,9 @@ const {
   getKitchenOrder,
   patchKitchenOrderLines,
   patchKitchenOrder,
+  getKitchenStock,
+  patchKitchenStock,
+  streamKitchenEvents,
 } = require('../controllers/kitchenController');
 const {
   validateKitchenOrdersQuery,
@@ -26,5 +29,8 @@ router.patch(
   patchKitchenOrderLines,
 );
 router.patch('/orders/:id', kitchenOnly, validateMongoIdParam('id'), patchKitchenOrder);
+router.get('/stock', kitchenOrAdmin, getKitchenStock);
+router.patch('/stock/:mealFileId', kitchenOnly, patchKitchenStock);
+router.get('/stream', rolesRequired('KITCHEN', 'ADMIN', 'STAFF'), streamKitchenEvents);
 
 module.exports = router;

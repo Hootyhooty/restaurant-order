@@ -3,6 +3,8 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
+import AdminKitchenSection from './AdminKitchenSection';
+import AdminPromotionsSection from './AdminPromotionsSection';
 import './AdminDashboard.css';
 
 const MENU_CATEGORIES = [
@@ -202,6 +204,9 @@ const AdminDashboard = () => {
         const data = await fetchJSON('/api/admin/souvenir-items?limit=100');
         setSectionData(data.items || []);
         setTotal(data.items?.length || 0);
+      } else if (section === 'kitchen' || section === 'promotions') {
+        setSectionData([]);
+        setTotal(0);
       }
     } catch (error) {
       console.error(`Failed to load ${section}:`, error);
@@ -1745,6 +1750,20 @@ const AdminDashboard = () => {
               </button>
               <span className="admin-topbar-separator">|</span>
               <button
+                className={`admin-topbar-link ${activeSection === 'kitchen' ? 'active' : ''}`}
+                onClick={() => loadSection('kitchen')}
+              >
+                Kitchen
+              </button>
+              <span className="admin-topbar-separator">|</span>
+              <button
+                className={`admin-topbar-link ${activeSection === 'promotions' ? 'active' : ''}`}
+                onClick={() => loadSection('promotions')}
+              >
+                Promotions
+              </button>
+              <span className="admin-topbar-separator">|</span>
+              <button
                 className={`admin-topbar-link ${activeSection === 'analysis' ? 'active' : ''}`}
                 onClick={() => loadSection('analysis')}
               >
@@ -1797,6 +1816,10 @@ const AdminDashboard = () => {
                   ? 'User Reviews'
                   : activeSection === 'booking'
                   ? 'Booking'
+                  : activeSection === 'kitchen'
+                  ? 'Kitchen'
+                  : activeSection === 'promotions'
+                  ? 'Promotions'
                   : activeSection === 'analysis'
                   ? 'Analysis'
                   : activeSection === 'audit'
@@ -1836,7 +1859,7 @@ const AdminDashboard = () => {
 
             {/* Section Body */}
             <div className="section-body">
-              {loading ? (
+              {loading && !['kitchen', 'promotions'].includes(activeSection) ? (
                 <div className="alert alert-info">Loading...</div>
               ) : activeSection === 'users' ? (
                 renderUsersSection()
@@ -1848,6 +1871,10 @@ const AdminDashboard = () => {
                 renderReviewsSection()
               ) : activeSection === 'booking' ? (
                 renderBookingSection()
+              ) : activeSection === 'kitchen' ? (
+                <AdminKitchenSection />
+              ) : activeSection === 'promotions' ? (
+                <AdminPromotionsSection fetchJSON={fetchJSON} />
               ) : activeSection === 'analysis' ? (
                 renderAnalysisSection()
               ) : activeSection === 'audit' ? (

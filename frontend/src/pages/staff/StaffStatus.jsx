@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { API_BASE } from '../../apiConfig';
 import { getBangkokDateString } from '../../utils/bangkokDate';
+import { useKitchenStream } from '../../hooks/useKitchenStream';
 import './StaffStatus.css';
 
-const POLL_MS = 20000;
+const POLL_MS = 8000;
 const TERMINAL = new Set(['served', 'cancelled']);
 
 const StaffStatus = () => {
@@ -16,38 +17,48 @@ const StaffStatus = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const etagRef = useRef(null);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({ date });
       if (tableId.trim()) params.set('tableId', tableId.trim());
       if (search.trim()) params.set('q', search.trim());
+      const headers = { Authorization: `Bearer ${token}` };
+      if (etagRef.current) headers['If-None-Match'] = etagRef.current;
 
-      const res = await fetch(`${API_BASE}/api/staff/orders?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`${API_BASE}/api/staff/orders?${params}`, { headers });
+      if (res.status === 304) return;
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || `HTTP ${res.status}`);
       }
+      const nextEtag = res.headers.get('etag');
+      if (nextEtag) etagRef.current = nextEtag;
       const data = await res.json();
       setOrders(data.items || []);
     } catch (err) {
       setError(err.message || 'Failed to load orders');
-      setOrders([]);
+      if (!silent) setOrders([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, [date, tableId, search]);
+  }, [date, tableId, search, token]);
 
   useEffect(() => {
+    etagRef.current = null;
     fetchOrders();
-    const id = setInterval(fetchOrders, POLL_MS);
+    const id = setInterval(() => fetchOrders(true), POLL_MS);
     return () => clearInterval(id);
   }, [fetchOrders]);
+
+  useKitchenStream(token, () => {
+    etagRef.current = null;
+    fetchOrders(true);
+  });
 
   const handleFilterSubmit = (e) => {
     e.preventDefault();

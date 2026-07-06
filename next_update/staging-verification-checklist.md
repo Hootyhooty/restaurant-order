@@ -122,6 +122,23 @@ Use a **new test email** (or delete the user in MongoDB first). Check Mailtrap i
 
 ---
 
+## 8. Staff and kitchen ops flows
+
+Requires at least one **STAFF**, **KITCHEN**, and **ADMIN** account (promote via Admin → Users / Staffs after migration).
+
+| Step | Action | Expected | Pass? |
+|------|--------|----------|-------|
+| 8.1 | Log in as **STAFF** | Redirect to `/staff/bookings` | ☐ |
+| 8.2 | Staff → **Order**, submit table order | 201 success; kitchen ticket created | ☐ |
+| 8.3 | Log in as **KITCHEN** | Redirect to `/kitchen/queue` | ☐ |
+| 8.4 | Kitchen: **Start preparing** → **Mark ready** → **Served** | Line statuses update; ticket completes | ☐ |
+| 8.5 | Kitchen → **Stock**, adjust a meal count | Stock saves; low-stock row highlights | ☐ |
+| 8.6 | Admin → **Kitchen** tab | Live queue + stock overview visible | ☐ |
+| 8.7 | Admin → **Promotions**, create promo | Appears in user Profile → Promotion tab | ☐ |
+| 8.8 | Admin → Users: promote USER → STAFF | User moves to Staffs tab; staff login works | ☐ |
+
+---
+
 ## Sign-off
 
 - [ ] All critical paths (sections 1–4) passed  

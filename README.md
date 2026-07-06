@@ -113,6 +113,26 @@ To add new meals, edit the `meals` array in `src/components/MealsSection.js`:
 }
 ```
 
+## Operations (staff / kitchen / admin)
+
+### Staffs collection migration
+
+Before using role-based staff login in production, run once against your MongoDB (idempotent):
+
+```bash
+cd backend
+# Set MONGODB_URI in backend/.env to your target database
+npm run migrate:staffs
+```
+
+### Pre-order kitchen timing
+
+Booking pre-orders create a kitchen ticket when the guest is **checked in** (staff or admin), not at payment time. This keeps the kitchen queue focused on guests who are on-site.
+
+### Kitchen stock
+
+Kitchen staff manage meal stock under **Kitchen → Stock**. Stock decrements automatically when order lines are marked **served**.
+
 ## License
 
 This project is for educational purposes only.

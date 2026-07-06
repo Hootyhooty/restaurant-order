@@ -33,10 +33,21 @@ const {
   cancelBooking,
 } = require('../controllers/bookingAdminController');
 const {
+  listAdminPromotions,
+  createPromotion,
+  updatePromotion,
+  deletePromotion,
+} = require('../controllers/promotionController');
+const {
+  getKitchenOrders,
+  getKitchenStock,
+} = require('../controllers/kitchenController');
+const {
   validateAdminBookingsQuery,
   validateAuditLogsQuery,
   validateMongoIdParam,
   validateAdminUserRoleBody,
+  validateKitchenOrdersQuery,
 } = require('../utils/validation');
 
 // Use in-memory storage for images; we upload to Cloudinary in controllers
@@ -96,5 +107,12 @@ router.post(
   validateMongoIdParam('bookingId'),
   cancelBooking,
 );
+
+router.get('/kitchen/orders', rolesRequired('ADMIN'), validateKitchenOrdersQuery, getKitchenOrders);
+router.get('/kitchen/stock', rolesRequired('ADMIN'), getKitchenStock);
+router.get('/promotions', rolesRequired('ADMIN'), listAdminPromotions);
+router.post('/promotions', rolesRequired('ADMIN'), createPromotion);
+router.patch('/promotions/:promotionId', rolesRequired('ADMIN'), validateMongoIdParam('promotionId'), updatePromotion);
+router.delete('/promotions/:promotionId', rolesRequired('ADMIN'), validateMongoIdParam('promotionId'), deletePromotion);
 
 module.exports = router;

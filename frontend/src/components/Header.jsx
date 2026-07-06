@@ -128,10 +128,8 @@ const Header = () => {
   };
 
   const handleCheckout = async () => {
-    // If cart is empty, "Order now" should send user to Menu.
-    // If cart has items, "Check out" behaves like clicking the cart "Buy" button.
     if (items.length === 0) {
-      navigate('/menu');
+      navigate('/booking');
       return;
     }
     await handleBuy();
@@ -313,7 +311,7 @@ const Header = () => {
               {isLoggedIn ? 'Logout' : 'Login'}
             </button>
             <button type="button" className="btn btn-primary" onClick={handleCheckout} disabled={isPaying}>
-              {isPaying ? 'Redirecting…' : items.length === 0 ? 'Order now' : 'Check out'}
+              {isPaying ? 'Redirecting…' : items.length === 0 ? 'Booking now' : 'Check out'}
             </button>
           </div>
           <button className="mobile-menu-btn" onClick={toggleMenu}>

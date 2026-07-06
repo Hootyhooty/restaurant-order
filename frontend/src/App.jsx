@@ -32,6 +32,7 @@ import StaffOrder from './pages/staff/StaffOrder';
 import StaffStatus from './pages/staff/StaffStatus';
 import KitchenLayout from './pages/kitchen/KitchenLayout';
 import KitchenQueue from './pages/kitchen/KitchenQueue';
+import KitchenStock from './pages/kitchen/KitchenStock';
 
 function App() {
   return (
@@ -64,9 +65,10 @@ function App() {
               <Route path="order" element={<StaffOrder />} />
               <Route path="status" element={<StaffStatus />} />
             </Route>
-            <Route path="/kitchen" element={<Navigate to="/kitchen/queue" replace />} />
-            <Route path="/kitchen/queue" element={<KitchenLayout />}>
-              <Route index element={<KitchenQueue />} />
+            <Route path="/kitchen" element={<KitchenLayout />}>
+              <Route index element={<Navigate to="/kitchen/queue" replace />} />
+              <Route path="queue" element={<KitchenQueue />} />
+              <Route path="stock" element={<KitchenStock />} />
             </Route>
             <Route path="/review/:menuSlug" element={<ReviewPage />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />

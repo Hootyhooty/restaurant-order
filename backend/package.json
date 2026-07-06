@@ -7,6 +7,7 @@
         "dev": "nodemon index.js",
         "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
         "lint": "eslint . --quiet",
+        "migrate:staffs": "node scripts/migrateStaffsCollection.js",
         "refund:reconcile": "node scripts/runRefundReconciliation.js",
         "staging:smoke": "node scripts/stagingSmoke.js",
         "email:test": "node scripts/emailTest.js"

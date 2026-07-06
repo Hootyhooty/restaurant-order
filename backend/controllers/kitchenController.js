@@ -6,6 +6,9 @@ const {
   normalizeLineStatus,
   normalizeLines,
 } = require('../utils/kitchenOrderStatus');
+const { ensureStockRows, updateMealStock, decrementStockForServedLines } = require('../services/mealStockService');
+const { emitKitchenEvent } = require('../utils/kitchenEventHub');
+const crypto = require('crypto');
 
 const SOURCE_LABELS = {
   booking_preorder: 'Pre-order',
@@ -40,11 +43,20 @@ const getKitchenOrders = async (req, res) => {
       .sort({ ticketNumber: 1 })
       .lean();
 
-    return res.json({
+    const payload = {
       success: true,
       date,
       items: orders.map(mapKitchenOrder),
-    });
+    };
+
+    const etagSource = orders.map((o) => `${o._id}:${o.updatedAt?.getTime?.() || 0}`).join('|');
+    const etag = `"${crypto.createHash('md5').update(etagSource).digest('hex')}"`;
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    return res.json(payload);
   } catch (error) {
     console.error('Kitchen get orders error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load orders' });
@@ -102,6 +114,11 @@ const patchKitchenOrderLines = async (req, res) => {
     order.status = deriveTicketStatus(order.lines);
     order.markModified('lines');
     await order.save();
+    if (lineStatus === 'served') {
+      const servedLines = lineIndexes.map((idx) => order.lines[idx]);
+      await decrementStockForServedLines(servedLines);
+    }
+    emitKitchenEvent('orders_updated', { orderId: order._id.toString(), date: order.serviceDate });
 
     return res.json({ success: true, item: mapKitchenOrder(order.toObject()) });
   } catch (error) {
@@ -132,6 +149,7 @@ const patchKitchenOrder = async (req, res) => {
     order.status = deriveTicketStatus(order.lines);
     order.markModified('lines');
     await order.save();
+    emitKitchenEvent('orders_updated', { orderId: order._id.toString(), date: order.serviceDate });
 
     return res.json({ success: true, item: mapKitchenOrder(order.toObject()) });
   } catch (error) {
@@ -143,10 +161,72 @@ const patchKitchenOrder = async (req, res) => {
   }
 };
 
+// GET /api/kitchen/stock
+const getKitchenStock = async (req, res) => {
+  try {
+    const items = await ensureStockRows();
+    return res.json({ success: true, items });
+  } catch (error) {
+    console.error('Kitchen get stock error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load stock' });
+  }
+};
+
+// PATCH /api/kitchen/stock/:mealFileId
+const patchKitchenStock = async (req, res) => {
+  try {
+    const mealFileId = Number(req.params.mealFileId);
+    if (!Number.isInteger(mealFileId)) {
+      return res.status(400).json({ success: false, message: 'Invalid meal id.' });
+    }
+    const item = await updateMealStock(mealFileId, {
+      stock: req.body?.stock,
+      lowStockThreshold: req.body?.lowStockThreshold,
+    });
+    emitKitchenEvent('stock_updated', { mealFileId });
+    return res.json({ success: true, item });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Kitchen patch stock error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to update stock' });
+  }
+};
+
+// GET /api/kitchen/stream — SSE for queue/stock updates
+const streamKitchenEvents = async (req, res) => {
+  const { subscribeKitchenEvents } = require('../utils/kitchenEventHub');
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  const send = (event) => {
+    res.write(`event: kitchen\ndata: ${JSON.stringify(event)}\n\n`);
+  };
+
+  send({ type: 'connected', at: Date.now() });
+  const unsubscribe = subscribeKitchenEvents(send);
+
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  });
+};
+
 module.exports = {
   getKitchenOrders,
   getKitchenOrder,
   patchKitchenOrderLines,
   patchKitchenOrder,
+  getKitchenStock,
+  patchKitchenStock,
+  streamKitchenEvents,
   mapKitchenOrder,
 };

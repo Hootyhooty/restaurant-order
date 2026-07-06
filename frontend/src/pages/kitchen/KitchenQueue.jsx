@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '../../apiConfig';
 import { getBangkokDateString } from '../../utils/bangkokDate';
+import { useKitchenStream } from '../../hooks/useKitchenStream';
 import './KitchenQueue.css';
 
-const POLL_MS = 20000;
+const POLL_MS = 8000;
 const TERMINAL = new Set(['served', 'cancelled']);
 
 const KitchenQueue = () => {
@@ -12,40 +13,49 @@ const KitchenQueue = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(null);
+  const etagRef = useRef(null);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({ date });
-      const res = await fetch(`${API_BASE}/api/kitchen/orders?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers = { Authorization: `Bearer ${token}` };
+      if (etagRef.current) headers['If-None-Match'] = etagRef.current;
+
+      const res = await fetch(`${API_BASE}/api/kitchen/orders?${params}`, { headers });
+      if (res.status === 304) return;
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || `HTTP ${res.status}`);
       }
+      const nextEtag = res.headers.get('etag');
+      if (nextEtag) etagRef.current = nextEtag;
       const data = await res.json();
       setOrders(data.items || []);
     } catch (err) {
       setError(err.message || 'Failed to load queue');
-      setOrders([]);
+      if (!silent) setOrders([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, [date]);
+  }, [date, token]);
 
   useEffect(() => {
+    etagRef.current = null;
     fetchOrders();
-    const id = setInterval(fetchOrders, POLL_MS);
+    const id = setInterval(() => fetchOrders(true), POLL_MS);
     return () => clearInterval(id);
   }, [fetchOrders]);
+
+  useKitchenStream(token, () => {
+    fetchOrders(true);
+  });
 
   const patchLines = async (orderId, lineIndexes, lineStatus) => {
     setUpdating(`${orderId}-${lineIndexes.join(',')}-${lineStatus}`);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/api/kitchen/orders/${orderId}/lines`, {
         method: 'PATCH',
         headers: {
@@ -58,7 +68,8 @@ const KitchenQueue = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || `HTTP ${res.status}`);
       }
-      await fetchOrders();
+      etagRef.current = null;
+      await fetchOrders(true);
     } catch (err) {
       alert(err.message || 'Update failed');
     } finally {
@@ -69,7 +80,6 @@ const KitchenQueue = () => {
   const startPreparing = async (orderId) => {
     setUpdating(`${orderId}-start`);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/api/kitchen/orders/${orderId}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
@@ -78,12 +88,21 @@ const KitchenQueue = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || `HTTP ${res.status}`);
       }
-      await fetchOrders();
+      etagRef.current = null;
+      await fetchOrders(true);
     } catch (err) {
       alert(err.message || 'Update failed');
     } finally {
       setUpdating(null);
     }
+  };
+
+  const markAllReady = async (order) => {
+    const indexes = (order.lines || [])
+      .map((line, idx) => (line.lineStatus === 'preparing' ? idx : -1))
+      .filter((idx) => idx >= 0);
+    if (!indexes.length) return;
+    await patchLines(order.id, indexes, 'ready');
   };
 
   const completeAllPending = async (order) => {
@@ -107,7 +126,7 @@ const KitchenQueue = () => {
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-          <button type="button" className="btn btn-primary" onClick={fetchOrders} disabled={loading}>
+          <button type="button" className="btn btn-primary" onClick={() => fetchOrders()} disabled={loading}>
             Refresh
           </button>
         </div>
@@ -122,6 +141,8 @@ const KitchenQueue = () => {
       <div className="kitchen-queue-grid">
         {activeOrders.map((order) => {
           const hasPending = (order.lines || []).some((l) => l.lineStatus === 'pending');
+          const hasPreparing = (order.lines || []).some((l) => l.lineStatus === 'preparing');
+          const hasReady = (order.lines || []).some((l) => l.lineStatus === 'ready');
           const allTerminal = (order.lines || []).every((l) => TERMINAL.has(l.lineStatus));
           return (
             <article key={order.id} className="kitchen-ticket">
@@ -144,25 +165,41 @@ const KitchenQueue = () => {
                       key={`${order.id}-${idx}`}
                       className={`kitchen-line${terminal ? ' kitchen-line--terminal' : ''}`}
                     >
-                      <label className="kitchen-line-label">
-                        <input
-                          type="checkbox"
-                          checked={line.lineStatus === 'served'}
-                          disabled={terminal || busy}
-                          onChange={() => patchLines(order.id, [idx], 'served')}
-                        />
+                      <div className="kitchen-line-main">
                         <span>{line.name}</span>
                         <span className="kitchen-line-status">{line.lineStatus}</span>
-                      </label>
+                      </div>
                       {!terminal && (
-                        <button
-                          type="button"
-                          className="kitchen-line-cancel"
-                          disabled={busy}
-                          onClick={() => patchLines(order.id, [idx], 'cancelled')}
-                        >
-                          Cancel
-                        </button>
+                        <div className="kitchen-line-actions">
+                          {line.lineStatus === 'preparing' && (
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              disabled={busy}
+                              onClick={() => patchLines(order.id, [idx], 'ready')}
+                            >
+                              Mark ready
+                            </button>
+                          )}
+                          {line.lineStatus === 'ready' && (
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              disabled={busy}
+                              onClick={() => patchLines(order.id, [idx], 'served')}
+                            >
+                              Served
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="kitchen-line-cancel"
+                            disabled={busy}
+                            onClick={() => patchLines(order.id, [idx], 'cancelled')}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       )}
                     </li>
                   );
@@ -179,14 +216,26 @@ const KitchenQueue = () => {
                     Start preparing
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={!!updating || allTerminal}
-                  onClick={() => completeAllPending(order)}
-                >
-                  Complete ticket
-                </button>
+                {hasPreparing && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    disabled={!!updating}
+                    onClick={() => markAllReady(order)}
+                  >
+                    Mark all ready
+                  </button>
+                )}
+                {(hasReady || hasPreparing) && (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={!!updating || allTerminal}
+                    onClick={() => completeAllPending(order)}
+                  >
+                    Complete ticket
+                  </button>
+                )}
               </footer>
             </article>
           );

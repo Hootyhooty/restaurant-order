@@ -7,6 +7,8 @@ const { getBangkokDateString } = require('../utils/bangkokDate');
 const { performBookingCheckIn } = require('../services/bookingCheckIn');
 const { createStaffTableOrder } = require('../services/createStaffTableOrder');
 const { mapKitchenOrder } = require('./kitchenController');
+const { emitKitchenEvent } = require('../utils/kitchenEventHub');
+const crypto = require('crypto');
 const { categories } = require('../data/meals');
 const { getMealsData } = require('../utils/mealsData');
 
@@ -226,6 +228,7 @@ const createStaffOrder = async (req, res) => {
       items,
       staffUserId: req.user?.accountType === 'staff' ? req.user._id?.toString?.() : null,
     });
+    emitKitchenEvent('orders_updated', { orderId: order._id.toString(), date: order.serviceDate });
     return res.status(201).json({ success: true, item: mapKitchenOrder(order.toObject()) });
   } catch (error) {
     if (error instanceof AppError) {
@@ -269,6 +272,13 @@ const getStaffOrders = async (req, res) => {
           .toLowerCase();
         return haystack.includes(q);
       });
+    }
+
+    const etagSource = items.map((o) => `${o.id}:${o.updatedAt || ''}`).join('|');
+    const etag = `"${crypto.createHash('md5').update(etagSource).digest('hex')}"`;
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
     }
 
     return res.json({ success: true, date, items });

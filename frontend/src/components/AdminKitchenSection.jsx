@@ -1,0 +1,96 @@
+import { useState, useEffect, useCallback } from 'react';
+import { API_BASE } from '../apiConfig';
+import { getBangkokDateString } from '../utils/bangkokDate';
+import { useKitchenStream } from '../hooks/useKitchenStream';
+import KitchenQueue from '../pages/kitchen/KitchenQueue';
+import './AdminKitchenSection.css';
+
+const AdminKitchenSection = () => {
+  const [view, setView] = useState('queue');
+  const [stock, setStock] = useState([]);
+  const [loadingStock, setLoadingStock] = useState(false);
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem('token'));
+  }, []);
+
+  const fetchStock = useCallback(async () => {
+    if (!token) return;
+    setLoadingStock(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/kitchen/stock`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setStock(data.items || []);
+    } catch (err) {
+      console.error('Admin stock load error:', err);
+    } finally {
+      setLoadingStock(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (view === 'stock') fetchStock();
+  }, [view, fetchStock]);
+
+  useKitchenStream(token, (event) => {
+    if (event.type === 'stock_updated' && view === 'stock') fetchStock();
+  });
+
+  return (
+    <div className="admin-kitchen-section">
+      <div className="admin-kitchen-subtabs">
+        <button
+          type="button"
+          className={view === 'queue' ? 'active' : ''}
+          onClick={() => setView('queue')}
+        >
+          Live queue
+        </button>
+        <button
+          type="button"
+          className={view === 'stock' ? 'active' : ''}
+          onClick={() => setView('stock')}
+        >
+          Stock overview
+        </button>
+      </div>
+      {view === 'queue' ? (
+        <KitchenQueue />
+      ) : (
+        <div className="admin-kitchen-stock">
+          <p className="text-muted small">Today: {getBangkokDateString()}</p>
+          {loadingStock && <p>Loading stock…</p>}
+          <div className="table-responsive">
+            <table className="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th>Meal</th>
+                  <th>Category</th>
+                  <th>Stock</th>
+                  <th>Threshold</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stock.map((row) => (
+                  <tr key={row.mealFileId} className={row.isLowStock ? 'admin-kitchen-low' : ''}>
+                    <td>{row.mealName}</td>
+                    <td>{row.category}</td>
+                    <td>{row.stock}</td>
+                    <td>{row.lowStockThreshold}</td>
+                    <td>{row.isLowStock ? 'Low' : 'OK'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminKitchenSection;
