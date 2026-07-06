@@ -224,7 +224,7 @@ const createStaffOrder = async (req, res) => {
       tableId,
       customerName,
       items,
-      staffUserId: req.user?._id?.toString?.(),
+      staffUserId: req.user?.accountType === 'staff' ? req.user._id?.toString?.() : null,
     });
     return res.status(201).json({ success: true, item: mapKitchenOrder(order.toObject()) });
   } catch (error) {

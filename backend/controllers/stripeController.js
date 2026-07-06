@@ -9,17 +9,13 @@ const Customer = require('../models/Customer');
 const { info, warn, error, setLogContext } = require('../utils/logger');
 const { recordBookingMetric, recordWebhookMetric } = require('../utils/opsMetricsStore');
 const { createKitchenOrderFromTransaction } = require('../services/kitchenOrderFromTransaction');
+const { getAdminActorId } = require('../utils/adminLookup');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 
-const getAdminUserId = async () => {
-  const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
-  return admin?._id?.toString() || null;
-};
-
 const sendAdminMessage = async ({ recipientId, subject, body }) => {
-  const adminId = await getAdminUserId();
+  const adminId = await getAdminActorId();
   if (!adminId) return;
   await Message.create({
     senderId: adminId,

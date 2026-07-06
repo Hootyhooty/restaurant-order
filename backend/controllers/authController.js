@@ -4,7 +4,6 @@
 const bcrypt = require('bcrypt');
 const Customer = require('../models/Customer');
 const PendingRegistration = require('../models/PendingRegistration');
-const jwt = require('jsonwebtoken');
 const { decodeToken } = require('../utils/jwtUtils');
 const {
   generateVerificationToken,
@@ -22,6 +21,13 @@ const {
   describeEmailError,
 } = require('../utils/emailService');
 const { warn } = require('../utils/logger');
+const {
+  findStaffByLogin,
+  findCustomerByLogin,
+  resolvePrincipalFromToken,
+  normalizePrincipal,
+} = require('../services/resolvePrincipal');
+const jwt = require('jsonwebtoken');
 
 const RESEND_GENERIC_MESSAGE =
   'If an account with that email exists and is not yet verified, a verification email has been sent.';
@@ -366,12 +372,42 @@ const login = async (req, res) => {
         .json({ message: 'Username/email and password are required' });
     }
 
-    const isEmail = usernameOrEmail.includes('@');
-    const customer = await Customer.findOne(
-      isEmail
-        ? { email: usernameOrEmail.toLowerCase() }
-        : { username: usernameOrEmail }
-    );
+    const staffAccount = await findStaffByLogin(usernameOrEmail);
+    if (staffAccount) {
+      const isMatch = await staffAccount.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid username or password' });
+      }
+      if (staffAccount.active === false) {
+        return res.status(401).json({ message: 'Account is deactivated' });
+      }
+
+      const token = jwt.sign(
+        { id: staffAccount._id, accountType: 'staff' },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' },
+      );
+      const principal = normalizePrincipal(staffAccount, 'staff');
+      return res.json({
+        token,
+        user: {
+          id: principal._id,
+          username: principal.username,
+          email: principal.email,
+          phone: principal.phone,
+          first_name: principal.first_name,
+          last_name: principal.last_name,
+          photo: principal.photo,
+          role: principal.role,
+          email_verified: principal.email_verified,
+          phone_verified: principal.phone_verified,
+          accountType: principal.accountType,
+          customerId: principal.customerId,
+        },
+      });
+    }
+
+    const customer = await findCustomerByLogin(usernameOrEmail);
     if (!customer) {
       console.log('User not found:', usernameOrEmail);
       return res
@@ -389,8 +425,7 @@ const login = async (req, res) => {
 
     if (
       !customer.email_verified &&
-      customer.email_verification_token &&
-      customer.role !== 'ADMIN'
+      customer.email_verification_token
     ) {
       return res.status(403).json({
         message: 'Please verify your email before logging in.',
@@ -399,12 +434,13 @@ const login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: customer._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d',
-    });
+    const token = jwt.sign(
+      { id: customer._id, accountType: 'customer' },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' },
+    );
     console.log('Login successful, token generated for:', customer._id);
 
-    // Expose key profile fields to the frontend (Profile page)
     res.json({
       token,
       user: {
@@ -415,13 +451,15 @@ const login = async (req, res) => {
         first_name: customer.first_name,
         last_name: customer.last_name,
         photo: customer.photo,
-        role: customer.role,
+        role: 'USER',
         email_verified: customer.email_verified,
         phone_verified: customer.phone_verified,
         address_line1: customer.address_line1,
         city: customer.city,
         state: customer.state,
         zipcode: customer.zipcode,
+        accountType: 'customer',
+        customerId: customer._id.toString(),
       },
     });
   } catch (error) {
@@ -477,24 +515,23 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    const user = await Customer.findById(userId);
-    if (!user) {
+    const principal = await resolvePrincipalFromToken(decoded);
+    if (!principal) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Check if account is active
-    if (user.active === false || user.is_active === false) {
+    if (principal.active === false) {
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated',
       });
     }
 
-    req.user = user;
-    req.logContext = { ...(req.logContext || {}), userId: user._id.toString() };
+    req.user = principal;
+    req.logContext = { ...(req.logContext || {}), userId: principal._id.toString() };
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

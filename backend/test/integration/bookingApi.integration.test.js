@@ -11,6 +11,7 @@ const {
 } = require('../../utils/stripeClient');
 const Customer = require('../../models/Customer');
 const Booking = require('../../models/Booking');
+const { seedOpsUser, staffToken: makeStaffToken, customerToken: makeCustomerToken } = require('../helpers/opsUsers');
 
 const FIXTURE_DATE = '2099-06-15';
 const FIXTURE_SLOT = '17:00-19:00';
@@ -47,11 +48,12 @@ describe('Booking API integration', () => {
   });
 
   async function seedAdminAndUser() {
-    const admin = await Customer.create({
+    const { staff: admin } = await seedOpsUser({
       username: 'admin_int',
       email: 'admin_int@test.local',
       password: 'password12',
       role: 'ADMIN',
+      withCustomer: false,
     });
     const user = await Customer.create({
       username: 'user_int',
@@ -59,8 +61,8 @@ describe('Booking API integration', () => {
       password: 'password12',
       role: 'USER',
     });
-    const adminToken = jwt.sign({ id: admin._id }, process.env.JWT_SECRET);
-    const userToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const adminToken = makeStaffToken(jwt, admin._id);
+    const userToken = makeCustomerToken(jwt, user._id);
     return { admin, user, adminToken, userToken };
   }
 

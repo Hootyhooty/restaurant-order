@@ -8,6 +8,7 @@ const BookingIntent = require('../models/BookingIntent');
 const Customer = require('../models/Customer');
 const Message = require('../models/Message');
 const { runRefundReconciliation } = require('../jobs/refundReconciliationJob');
+const { seedOpsUser } = require('./helpers/opsUsers');
 const {
   setStripeClientForTest,
   clearStripeClientForTest,
@@ -38,11 +39,12 @@ describe('refund reconciliation job', () => {
   });
 
   async function seedAdmin() {
-    await Customer.create({
+    await seedOpsUser({
       username: 'admin_rc',
       email: 'admin_rc@test.local',
       password: 'password12',
       role: 'ADMIN',
+      withCustomer: false,
     });
   }
 

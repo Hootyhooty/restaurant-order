@@ -5,12 +5,13 @@ const Message = require('../models/Message');
 const { refundPaymentIntentAmount } = require('../utils/stripeRefundPayment');
 const { info, warn } = require('../utils/logger');
 const { recordAdminAudit } = require('../utils/auditLog');
+const { getAdminActorId } = require('../utils/adminLookup');
 
 const sendAdminMessage = async ({ recipientId, subject, body }) => {
-  const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
-  if (!admin) return;
+  const adminId = await getAdminActorId();
+  if (!adminId) return;
   await Message.create({
-    senderId: admin._id.toString(),
+    senderId: adminId,
     recipientId,
     subject,
     body,

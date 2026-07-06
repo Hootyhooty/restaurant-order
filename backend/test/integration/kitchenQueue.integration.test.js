@@ -10,6 +10,7 @@ const KitchenOrder = require('../../models/KitchenOrder');
 const Transaction = require('../../models/Transaction');
 const { getBangkokDateString } = require('../../utils/bangkokDate');
 const { createKitchenOrderFromTransaction } = require('../../services/kitchenOrderFromTransaction');
+const { seedOpsUser, staffToken: makeStaffToken, customerToken: makeCustomerToken } = require('../helpers/opsUsers');
 
 let app;
 let mongoServer;
@@ -45,17 +46,19 @@ describe('Kitchen queue API', () => {
     await mongoose.connection.dropDatabase();
     today = getBangkokDateString();
 
-    const kitchen = await Customer.create({
+    const { staff: kitchenAccount } = await seedOpsUser({
       username: 'kitchen_test',
       email: 'kitchen_test@test.local',
       password: 'password12',
       role: 'KITCHEN',
+      withCustomer: false,
     });
-    const staff = await Customer.create({
+    const { staff: staffAccount } = await seedOpsUser({
       username: 'staff_kitchen_test',
       email: 'staff_kitchen_test@test.local',
       password: 'password12',
       role: 'STAFF',
+      withCustomer: false,
     });
     const user = await Customer.create({
       username: 'user_kitchen_test',
@@ -64,9 +67,9 @@ describe('Kitchen queue API', () => {
       role: 'USER',
     });
 
-    kitchenToken = jwt.sign({ user_id: kitchen._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    staffToken = jwt.sign({ user_id: staff._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    userToken = jwt.sign({ user_id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    kitchenToken = makeStaffToken(jwt, kitchenAccount._id);
+    staffToken = makeStaffToken(jwt, staffAccount._id);
+    userToken = makeCustomerToken(jwt, user._id);
 
     const order = await KitchenOrder.create({
       ticketNumber: 1,

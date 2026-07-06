@@ -420,6 +420,17 @@ function validateContactBody(req, res, next) {
   next();
 }
 
+function validateAdminUserRoleBody(req, res, next) {
+  const role = String(req.body?.role || '').trim().toUpperCase();
+  const allowed = new Set(['USER', 'ADMIN', 'STAFF', 'KITCHEN']);
+  if (!allowed.has(role)) {
+    markValidationError(req, 'role must be USER, ADMIN, STAFF, or KITCHEN.');
+    return badRequest(res, 'role must be USER, ADMIN, STAFF, or KITCHEN.');
+  }
+  req.body.role = role;
+  next();
+}
+
 module.exports = {
   validateRegisterBody,
   validateLoginBody,
@@ -443,6 +454,8 @@ module.exports = {
   validateStaffCreateOrderBody,
   validateKitchenOrdersQuery,
   validateKitchenPatchLinesBody,
+  validateAdminUserRoleBody,
+  validateAdminUserRoleBody,
   validatePaginationQuery,
   isUuid,
 };

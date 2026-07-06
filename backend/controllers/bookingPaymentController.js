@@ -14,6 +14,7 @@ const {
 const { getStripe } = require('../utils/stripeClient');
 const { info, warn, error, setLogContext } = require('../utils/logger');
 const { recordBookingMetric } = require('../utils/opsMetricsStore');
+const { getAdminActorId } = require('../utils/adminLookup');
 
 const isISODate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
 
@@ -27,10 +28,7 @@ const normalizePreOrderItems = (items) => {
     .filter((i) => Number.isFinite(i.id) && Number.isFinite(i.quantity) && i.quantity > 0);
 };
 
-const getAdminUserId = async () => {
-  const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
-  return admin?._id?.toString() || null;
-};
+const getAdminUserId = getAdminActorId;
 
 // POST /api/bookings/create-checkout-session
 // Body: { date, timeSlot, guestCount, tableId, redeemCode?, preOrderItems?: [{id, quantity}] }

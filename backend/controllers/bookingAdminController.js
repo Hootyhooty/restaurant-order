@@ -5,14 +5,10 @@ const { refundPaymentIntentAmount } = require('../utils/stripeRefundPayment');
 const { recordAdminAudit } = require('../utils/auditLog');
 const AppError = require('../utils/appError');
 const { performBookingCheckIn } = require('../services/bookingCheckIn');
-
-const getAdminUserId = async () => {
-  const admin = await Customer.findOne({ role: 'ADMIN' }).select('_id').lean();
-  return admin?._id?.toString() || null;
-};
+const { getAdminActorId } = require('../utils/adminLookup');
 
 const sendAdminMessage = async ({ recipientId, subject, body }) => {
-  const adminId = await getAdminUserId();
+  const adminId = await getAdminActorId();
   if (!adminId) return;
   await Message.create({
     senderId: adminId,

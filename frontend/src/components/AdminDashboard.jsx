@@ -54,6 +54,16 @@ const AdminDashboard = () => {
   const [sendMessageTarget, setSendMessageTarget] = useState(null);
   const [sendMessageSubject, setSendMessageSubject] = useState('');
   const [sendMessageBody, setSendMessageBody] = useState('');
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [addUserForm, setAddUserForm] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'USER',
+  });
+  const [addUserSubmitting, setAddUserSubmitting] = useState(false);
+  const [roleUpdatingId, setRoleUpdatingId] = useState(null);
   const [sendMessageSubmitting, setSendMessageSubmitting] = useState(false);
   const [showAddSouvenirModal, setShowAddSouvenirModal] = useState(false);
   const [showEditSouvenirModal, setShowEditSouvenirModal] = useState(false);
@@ -295,23 +305,45 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleAddUser = async () => {
-    const username = prompt('Username');
-    if (!username) return;
-    const email = prompt('Email');
-    if (!email) return;
-    const phone = prompt('Phone (optional)');
-    const role = prompt('Role (USER/STAFF/KITCHEN/ADMIN)', 'USER');
-    const password = prompt('Password', 'changeme123');
+  const handleAddUser = async (e) => {
+    e?.preventDefault?.();
+    const { username, email, phone, password, role } = addUserForm;
+    if (!username?.trim() || !email?.trim() || !password) {
+      alert('Username, email, and password are required.');
+      return;
+    }
 
+    setAddUserSubmitting(true);
     try {
       await fetchJSON('/api/admin/users', {
         method: 'POST',
-        body: JSON.stringify({ username, email, phone, role, password })
+        body: JSON.stringify({ username, email, phone, role, password }),
       });
+      setShowAddUserModal(false);
+      setAddUserForm({ username: '', email: '', phone: '', password: '', role: 'USER' });
       loadSection('users');
     } catch (error) {
       alert(`Failed to create user: ${error.message}`);
+    } finally {
+      setAddUserSubmitting(false);
+    }
+  };
+
+  const handleRoleChange = async (userRow, newRole) => {
+    if (!userRow || newRole === userRow.role) return;
+    if (!window.confirm(`Change ${userRow.username}'s role to ${newRole}?`)) return;
+
+    setRoleUpdatingId(userRow.id);
+    try {
+      await fetchJSON(`/api/admin/users/${userRow.id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: newRole }),
+      });
+      loadSection('users');
+    } catch (error) {
+      alert(`Failed to update role: ${error.message}`);
+    } finally {
+      setRoleUpdatingId(null);
     }
   };
 
@@ -665,27 +697,28 @@ const AdminDashboard = () => {
                   <button
                     type="button"
                     className="btn btn-link p-0"
-                    onClick={() => navigate(`/profile/${u.id}`)}
+                    onClick={() => navigate(`/profile/${u.profileId || u.id}`)}
                   >
                     {u.username || '-'}
                   </button>
+                  {u.accountType && u.accountType !== 'customer' && (
+                    <div className="small text-muted">{u.accountType}</div>
+                  )}
                 </td>
                 <td>{u.email || '-'}</td>
                 <td>{u.phone || '-'}</td>
                 <td>
-                  <span
-                    className={`badge ${
-                      u.role === 'ADMIN'
-                        ? 'bg-danger'
-                        : u.role === 'STAFF'
-                          ? 'bg-warning'
-                          : u.role === 'KITCHEN'
-                            ? 'bg-info'
-                            : 'bg-secondary'
-                    }`}
+                  <select
+                    className="form-select form-select-sm admin-role-select"
+                    value={u.role || 'USER'}
+                    disabled={roleUpdatingId === u.id}
+                    onChange={(e) => handleRoleChange(u, e.target.value)}
                   >
-                    {u.role}
-                  </span>
+                    <option value="USER">USER</option>
+                    <option value="STAFF">STAFF</option>
+                    <option value="KITCHEN">KITCHEN</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
                 </td>
                 <td>{u.active ? 'Yes' : 'No'}</td>
                 <td>
@@ -1626,7 +1659,11 @@ const AdminDashboard = () => {
                   : 'Transactions'}
               </h4>
               {activeSection === 'users' && (
-                <button className="btn btn-primary" onClick={handleAddUser}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowAddUserModal(true)}
+                >
                   Add User
                 </button>
               )}
@@ -2015,6 +2052,88 @@ const AdminDashboard = () => {
                 <button type="button" className="btn btn-outline-secondary" onClick={closeEditSouvenirModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={editSouvenirSubmitting}>
                   {editSouvenirSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <div className="admin-modal-overlay" onClick={() => !addUserSubmitting && setShowAddUserModal(false)}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h5>Add User</h5>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => !addUserSubmitting && setShowAddUserModal(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleAddUser} className="admin-modal-body">
+              <div className="admin-add-menu-field">
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={addUserForm.username}
+                  onChange={(e) => setAddUserForm((prev) => ({ ...prev, username: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={addUserForm.email}
+                  onChange={(e) => setAddUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Phone (optional)</label>
+                <input
+                  type="text"
+                  value={addUserForm.phone}
+                  onChange={(e) => setAddUserForm((prev) => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Role</label>
+                <select
+                  value={addUserForm.role}
+                  onChange={(e) => setAddUserForm((prev) => ({ ...prev, role: e.target.value }))}
+                >
+                  <option value="USER">USER</option>
+                  <option value="STAFF">STAFF</option>
+                  <option value="KITCHEN">KITCHEN</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+              <div className="admin-add-menu-field">
+                <label>Password</label>
+                <input
+                  type="password"
+                  value={addUserForm.password}
+                  onChange={(e) => setAddUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                  minLength={8}
+                />
+              </div>
+              <div className="admin-modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setShowAddUserModal(false)}
+                  disabled={addUserSubmitting}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={addUserSubmitting}>
+                  {addUserSubmitting ? 'Creating…' : 'Create User'}
                 </button>
               </div>
             </form>

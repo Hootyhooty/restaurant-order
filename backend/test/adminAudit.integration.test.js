@@ -12,6 +12,7 @@ const {
 const Customer = require('../models/Customer');
 const Booking = require('../models/Booking');
 const AdminAuditLog = require('../models/AdminAuditLog');
+const { seedOpsUser, staffToken: makeStaffToken } = require('./helpers/opsUsers');
 
 let app;
 let mongoServer;
@@ -45,11 +46,12 @@ describe('Admin audit trail', () => {
   });
 
   async function seedAdminAndBooking() {
-    const admin = await Customer.create({
+    const { staff: admin } = await seedOpsUser({
       username: 'admin_audit',
       email: 'admin_audit@test.local',
       password: 'password12',
       role: 'ADMIN',
+      withCustomer: false,
     });
     const user = await Customer.create({
       username: 'user_audit',
@@ -70,7 +72,7 @@ describe('Admin audit trail', () => {
       status: 'confirmed',
       stripePaymentIntentId: 'pi_audit_test',
     });
-    const adminToken = jwt.sign({ user_id: admin._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const adminToken = makeStaffToken(jwt, admin._id);
     return { admin, booking, adminToken };
   }
 

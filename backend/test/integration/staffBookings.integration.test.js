@@ -14,6 +14,7 @@ const Booking = require('../../models/Booking');
 const BookingIntent = require('../../models/BookingIntent');
 const KitchenOrder = require('../../models/KitchenOrder');
 const { getBangkokDateString } = require('../../utils/bangkokDate');
+const { seedOpsUser, staffToken: makeStaffToken, customerToken: makeCustomerToken } = require('../helpers/opsUsers');
 
 let app;
 let mongoServer;
@@ -50,17 +51,19 @@ describe('Staff bookings API', () => {
   });
 
   async function seedStaffScenario() {
-    const admin = await Customer.create({
+    await seedOpsUser({
       username: 'admin_staff_test',
       email: 'admin_staff_test@test.local',
       password: 'password12',
       role: 'ADMIN',
+      withCustomer: false,
     });
-    const staff = await Customer.create({
+    const { staff: staffAccount } = await seedOpsUser({
       username: 'staff_test',
       email: 'staff_test@test.local',
       password: 'password12',
       role: 'STAFF',
+      withCustomer: false,
     });
     const user = await Customer.create({
       username: 'customer_staff_test',
@@ -89,10 +92,10 @@ describe('Staff bookings API', () => {
       stripePaymentIntentId: 'pi_staff_test',
     });
 
-    const staffToken = jwt.sign({ user_id: staff._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    const userToken = jwt.sign({ user_id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const tokenStaff = makeStaffToken(jwt, staffAccount._id);
+    const tokenUser = makeCustomerToken(jwt, user._id);
 
-    return { admin, staff, user, booking, staffToken, userToken, today };
+    return { staff: staffAccount, user, booking, staffToken: tokenStaff, userToken: tokenUser, today };
   }
 
   test('staff can list bookings for today with pre-order summary', async () => {

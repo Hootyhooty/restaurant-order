@@ -12,6 +12,7 @@ const {
   handleBookingCheckoutCompleted,
   claimStripeWebhookEvent,
 } = require('../controllers/stripeController');
+const { seedOpsUser } = require('./helpers/opsUsers');
 
 let mongoServer;
 
@@ -38,11 +39,12 @@ describe('Stripe webhook idempotency', () => {
   });
 
   async function seedCustomersForMessages() {
-    await Customer.create({
+    await seedOpsUser({
       username: 'admin_wh',
       email: 'admin_wh@test.local',
       password: 'password12',
       role: 'ADMIN',
+      withCustomer: false,
     });
     return Customer.create({
       username: 'user_wh',

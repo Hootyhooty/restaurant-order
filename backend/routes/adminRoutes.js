@@ -8,6 +8,7 @@ const {
   toggleUserActive,
   deleteUser,
   createUser,
+  updateUserRole,
   getMenuItems,
   createMenuItem,
   updateMenuItem,
@@ -35,6 +36,7 @@ const {
   validateAdminBookingsQuery,
   validateAuditLogsQuery,
   validateMongoIdParam,
+  validateAdminUserRoleBody,
 } = require('../utils/validation');
 
 // Use in-memory storage for images; we upload to Cloudinary in controllers
@@ -51,6 +53,7 @@ const uploadMenuImage = multer({
 router.get('/stats', rolesRequired('ADMIN'), getDashboardStats);
 router.get('/users', rolesRequired('ADMIN'), getUsers);
 router.post('/users', rolesRequired('ADMIN'), createUser);
+router.patch('/users/:userId/role', rolesRequired('ADMIN'), validateMongoIdParam('userId'), validateAdminUserRoleBody, updateUserRole);
 router.post('/users/:userId/toggle', rolesRequired('ADMIN'), toggleUserActive);
 router.delete('/users/:userId', rolesRequired('ADMIN'), deleteUser);
 router.get('/menu-items', rolesRequired('ADMIN'), getMenuItems);

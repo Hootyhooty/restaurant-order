@@ -8,6 +8,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const Customer = require('../../models/Customer');
 const KitchenOrder = require('../../models/KitchenOrder');
 const { getBangkokDateString } = require('../../utils/bangkokDate');
+const { seedOpsUser, staffToken: makeStaffToken, customerToken: makeCustomerToken } = require('../helpers/opsUsers');
 
 let app;
 let mongoServer;
@@ -41,11 +42,12 @@ describe('Staff orders API', () => {
     await mongoose.connection.dropDatabase();
     today = getBangkokDateString();
 
-    const staff = await Customer.create({
+    const { staff: staffAccount } = await seedOpsUser({
       username: 'staff_order_test',
       email: 'staff_order_test@test.local',
       password: 'password12',
       role: 'STAFF',
+      withCustomer: false,
     });
     const user = await Customer.create({
       username: 'user_order_test',
@@ -54,8 +56,8 @@ describe('Staff orders API', () => {
       role: 'USER',
     });
 
-    staffToken = jwt.sign({ user_id: staff._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    userToken = jwt.sign({ user_id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    staffToken = makeStaffToken(jwt, staffAccount._id);
+    userToken = makeCustomerToken(jwt, user._id);
   });
 
   test('staff can load menu', async () => {
