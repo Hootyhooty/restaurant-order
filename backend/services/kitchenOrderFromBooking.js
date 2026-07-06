@@ -1,13 +1,6 @@
 const KitchenOrder = require('../models/KitchenOrder');
 const { expandOrderLines } = require('../utils/expandOrderLines');
-
-async function nextTicketNumber(serviceDate) {
-  const latest = await KitchenOrder.findOne({ serviceDate })
-    .sort({ ticketNumber: -1 })
-    .select('ticketNumber')
-    .lean();
-  return (latest?.ticketNumber || 0) + 1;
-}
+const { nextTicketNumber } = require('./kitchenTicketNumber');
 
 /**
  * Create a kitchen ticket from booking pre-order items (idempotent per bookingId).

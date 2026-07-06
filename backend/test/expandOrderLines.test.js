@@ -19,6 +19,7 @@ test('expandOrderLines: qty 3 produces 3 separate lines', () => {
     assert.equal(line.name, 'Pad Thai');
     assert.equal(line.unitPrice, 120);
     assert.equal(line.quantity, 1);
+    assert.equal(line.lineStatus, 'pending');
   }
 });
 

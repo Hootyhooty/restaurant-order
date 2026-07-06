@@ -8,6 +8,7 @@ const Message = require('../models/Message');
 const Customer = require('../models/Customer');
 const { info, warn, error, setLogContext } = require('../utils/logger');
 const { recordBookingMetric, recordWebhookMetric } = require('../utils/opsMetricsStore');
+const { createKitchenOrderFromTransaction } = require('../services/kitchenOrderFromTransaction');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
@@ -357,6 +358,16 @@ const webhookHandler = async (req, res) => {
 
         if (!tx) {
           warn('webhook_transaction_missing', { sessionId: session.id, stripeEventId: event.id }, req);
+        } else if (tx.status === 'paid') {
+          try {
+            await createKitchenOrderFromTransaction(tx);
+          } catch (kitchenErr) {
+            error(
+              'webhook_kitchen_order_failed',
+              { transactionId: tx._id, message: kitchenErr.message || 'unknown' },
+              req,
+            );
+          }
         }
       }
 

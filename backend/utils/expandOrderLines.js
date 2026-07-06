@@ -11,6 +11,7 @@ function expandOrderLines(items) {
         name: item.name,
         unitPrice: item.unitPrice,
         quantity: 1,
+        lineStatus: 'pending',
       });
     }
   }

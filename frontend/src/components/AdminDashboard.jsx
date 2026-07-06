@@ -301,7 +301,7 @@ const AdminDashboard = () => {
     const email = prompt('Email');
     if (!email) return;
     const phone = prompt('Phone (optional)');
-    const role = prompt('Role (USER/STAFF/ADMIN)', 'USER');
+    const role = prompt('Role (USER/STAFF/KITCHEN/ADMIN)', 'USER');
     const password = prompt('Password', 'changeme123');
 
     try {
@@ -679,7 +679,9 @@ const AdminDashboard = () => {
                         ? 'bg-danger'
                         : u.role === 'STAFF'
                           ? 'bg-warning'
-                          : 'bg-secondary'
+                          : u.role === 'KITCHEN'
+                            ? 'bg-info'
+                            : 'bg-secondary'
                     }`}
                   >
                     {u.role}

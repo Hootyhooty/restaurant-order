@@ -29,7 +29,7 @@ const Login = () => {
     if (result.success) {
       const role = result.user?.role;
       const roleHome = getHomeRouteForRole(role);
-      if (role === 'ADMIN' || role === 'STAFF') {
+      if (role === 'ADMIN' || role === 'STAFF' || role === 'KITCHEN') {
         navigate(roleHome);
       } else {
         navigate(location.state?.from || roleHome);

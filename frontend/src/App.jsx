@@ -28,6 +28,10 @@ import BookingPaymentSuccess from './components/BookingPaymentSuccess';
 import BookingPaymentCancel from './components/BookingPaymentCancel';
 import StaffLayout from './pages/staff/StaffLayout';
 import StaffBookings from './pages/staff/StaffBookings';
+import StaffOrder from './pages/staff/StaffOrder';
+import StaffStatus from './pages/staff/StaffStatus';
+import KitchenLayout from './pages/kitchen/KitchenLayout';
+import KitchenQueue from './pages/kitchen/KitchenQueue';
 
 function App() {
   return (
@@ -54,9 +58,15 @@ function App() {
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/staff" element={<Navigate to="/staff/bookings" replace />} />
-            <Route path="/staff/bookings" element={<StaffLayout />}>
-              <Route index element={<StaffBookings />} />
+            <Route path="/staff" element={<StaffLayout />}>
+              <Route index element={<Navigate to="/staff/bookings" replace />} />
+              <Route path="bookings" element={<StaffBookings />} />
+              <Route path="order" element={<StaffOrder />} />
+              <Route path="status" element={<StaffStatus />} />
+            </Route>
+            <Route path="/kitchen" element={<Navigate to="/kitchen/queue" replace />} />
+            <Route path="/kitchen/queue" element={<KitchenLayout />}>
+              <Route index element={<KitchenQueue />} />
             </Route>
             <Route path="/review/:menuSlug" element={<ReviewPage />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />

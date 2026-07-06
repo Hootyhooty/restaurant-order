@@ -1,9 +1,14 @@
 const Booking = require('../models/Booking');
 const BookingIntent = require('../models/BookingIntent');
 const Customer = require('../models/Customer');
+const KitchenOrder = require('../models/KitchenOrder');
 const AppError = require('../utils/appError');
 const { getBangkokDateString } = require('../utils/bangkokDate');
 const { performBookingCheckIn } = require('../services/bookingCheckIn');
+const { createStaffTableOrder } = require('../services/createStaffTableOrder');
+const { mapKitchenOrder } = require('./kitchenController');
+const { categories } = require('../data/meals');
+const { getMealsData } = require('../utils/mealsData');
 
 const formatCustomerName = (customer) => {
   const full = [customer?.first_name, customer?.last_name].filter(Boolean).join(' ').trim();
@@ -147,7 +152,137 @@ const checkInStaffBooking = async (req, res) => {
   }
 };
 
+// GET /api/staff/bookings/:bookingId
+const getStaffBookingDetail = async (req, res) => {
+  try {
+    const bookingId = String(req.params.bookingId || '').trim();
+    const booking = await Booking.findById(bookingId).lean();
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const customer = await Customer.findById(booking.userId)
+      .select('username first_name last_name email phone')
+      .lean();
+
+    return res.json({
+      success: true,
+      item: {
+        id: booking._id,
+        source: 'booking',
+        userId: booking.userId,
+        customerName: formatCustomerName(customer),
+        customerEmail: customer?.email || '',
+        customerPhone: customer?.phone || '',
+        tableId: booking.tableId,
+        date: booking.date,
+        timeSlot: booking.timeSlot,
+        guestCount: booking.guestCount,
+        status: booking.status,
+        reservationFee: booking.reservationFee,
+        reservationCost: booking.reservationCost,
+        preOrderItems: booking.preOrderItems || [],
+        preOrderTotal: booking.preOrderTotal,
+        amountTotal: booking.amountTotal,
+        createdAt: booking.createdAt,
+        canCheckIn: booking.status === 'confirmed',
+      },
+    });
+  } catch (error) {
+    console.error('Staff get booking detail error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load booking' });
+  }
+};
+
+// GET /api/staff/menu
+const getStaffMenu = async (req, res) => {
+  try {
+    const meals = getMealsData();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const items = meals.map((m) => ({
+      id: m.id,
+      name: m.name,
+      slug: m.slug,
+      price: m.price,
+      category: m.category,
+      description: m.description || '',
+      image: m.image && m.image.startsWith('/') ? baseUrl + m.image : (m.image || ''),
+    }));
+
+    return res.json({ success: true, items, categories });
+  } catch (error) {
+    console.error('Staff get menu error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load menu' });
+  }
+};
+
+// POST /api/staff/orders
+const createStaffOrder = async (req, res) => {
+  try {
+    const { tableId, customerName, items } = req.body || {};
+    const order = await createStaffTableOrder({
+      tableId,
+      customerName,
+      items,
+      staffUserId: req.user?._id?.toString?.(),
+    });
+    return res.status(201).json({ success: true, item: mapKitchenOrder(order.toObject()) });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Staff create order error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to create order' });
+  }
+};
+
+// GET /api/staff/orders?date=&tableId=&q=
+const getStaffOrders = async (req, res) => {
+  try {
+    const date = String(req.query.date || getBangkokDateString()).trim();
+    const tableId = req.query.tableId != null && req.query.tableId !== ''
+      ? Number(req.query.tableId)
+      : null;
+    const q = String(req.query.q || '').trim().toLowerCase();
+
+    const filter = { serviceDate: date };
+    if (Number.isInteger(tableId) && tableId >= 1 && tableId <= 12) {
+      filter.tableId = tableId;
+    }
+
+    const orders = await KitchenOrder.find(filter)
+      .sort({ ticketNumber: 1 })
+      .lean();
+
+    let items = orders.map(mapKitchenOrder);
+    if (q) {
+      items = items.filter((row) => {
+        const haystack = [
+          row.customerName,
+          String(row.tableId || ''),
+          row.sourceLabel,
+          row.status,
+          String(row.ticketNumber),
+          ...(row.lines || []).map((l) => l.name),
+        ]
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    return res.json({ success: true, date, items });
+  } catch (error) {
+    console.error('Staff get orders error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load orders' });
+  }
+};
+
 module.exports = {
   getStaffBookings,
+  getStaffBookingDetail,
   checkInStaffBooking,
+  getStaffMenu,
+  createStaffOrder,
+  getStaffOrders,
 };

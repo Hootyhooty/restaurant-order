@@ -7,6 +7,11 @@ const kitchenOrderLineSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     unitPrice: { type: Number, required: true, min: 0 },
     quantity: { type: Number, required: true, default: 1, min: 1 },
+    lineStatus: {
+      type: String,
+      enum: ['pending', 'preparing', 'ready', 'served', 'cancelled'],
+      default: 'pending',
+    },
   },
   { _id: false }
 );
@@ -26,6 +31,8 @@ const kitchenOrderSchema = new mongoose.Schema(
     },
 
     bookingId: { type: String, ref: 'Booking', sparse: true, unique: true },
+    transactionId: { type: String, ref: 'Transaction', sparse: true, unique: true },
+    createdByStaffId: { type: String, ref: 'Customer', sparse: true },
     tableId: { type: Number, min: 1, max: 12, index: true },
     customerName: { type: String, required: true, trim: true },
 

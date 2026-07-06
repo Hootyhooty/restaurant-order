@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import './StaffLayout.css';
 
@@ -40,13 +40,30 @@ const StaffLayout = () => {
         </header>
 
         <nav className="staff-nav" aria-label="Staff sections">
-          <span className="staff-nav-tab staff-nav-tab--active">Bookings</span>
-          <span className="staff-nav-tab staff-nav-tab--disabled" title="Coming soon">
+          <NavLink
+            to="/staff/bookings"
+            className={({ isActive }) =>
+              `staff-nav-tab${isActive ? ' staff-nav-tab--active' : ''}`
+            }
+          >
+            Bookings
+          </NavLink>
+          <NavLink
+            to="/staff/order"
+            className={({ isActive }) =>
+              `staff-nav-tab${isActive ? ' staff-nav-tab--active' : ''}`
+            }
+          >
             Order
-          </span>
-          <span className="staff-nav-tab staff-nav-tab--disabled" title="Coming soon">
+          </NavLink>
+          <NavLink
+            to="/staff/status"
+            className={({ isActive }) =>
+              `staff-nav-tab${isActive ? ' staff-nav-tab--active' : ''}`
+            }
+          >
             Status
-          </span>
+          </NavLink>
         </nav>
 
         <div className="staff-content">

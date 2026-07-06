@@ -198,6 +198,15 @@ const Header = () => {
                 Staff
               </button>
             )}
+            {isLoggedIn && user?.role === 'KITCHEN' && (
+              <button
+                type="button"
+                className="btn btn-secondary header-dashboard-btn"
+                onClick={() => navigate('/kitchen/queue')}
+              >
+                Kitchen
+              </button>
+            )}
             {isLoggedIn && (
               <button
                 type="button"

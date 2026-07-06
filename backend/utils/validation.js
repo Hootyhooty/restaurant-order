@@ -318,6 +318,78 @@ function validateStaffBookingsQuery(req, res, next) {
   next();
 }
 
+function validateStaffOrdersQuery(req, res, next) {
+  const date = req.query?.date;
+  if (date != null && date !== '' && !isISODate(date)) {
+    markValidationError(req, 'Invalid date. Expected YYYY-MM-DD.');
+    return badRequest(res, 'Invalid date. Expected YYYY-MM-DD.');
+  }
+  const tableId = req.query?.tableId;
+  if (tableId != null && tableId !== '') {
+    const n = Number(tableId);
+    if (!Number.isInteger(n) || n < 1 || n > 12) {
+      markValidationError(req, 'tableId must be between 1 and 12.');
+      return badRequest(res, 'tableId must be between 1 and 12.');
+    }
+  }
+  next();
+}
+
+function validateStaffCreateOrderBody(req, res, next) {
+  const tableId = Number(req.body?.tableId);
+  if (!Number.isInteger(tableId) || tableId < 1 || tableId > 12) {
+    markValidationError(req, 'tableId must be between 1 and 12.');
+    return badRequest(res, 'tableId must be between 1 and 12.');
+  }
+  const items = req.body?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    markValidationError(req, 'items must be a non-empty array.');
+    return badRequest(res, 'items must be a non-empty array.');
+  }
+  if (items.length > 30) {
+    markValidationError(req, 'items cannot exceed 30 entries.');
+    return badRequest(res, 'items cannot exceed 30 entries.');
+  }
+  for (const raw of items) {
+    const mealId = Number(raw?.mealId ?? raw?.id);
+    const quantity = Number(raw?.quantity);
+    if (!Number.isFinite(mealId) || mealId < 1) {
+      markValidationError(req, 'Invalid meal id in items.');
+      return badRequest(res, 'Invalid meal id in items.');
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      markValidationError(req, 'Item quantity must be between 1 and 99.');
+      return badRequest(res, 'Item quantity must be between 1 and 99.');
+    }
+  }
+  next();
+}
+
+function validateKitchenOrdersQuery(req, res, next) {
+  const date = req.query?.date;
+  if (date != null && date !== '' && !isISODate(date)) {
+    markValidationError(req, 'Invalid date. Expected YYYY-MM-DD.');
+    return badRequest(res, 'Invalid date. Expected YYYY-MM-DD.');
+  }
+  next();
+}
+
+const KITCHEN_LINE_PATCH_STATUSES = new Set(['preparing', 'ready', 'served', 'cancelled']);
+
+function validateKitchenPatchLinesBody(req, res, next) {
+  const lineStatus = String(req.body?.lineStatus || '').trim().toLowerCase();
+  if (!KITCHEN_LINE_PATCH_STATUSES.has(lineStatus)) {
+    markValidationError(req, 'lineStatus must be preparing, ready, served, or cancelled.');
+    return badRequest(res, 'lineStatus must be preparing, ready, served, or cancelled.');
+  }
+  const lineIndexes = req.body?.lineIndexes;
+  if (!Array.isArray(lineIndexes) || lineIndexes.length === 0) {
+    markValidationError(req, 'lineIndexes must be a non-empty array.');
+    return badRequest(res, 'lineIndexes must be a non-empty array.');
+  }
+  next();
+}
+
 function validateContactBody(req, res, next) {
   const name = String(req.body?.name || '').trim();
   const email = String(req.body?.email || '').trim();
@@ -367,6 +439,10 @@ module.exports = {
   validateAdminBookingsQuery,
   validateAuditLogsQuery,
   validateStaffBookingsQuery,
+  validateStaffOrdersQuery,
+  validateStaffCreateOrderBody,
+  validateKitchenOrdersQuery,
+  validateKitchenPatchLinesBody,
   validatePaginationQuery,
   isUuid,
 };

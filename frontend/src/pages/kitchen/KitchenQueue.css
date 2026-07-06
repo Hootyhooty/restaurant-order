@@ -1,0 +1,146 @@
+.kitchen-queue-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.kitchen-queue-toolbar h2 {
+  color: #6b4423;
+  margin: 0;
+}
+
+.kitchen-queue-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.kitchen-queue-controls .form-control {
+  max-width: 180px;
+}
+
+.kitchen-queue-msg {
+  color: #5c4a32;
+}
+
+.kitchen-queue-error {
+  color: #a33;
+}
+
+.kitchen-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.kitchen-ticket {
+  border: 2px solid #e8d5a8;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.kitchen-ticket-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.kitchen-ticket-number {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #6b4423;
+}
+
+.kitchen-ticket-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.kitchen-ticket-badge--booking_preorder {
+  background: #e8d5ff;
+  color: #4a3070;
+}
+
+.kitchen-ticket-badge--staff_table {
+  background: #d4edda;
+  color: #1e5631;
+}
+
+.kitchen-ticket-badge--online {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.kitchen-ticket-table {
+  font-weight: 600;
+  color: #5c4a32;
+}
+
+.kitchen-ticket-customer {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #3d2f1f;
+}
+
+.kitchen-ticket-lines {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.kitchen-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #efe3c6;
+}
+
+.kitchen-line--terminal {
+  opacity: 0.5;
+}
+
+.kitchen-line-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+
+.kitchen-line-label input {
+  width: 20px;
+  height: 20px;
+}
+
+.kitchen-line-status {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #8a7355;
+}
+
+.kitchen-line-cancel {
+  border: none;
+  background: transparent;
+  color: #a33;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.kitchen-ticket-footer {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

@@ -102,6 +102,28 @@
   text-transform: capitalize;
 }
 
+.staff-bookings-table tbody tr.staff-bookings-row {
+  cursor: pointer;
+}
+
+.staff-bookings-table tbody tr.staff-bookings-row:hover {
+  background: #faf4ea;
+}
+
+.staff-modal--wide {
+  max-width: 520px;
+}
+
+.staff-detail-preorder {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.staff-modal-note {
+  color: #8a7355;
+  font-style: italic;
+}
+
 .staff-modal-overlay {
   position: fixed;
   inset: 0;

@@ -11,6 +11,8 @@ const StaffBookings = () => {
   const [date, setDate] = useState(getDefaultStaffBookingDate);
   const [confirmBooking, setConfirmBooking] = useState(null);
   const [checkInSubmitting, setCheckInSubmitting] = useState(false);
+  const [detailBooking, setDetailBooking] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -91,6 +93,32 @@ const StaffBookings = () => {
     return `฿${Number(cost).toLocaleString()}`;
   };
 
+  const openDetail = async (booking) => {
+    if (booking.source === 'intent') {
+      setDetailBooking({
+        ...booking,
+        preOrderItems: [],
+        note: 'Payment not yet confirmed — full details available after checkout completes.',
+      });
+      return;
+    }
+
+    setDetailLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/api/staff/bookings/${booking.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+      setDetailBooking(data.item);
+    } catch (err) {
+      alert(err.message || 'Failed to load booking details');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   return (
     <div className="staff-bookings">
       <div className="staff-bookings-header">
@@ -147,7 +175,14 @@ const StaffBookings = () => {
             </thead>
             <tbody>
               {bookings.map((b) => (
-                <tr key={b.id}>
+                <tr
+                  key={b.id}
+                  className="staff-bookings-row"
+                  onClick={() => openDetail(b)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && openDetail(b)}
+                >
                   <td>{b.date}</td>
                   <td>{formatTime(b.time || b.timeSlot)}</td>
                   <td>{b.customerName || '—'}</td>
@@ -165,7 +200,10 @@ const StaffBookings = () => {
                       <button
                         type="button"
                         className="btn btn-primary btn-sm staff-checkin-btn"
-                        onClick={() => setConfirmBooking(b)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmBooking(b);
+                        }}
                       >
                         Check in &amp; refund deposit
                       </button>
@@ -226,6 +264,48 @@ const StaffBookings = () => {
               >
                 {checkInSubmitting ? 'Processing…' : 'Confirm check-in'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(detailBooking || detailLoading) && (
+        <div
+          className="staff-modal-overlay"
+          onClick={() => !detailLoading && setDetailBooking(null)}
+        >
+          <div className="staff-modal staff-modal--wide" onClick={(e) => e.stopPropagation()} role="dialog">
+            <div className="staff-modal-header">
+              <h3>Booking details</h3>
+              <button
+                type="button"
+                className="staff-modal-close"
+                onClick={() => setDetailBooking(null)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="staff-modal-body">
+              {detailLoading && <p>Loading…</p>}
+              {!detailLoading && detailBooking && (
+                <>
+                  <p><strong>{detailBooking.customerName}</strong></p>
+                  <p>Table {detailBooking.tableId} · {detailBooking.date} · {formatTime(detailBooking.timeSlot)}</p>
+                  <p>Guests: {detailBooking.guestCount ?? '—'} · Status: {detailBooking.status}</p>
+                  <p>Deposit: {formatCost(detailBooking.reservationCost)}</p>
+                  {detailBooking.note && <p className="staff-modal-note">{detailBooking.note}</p>}
+                  {(detailBooking.preOrderItems || []).length > 0 ? (
+                    <ul className="staff-detail-preorder">
+                      {detailBooking.preOrderItems.map((item, idx) => (
+                        <li key={idx}>{item.name} × {item.quantity}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No pre-order</p>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
