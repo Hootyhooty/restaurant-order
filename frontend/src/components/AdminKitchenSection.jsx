@@ -36,9 +36,13 @@ const AdminKitchenSection = () => {
     if (view === 'stock') fetchStock();
   }, [view, fetchStock]);
 
-  useKitchenStream(token, (event) => {
-    if (event.type === 'stock_updated' && view === 'stock') fetchStock();
-  });
+  const onKitchenEvent = useCallback(
+    (event) => {
+      if (event.type === 'stock_updated' && view === 'stock') fetchStock();
+    },
+    [view, fetchStock],
+  );
+  useKitchenStream(token, onKitchenEvent);
 
   return (
     <div className="admin-kitchen-section">

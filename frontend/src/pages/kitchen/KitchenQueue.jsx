@@ -68,9 +68,10 @@ const KitchenQueue = () => {
     return () => clearInterval(id);
   }, [fetchOrders]);
 
-  useKitchenStream(token, () => {
+  const onKitchenEvent = useCallback(() => {
     fetchOrders(true);
-  });
+  }, [fetchOrders]);
+  useKitchenStream(token, onKitchenEvent);
 
   const patchLines = async (orderId, lineIndexes, lineStatus) => {
     setUpdating(`${orderId}-${lineIndexes.join(',')}-${lineStatus}`);

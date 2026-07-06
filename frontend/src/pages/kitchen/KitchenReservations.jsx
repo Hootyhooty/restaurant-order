@@ -49,11 +49,15 @@ const KitchenReservations = ({ apiBasePath = '/api/kitchen/reservations' }) => {
     return () => clearInterval(id);
   }, [fetchReservations]);
 
-  useKitchenStream(token, (event) => {
-    if (event.type === 'reservations_updated' || event.type === 'orders_updated') {
-      fetchReservations(true);
-    }
-  });
+  const onKitchenEvent = useCallback(
+    (event) => {
+      if (event.type === 'reservations_updated' || event.type === 'orders_updated') {
+        fetchReservations(true);
+      }
+    },
+    [fetchReservations],
+  );
+  useKitchenStream(token, onKitchenEvent);
 
   return (
     <div className="kitchen-reservations">

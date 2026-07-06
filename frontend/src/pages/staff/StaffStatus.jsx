@@ -55,10 +55,11 @@ const StaffStatus = () => {
     return () => clearInterval(id);
   }, [fetchOrders]);
 
-  useKitchenStream(token, () => {
+  const onKitchenEvent = useCallback(() => {
     etagRef.current = null;
     fetchOrders(true);
-  });
+  }, [fetchOrders]);
+  useKitchenStream(token, onKitchenEvent);
 
   const handleFilterSubmit = (e) => {
     e.preventDefault();
