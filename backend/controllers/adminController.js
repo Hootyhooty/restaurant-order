@@ -29,7 +29,7 @@ const getUsers = async (req, res) => {
     const audience = String(req.query.audience || 'customers').toLowerCase();
 
     if (audience === 'staff') {
-      const staffList = await Staff.find()
+      const staffList = await Staff.find({ role: { $in: ['STAFF', 'KITCHEN'] } })
         .select('-password')
         .sort({ createdAt: -1 })
         .limit(limit)

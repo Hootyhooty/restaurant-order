@@ -47,6 +47,10 @@ const staffSchema = new mongoose.Schema(
       trim: true,
       maxlength: 50,
     },
+    photo: {
+      type: String,
+      default: 'other_img/default.jpg',
+    },
     role: {
       type: String,
       enum: OPS_ROLES,

@@ -25,7 +25,7 @@ const {
   findStaffByLogin,
   findCustomerByLogin,
   resolvePrincipalFromToken,
-  normalizePrincipal,
+  resolvePrincipalById,
 } = require('../services/resolvePrincipal');
 const jwt = require('jsonwebtoken');
 
@@ -387,7 +387,7 @@ const login = async (req, res) => {
         process.env.JWT_SECRET,
         { expiresIn: '30d' },
       );
-      const principal = normalizePrincipal(staffAccount, 'staff');
+      const principal = await resolvePrincipalById(staffAccount._id, 'staff');
       return res.json({
         token,
         user: {
@@ -403,6 +403,7 @@ const login = async (req, res) => {
           phone_verified: principal.phone_verified,
           accountType: principal.accountType,
           customerId: principal.customerId,
+          staffId: principal.staffId,
         },
       });
     }

@@ -145,7 +145,7 @@ describe('User role management', () => {
       .set('Authorization', `Bearer ${adminToken}`);
     assert.equal(staffRes.status, 200);
     assert.equal(staffRes.body.audience, 'staff');
-    assert.ok(staffRes.body.items.length >= 2);
     assert.ok(staffRes.body.items.some((row) => row.username === 'list_staff'));
+    assert.ok(!staffRes.body.items.some((row) => row.role === 'ADMIN'));
   });
 });
