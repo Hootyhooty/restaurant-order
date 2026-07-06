@@ -32,7 +32,6 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password, phone) => {
     try {
-      console.log('Sending registration request to:', `${API_BASE}/api/auth/register`);
       const response = await axios.post(
         `${API_BASE}/api/auth/register`,
         {
@@ -45,14 +44,12 @@ export const AuthProvider = ({ children }) => {
           headers: { 'Content-Type': 'application/json' }
         }
       );
-      console.log('Registration response:', response.data);
       return {
         success: true,
         message: response.data.message,
         emailSent: response.data.emailSent,
       };
     } catch (error) {
-      console.error('Registration error:', error.response?.data?.message || error.message);
       return {
         success: false,
         message: error.response?.data?.message || 'Registration failed',
@@ -79,7 +76,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      console.log('Sending login request to:', `${API_BASE}/api/auth/login`);
       const response = await axios.post(
         `${API_BASE}/api/auth/login`,
         {
@@ -90,13 +86,11 @@ export const AuthProvider = ({ children }) => {
           headers: { 'Content-Type': 'application/json' }
         }
       );
-      console.log('Login response:', response.data);
       localStorage.setItem('token', response.data.token);
       setIsLoggedIn(true);
       setUser(response.data.user);
       return { success: true, user: response.data.user };
     } catch (error) {
-      console.error('Login error:', error.response?.data?.message || error.message);
       const data = error.response?.data || {};
       return {
         success: false,
@@ -108,7 +102,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    console.log('Logging out user');
     setIsLoggedIn(false);
     setUser(null);
     localStorage.removeItem('token');
