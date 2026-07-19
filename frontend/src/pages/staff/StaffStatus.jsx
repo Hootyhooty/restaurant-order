@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { API_BASE } from '../../apiConfig';
+import { apiFetch } from '../../apiClient';
 import { getBangkokDateString } from '../../utils/bangkokDate';
 import { useKitchenStream } from '../../hooks/useKitchenStream';
 import './StaffStatus.css';
@@ -18,7 +19,6 @@ const StaffStatus = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const etagRef = useRef(null);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -27,10 +27,10 @@ const StaffStatus = () => {
       const params = new URLSearchParams({ date });
       if (tableId.trim()) params.set('tableId', tableId.trim());
       if (search.trim()) params.set('q', search.trim());
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = {};
       if (etagRef.current) headers['If-None-Match'] = etagRef.current;
 
-      const res = await fetch(`${API_BASE}/api/staff/orders?${params}`, { headers });
+      const res = await apiFetch(`${API_BASE}/api/staff/orders?${params}`, { headers });
       if (res.status === 304) return;
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -46,7 +46,7 @@ const StaffStatus = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [date, tableId, search, token]);
+  }, [date, tableId, search]);
 
   useEffect(() => {
     etagRef.current = null;
@@ -59,7 +59,7 @@ const StaffStatus = () => {
     etagRef.current = null;
     fetchOrders(true);
   }, [fetchOrders]);
-  useKitchenStream(token, onKitchenEvent);
+  useKitchenStream(onKitchenEvent);
 
   const handleFilterSubmit = (e) => {
     e.preventDefault();

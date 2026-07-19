@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE } from '../../apiConfig';
+import { apiFetch } from '../../apiClient';
 import { getBangkokDateString } from '../../utils/bangkokDate';
 import { useKitchenStream } from '../../hooks/useKitchenStream';
 import './KitchenReservations.css';
@@ -16,7 +17,6 @@ const KitchenReservations = ({ apiBasePath = '/api/kitchen/reservations' }) => {
   const [date, setDate] = useState(getBangkokDateString);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   const fetchReservations = useCallback(
     async (silent = false) => {
@@ -24,9 +24,7 @@ const KitchenReservations = ({ apiBasePath = '/api/kitchen/reservations' }) => {
       setError('');
       try {
         const params = new URLSearchParams({ date });
-        const res = await fetch(`${API_BASE}${apiBasePath}?${params}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiFetch(`${API_BASE}${apiBasePath}?${params}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.message || `HTTP ${res.status}`);
@@ -40,7 +38,7 @@ const KitchenReservations = ({ apiBasePath = '/api/kitchen/reservations' }) => {
         if (!silent) setLoading(false);
       }
     },
-    [apiBasePath, date, token]
+    [apiBasePath, date]
   );
 
   useEffect(() => {
@@ -57,7 +55,7 @@ const KitchenReservations = ({ apiBasePath = '/api/kitchen/reservations' }) => {
     },
     [fetchReservations],
   );
-  useKitchenStream(token, onKitchenEvent);
+  useKitchenStream(onKitchenEvent);
 
   return (
     <div className="kitchen-reservations">

@@ -1,14 +1,15 @@
 /**
  * Load test: POST /api/bookings/create-checkout-session (authenticated).
  *
- * Requires JWT_TOKEN from POST /api/auth/login and Stripe + FRONTEND_ORIGIN on server.
+ * Requires a test account plus Stripe + FRONTEND_ORIGIN on the server.
  *
  * Examples:
- *   JWT_TOKEN=eyJ... FRONTEND_ORIGIN=http://localhost:3000 k6 run k6/booking-checkout-session.js
- *   K6_SCENARIO=race JWT_TOKEN=... FRONTEND_ORIGIN=http://localhost:3000 BOOKING_TABLE_ID=5 k6 run k6/booking-checkout-session.js
+ *   K6_USERNAME=user K6_PASSWORD=secret FRONTEND_ORIGIN=http://localhost:3000 k6 run k6/booking-checkout-session.js
+ *   K6_SCENARIO=race AUTH_COOKIE='access_token=...' FRONTEND_ORIGIN=http://localhost:3000 BOOKING_TABLE_ID=5 k6 run k6/booking-checkout-session.js
  *
  * Env:
- *   JWT_TOKEN, FRONTEND_ORIGIN, BASE_URL, K6_SCENARIO, BOOKING_DATE, BOOKING_TABLE_ID (race)
+ *   K6_USERNAME, K6_PASSWORD (or AUTH_COOKIE), FRONTEND_ORIGIN, BASE_URL,
+ *   K6_SCENARIO, BOOKING_DATE, BOOKING_TABLE_ID (race)
  */
 import http from 'k6/http';
 import { check, sleep } from 'k6';
@@ -77,13 +78,31 @@ export const options = scenarioOptions();
 
 const BASE = (__ENV.BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
 const ORIGIN = __ENV.FRONTEND_ORIGIN || 'http://localhost:3000';
-const TOKEN = __ENV.JWT_TOKEN || '';
+const AUTH_COOKIE = __ENV.AUTH_COOKIE || '';
 
 export function setup() {
-  if (!TOKEN) {
-    throw new Error('JWT_TOKEN is required — login via POST /api/auth/login and copy token');
+  if (AUTH_COOKIE) {
+    return { cookie: AUTH_COOKIE };
   }
-  return { token: TOKEN };
+
+  const username = __ENV.K6_USERNAME || '';
+  const password = __ENV.K6_PASSWORD || '';
+  if (!username || !password) {
+    throw new Error('Set K6_USERNAME and K6_PASSWORD, or provide AUTH_COOKIE');
+  }
+
+  const login = http.post(
+    `${BASE}/api/auth/login`,
+    JSON.stringify({ username, password }),
+    {
+      headers: { 'Content-Type': 'application/json', Origin: ORIGIN },
+      tags: { name: 'auth_login_setup' },
+    },
+  );
+  if (login.status !== 200 || !login.cookies.access_token?.[0]?.value) {
+    throw new Error(`Cookie login failed with status ${login.status}`);
+  }
+  return { cookie: `access_token=${login.cookies.access_token[0].value}` };
 }
 
 function tableId() {
@@ -119,7 +138,7 @@ export default function (data) {
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${data.token}`,
+      Cookie: data.cookie,
       Origin: ORIGIN,
     },
     tags: { name: 'booking_create_checkout' },

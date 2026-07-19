@@ -32,7 +32,7 @@ Overview of how the restaurant-order system is built, plus risks and mitigations
 | Entry | `frontend/src/App.jsx` |
 | State | `AuthContext`, `CartContext` |
 | API base | `frontend/src/apiConfig.js` → `VITE_API_BASE_URL` |
-| Auth | JWT in `localStorage`; sent as `Authorization: Bearer` |
+| Auth | JWT in a host-only HttpOnly cookie; credentialed API requests |
 
 **Key routes:** `/`, `/menu`, `/store`, `/booking`, `/profile`, `/admin`, `/payment/*`, `/review/:menuSlug`
 
@@ -145,13 +145,13 @@ Branch protection should block merge without green CI (see `.github/BRANCH_PROTE
 | Simultaneous booking payments for same table | Double charge / double book | Unique index + webhook conflict handler + refund path | Implemented |
 | Stripe webhook duplicate delivery | Duplicate bookings/refunds | `ProcessedStripeEvent` claim-before-process | Implemented |
 | Stripe refund API transient failure | User charged, status `refund_pending` | Manual/scheduled `npm run refund:reconcile` | Implemented; schedule optional |
-| JWT in localStorage | XSS could steal token | Helmet CSP, validate inputs; no secrets in frontend | Partial — no httpOnly cookie |
+| Browser session theft through XSS | Compromised account actions | Host-only HttpOnly cookie, CSP, input validation | Mitigated; continue XSS review |
 | CORS misconfiguration | Frontend blocked | Require `FRONTEND_ORIGIN` in production | Implemented |
 | MongoDB Atlas IP allowlist | Backend cannot connect | Use `0.0.0.0/0` or Render outbound ranges | Manual ops |
 | Render shared outbound IPs | Atlas allowlist drift | Monitor; use Dedicated IPs if required | Manual ops |
 | No automated DB backup restore runbook | Data loss on bad migration | Atlas continuous backup; manual restore only | Documented caution in incident runbook |
 | Metrics in memory only | Lost on restart | Accept for MVP; export logs/alerts externally later | Known gap |
-| Account lockout / email verify absent | Brute force, fake accounts | Rate limits on auth; future hardening | See security checklist |
+| No account lockout | Repeated credential guessing | Auth rate limits; future account lockout | See security checklist |
 | Cloudinary / image URL drift | Broken images | Migration scripts in `backend/scripts/` | Ops as needed |
 | `JWT_SECRET` rotation | All users logged out | Plan rotation; communicate downtime | Manual |
 

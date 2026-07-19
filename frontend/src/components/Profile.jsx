@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
+import { apiFetch } from '../apiClient';
 import { isReputationGreen } from '../utils/profileUtils';
 import './Profile.css';
 
@@ -33,16 +34,12 @@ const Profile = () => {
 
   const loadMessages = async (nextPage = 1, limitOverride) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
       setMessagesLoading(true);
       const effectiveLimit = limitOverride || messagesLimit || 10;
       const params = new URLSearchParams();
       params.set('page', String(nextPage));
       params.set('limit', String(effectiveLimit));
-      const res = await fetch(`${API_BASE}/api/messages?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`${API_BASE}/api/messages?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.items) {
         setMessages(data.items);
@@ -60,7 +57,7 @@ const Profile = () => {
   const loadPromotions = async () => {
     setPromotionsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/promotions`);
+      const res = await apiFetch(`${API_BASE}/api/promotions`);
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.items) setPromotions(data.items);
     } catch (err) {
@@ -76,12 +73,12 @@ const Profile = () => {
       // Public profile view
       const loadPublic = async () => {
         try {
-          const res = await fetch(`${API_BASE}/api/users/public/${routeUserId}`);
+          const res = await apiFetch(`${API_BASE}/api/users/public/${routeUserId}`);
           const data = await res.json();
           if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to load profile');
           setProfileUser(data.user);
 
-          const histRes = await fetch(`${API_BASE}/api/users/${routeUserId}/history`);
+          const histRes = await apiFetch(`${API_BASE}/api/users/${routeUserId}/history`);
           const histData = await histRes.json().catch(() => ({}));
           if (histRes.ok && histData?.items) setHistoryItems(histData.items);
         } catch (err) {
@@ -103,11 +100,7 @@ const Profile = () => {
 
     const loadHistory = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch(`${API_BASE}/api/users/history`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiFetch(`${API_BASE}/api/users/history`);
         const data = await res.json().catch(() => ({}));
         if (res.ok && data?.items) setHistoryItems(data.items);
       } catch (err) {
@@ -117,12 +110,8 @@ const Profile = () => {
 
     const loadBookings = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
         setBookingLoading(true);
-        const res = await fetch(`${API_BASE}/api/bookings/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiFetch(`${API_BASE}/api/bookings/my`);
         const data = await res.json().catch(() => ({}));
         if (res.ok && data?.items) setBookingItems(data.items);
       } catch (err) {
@@ -155,14 +144,11 @@ const Profile = () => {
 
   const cancelBooking = async (bookingId) => {
     if (!window.confirm('Cancel this reservation? You will NOT get a refund for reservation fee and cost.')) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/cancel`, {
+      const res = await apiFetch(`${API_BASE}/api/bookings/${bookingId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ confirm: true }),
       });
@@ -198,12 +184,9 @@ const Profile = () => {
   const handleDeleteMessage = async (msgId, e) => {
     e?.stopPropagation?.();
     if (!window.confirm('Delete this message?')) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/api/messages/${msgId}`, {
+      const res = await apiFetch(`${API_BASE}/api/messages/${msgId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -220,12 +203,10 @@ const Profile = () => {
     if (!composeRecipient?.id || !sendSubject.trim() || !sendBody.trim()) return;
     setSending(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/api/messages`, {
+      const res = await apiFetch(`${API_BASE}/api/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           recipientId: composeRecipient.id,
@@ -247,12 +228,9 @@ const Profile = () => {
   };
 
   const markMessageRead = async (msgId) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/api/messages/${msgId}/read`, {
+      const res = await apiFetch(`${API_BASE}/api/messages/${msgId}/read`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         setMessages((prev) =>

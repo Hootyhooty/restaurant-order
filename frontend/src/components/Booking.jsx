@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE } from '../apiConfig';
+import { apiFetch } from '../apiClient';
 import { userHasAddress } from '../utils/profileUtils';
 import AddressRequiredModal from './AddressRequiredModal';
 import './Booking.css';
@@ -71,7 +72,7 @@ const Booking = () => {
         params.set('date', selectedDate);
         params.set('timeSlot', selectedSlot);
         params.set('guestCount', String(guestCountNum));
-        const res = await fetch(`${API_BASE}/api/bookings/availability?${params.toString()}`);
+        const res = await apiFetch(`${API_BASE}/api/bookings/availability?${params.toString()}`);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
         setAvailability(data?.availability || {});
@@ -147,7 +148,7 @@ const Booking = () => {
 
   const ensureMealsLoaded = async () => {
     if (meals.length > 0) return;
-    const res = await fetch(`${API_BASE}/api/meals`);
+    const res = await apiFetch(`${API_BASE}/api/meals`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.message || 'Failed to load menu');
     setMeals(data.items || []);
@@ -202,11 +203,6 @@ const Booking = () => {
   const startPayment = async () => {
     try {
       if (!selectedTableId || !canLoadTables) return;
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login', { state: { from: '/booking' } });
-        return;
-      }
       if (!userHasAddress(user)) {
         setShowAddressModal(true);
         return;
@@ -220,11 +216,10 @@ const Booking = () => {
         redeemCode: redeemCode.trim(),
         preOrderItems: preOrderItems.map((i) => ({ id: i.mealId, quantity: i.quantity })),
       };
-      const res = await fetch(`${API_BASE}/api/bookings/create-checkout-session`, {
+      const res = await apiFetch(`${API_BASE}/api/bookings/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });

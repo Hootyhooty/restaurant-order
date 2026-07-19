@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE } from '../../apiConfig';
+import { apiFetch } from '../../apiClient';
 import { getDefaultStaffBookingDate } from '../../utils/bangkokDate';
 import './StaffBookings.css';
 
@@ -18,16 +19,11 @@ const StaffBookings = () => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (date) params.set('date', date);
       if (search.trim()) params.set('q', search.trim());
 
-      const res = await fetch(`${API_BASE}/api/staff/bookings?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await apiFetch(`${API_BASE}/api/staff/bookings?${params.toString()}`);
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -57,13 +53,11 @@ const StaffBookings = () => {
     if (!confirmBooking) return;
     setCheckInSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE}/api/staff/bookings/${confirmBooking.id}/check-in`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         },
@@ -105,10 +99,7 @@ const StaffBookings = () => {
 
     setDetailLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/api/staff/bookings/${booking.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`${API_BASE}/api/staff/bookings/${booking.id}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
       setDetailBooking(data.item);

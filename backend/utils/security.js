@@ -46,6 +46,7 @@ const authLimiter = rateLimit({
   limit: envNumber('RATE_LIMIT_AUTH_MAX', 20),
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/logout',
   message: jsonError('Too many authentication attempts. Please try again later.'),
 });
 

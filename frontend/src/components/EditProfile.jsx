@@ -3,8 +3,8 @@ import { useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import MapModal from './MapModal';
-import axios from 'axios';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
+import { apiClient } from '../apiClient';
 import './EditProfile.css';
 
 const EditProfile = () => {
@@ -76,17 +76,9 @@ const EditProfile = () => {
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('You must be logged in to update your profile.');
-        navigate('/login');
-        return;
-      }
-
-      const response = await axios.put(`${API_BASE}/api/users/profile`, form, {
+      const response = await apiClient.put(`${API_BASE}/api/users/profile`, form, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -122,14 +114,12 @@ const EditProfile = () => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE}/api/users/upload-image-to-allimgs`,
         formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
           }
         }
       );

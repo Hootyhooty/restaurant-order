@@ -107,7 +107,8 @@ describe('Password reset integration', () => {
       password: 'newpassword99',
     });
     assert.equal(newLogin.status, 200);
-    assert.ok(newLogin.body.token);
+    assert.equal(newLogin.body.token, undefined);
+    assert.match(newLogin.headers['set-cookie']?.[0] || '', /^access_token=/);
 
     const user = await Customer.findOne({ email: 'changepw@test.local' });
     assert.equal(user.password_reset_token, undefined);

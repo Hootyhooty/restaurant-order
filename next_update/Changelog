@@ -805,6 +805,41 @@ Global theme
 - [x] Red accent `#e31837` → gold `#c0892f` across Login, Register, Profile, Store, Meals, Admin, Review pages
 
 ==================================================
+6 Jul 2026 — Kitchen/Staff Rate Limits + Auth Logging
+==================================================
+
+Rate limiting fix
+- [x] Removed `authLimiter` from `/api/staff` and `/api/kitchen` — was counting kitchen queue polling and SSE as login attempts, causing 429 spam ("Too many authentication attempts")
+- [x] Added `operationalLimiter` for staff/kitchen dashboards (`RATE_LIMIT_OPERATIONAL_*`, default 180 req/min)
+- [x] Applied `writeLimiter` on staff/kitchen mutating routes (check-in, create order, kitchen order/stock PATCH)
+- [x] `backend/.env.example` — `RATE_LIMIT_OPERATIONAL_WINDOW_MS`, `RATE_LIMIT_OPERATIONAL_MAX`
+
+Frontend kitchen stream
+- [x] Stabilized `useKitchenStream` callbacks with `useCallback` in `KitchenQueue`, `KitchenReservations`, `StaffStatus`, `AdminKitchenSection` — prevents SSE reconnect on every re-render
+
+Security / dev hygiene
+- [x] Removed debug `console.log` from `AuthContext.jsx` — login/register responses no longer print JWT in browser DevTools
+
+==================================================
+20 Jul 2026 — Cookie Sessions, Admin Refactor, Documentation
+==================================================
+
+Authentication security
+- [x] Replaced browser `localStorage` Bearer JWTs with host-only HttpOnly session cookies
+- [x] Added secure production cookie flags, configurable session lifetime, server logout, cookie parsing, and exact-origin CSRF protection for authenticated writes
+- [x] Removed frontend token reads and `Authorization` headers; centralized credentialed JSON, form, and SSE requests
+- [x] Updated integration tests, k6 checkout authentication, and staging smoke checks for cookie sessions
+
+Admin maintainability
+- [x] Reduced `AdminDashboard.jsx` to a small shell and extracted users, menu, souvenirs, reviews, transactions, bookings, analysis, and audit sections
+- [x] Added shared admin API, modal, pagination, and item-editor components
+
+Quality and documentation
+- [x] Added Vitest + React Testing Library coverage and a frontend CI test step
+- [x] Replaced the stale README with current features, setup, scripts, architecture, security, and runbook links
+- [x] Updated security and architecture documentation for HttpOnly cookie authentication
+
+==================================================
 Known Issues / Ops Notes
 ==================================================
 

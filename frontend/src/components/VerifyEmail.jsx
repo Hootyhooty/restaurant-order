@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../apiClient';
 import { API_BASE } from '../apiConfig';
 import './VerifyEmail.css';
 
@@ -19,7 +19,7 @@ const VerifyEmail = () => {
 
     const verify = async () => {
       try {
-        const response = await axios.post(`${API_BASE}/api/auth/verify-email`, { token });
+        const response = await apiClient.post(`${API_BASE}/api/auth/verify-email`, { token });
         setStatus('success');
         setMessage(response.data?.message || 'Email verified successfully.');
       } catch (error) {

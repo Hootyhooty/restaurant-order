@@ -4,16 +4,17 @@ import { AuthContext } from '../../context/AuthContext';
 import './StaffLayout.css';
 
 const StaffLayout = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, isAuthLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isAuthLoading) return;
     if (!user || user.role !== 'STAFF') {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [isAuthLoading, user, navigate]);
 
-  if (!user || user.role !== 'STAFF') {
+  if (isAuthLoading || !user || user.role !== 'STAFF') {
     return null;
   }
 
@@ -30,8 +31,8 @@ const StaffLayout = () => {
           <button
             type="button"
             className="staff-header-logout"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               navigate('/');
             }}
           >

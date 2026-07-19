@@ -85,12 +85,12 @@ describe('Admin audit trail', () => {
 
     const actionRes = await request(app)
       .post(`/api/admin/bookings/${booking._id}/no-show`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
     assert.equal(actionRes.status, 200);
 
     const auditRes = await request(app)
       .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
     assert.equal(auditRes.status, 200);
     assert.ok(auditRes.body.items.length >= 1);
 
@@ -106,7 +106,7 @@ describe('Admin audit trail', () => {
     const { adminToken } = await seedAdminAndBooking();
     const res = await request(app)
       .post('/api/admin/bookings/not-a-uuid/no-show')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
     assert.equal(res.status, 400);
     const count = await AdminAuditLog.countDocuments();
     assert.equal(count, 0);

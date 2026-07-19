@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE } from '../../apiConfig';
+import { apiFetch } from '../../apiClient';
 import { useKitchenStream } from '../../hooks/useKitchenStream';
 import './KitchenStock.css';
 
@@ -8,20 +9,12 @@ const KitchenStock = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState(null);
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    setToken(localStorage.getItem('token'));
-  }, []);
 
   const fetchStock = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/api/kitchen/stock`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`${API_BASE}/api/kitchen/stock`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || `HTTP ${res.status}`);
@@ -39,18 +32,16 @@ const KitchenStock = () => {
     fetchStock();
   }, [fetchStock]);
 
-  useKitchenStream(token, (event) => {
+  useKitchenStream((event) => {
     if (event.type === 'stock_updated') fetchStock();
   });
 
   const saveRow = async (mealFileId, stock, lowStockThreshold) => {
     setSavingId(mealFileId);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/api/kitchen/stock/${mealFileId}`, {
+      const res = await apiFetch(`${API_BASE}/api/kitchen/stock/${mealFileId}`, {
         method: 'PATCH',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ stock: Number(stock), lowStockThreshold: Number(lowStockThreshold) }),

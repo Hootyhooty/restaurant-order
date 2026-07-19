@@ -4,16 +4,17 @@ import { AuthContext } from '../../context/AuthContext';
 import './KitchenLayout.css';
 
 const KitchenLayout = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, isAuthLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isAuthLoading) return;
     if (!user || user.role !== 'KITCHEN') {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [isAuthLoading, user, navigate]);
 
-  if (!user || user.role !== 'KITCHEN') {
+  if (isAuthLoading || !user || user.role !== 'KITCHEN') {
     return null;
   }
 
@@ -30,8 +31,8 @@ const KitchenLayout = () => {
           <button
             type="button"
             className="kitchen-header-logout"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               navigate('/');
             }}
           >

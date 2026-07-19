@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../apiClient';
 import { API_BASE } from '../apiConfig';
 import './ResetPassword.css';
 
@@ -32,7 +32,7 @@ const ResetPassword = () => {
     }
 
     try {
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE}/api/auth/reset-password`,
         { token: tokenFromUrl, password },
         { headers: { 'Content-Type': 'application/json' } },

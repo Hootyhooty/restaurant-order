@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import './Store.css';
 import SouvenirCard from './SouvenirCard';
 import { API_BASE } from '../apiConfig';
+import { apiFetch } from '../apiClient';
 
 const Store = () => {
   const [souvenirs, setSouvenirs] = useState([]);
@@ -15,7 +16,7 @@ const Store = () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(`${API_BASE}/api/souvenirs`);
+        const res = await apiFetch(`${API_BASE}/api/souvenirs`);
         if (!res.ok) throw new Error('Failed to load souvenirs');
         const data = await res.json();
         setSouvenirs(data.items || []);

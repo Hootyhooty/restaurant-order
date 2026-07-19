@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE } from '../apiConfig';
+import { apiFetch } from '../apiClient';
 import { getBangkokDateString } from '../utils/bangkokDate';
 import { useKitchenStream } from '../hooks/useKitchenStream';
 import KitchenQueue from '../pages/kitchen/KitchenQueue';
@@ -10,19 +11,11 @@ const AdminKitchenSection = () => {
   const [view, setView] = useState('queue');
   const [stock, setStock] = useState([]);
   const [loadingStock, setLoadingStock] = useState(false);
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    setToken(localStorage.getItem('token'));
-  }, []);
 
   const fetchStock = useCallback(async () => {
-    if (!token) return;
     setLoadingStock(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/kitchen/stock`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`${API_BASE}/api/admin/kitchen/stock`);
       const data = await res.json();
       if (res.ok) setStock(data.items || []);
     } catch (err) {
@@ -30,7 +23,7 @@ const AdminKitchenSection = () => {
     } finally {
       setLoadingStock(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (view === 'stock') fetchStock();
@@ -42,7 +35,7 @@ const AdminKitchenSection = () => {
     },
     [view, fetchStock],
   );
-  useKitchenStream(token, onKitchenEvent);
+  useKitchenStream(onKitchenEvent);
 
   return (
     <div className="admin-kitchen-section">

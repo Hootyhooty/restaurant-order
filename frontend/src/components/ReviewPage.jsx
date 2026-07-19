@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { API_BASE } from '../apiConfig';
+import { apiFetch } from '../apiClient';
 import './ReviewPage.css';
 
 const ReviewPage = () => {
@@ -26,7 +27,7 @@ const ReviewPage = () => {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`${API_BASE}/api/meals/${menuSlug}`);
+        const res = await apiFetch(`${API_BASE}/api/meals/${menuSlug}`);
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error('Menu item not found.');
@@ -40,7 +41,7 @@ const ReviewPage = () => {
 
         // Load reviews once meal is known
         if (data.item?.id != null) {
-          const reviewsRes = await fetch(`${API_BASE}/api/reviews?mealId=${encodeURIComponent(data.item.id)}&limit=50`);
+          const reviewsRes = await apiFetch(`${API_BASE}/api/reviews?mealId=${encodeURIComponent(data.item.id)}&limit=50`);
           const reviewsData = await reviewsRes.json().catch(() => ({}));
           if (reviewsRes.ok) setComments(reviewsData.items || []);
         }
@@ -88,16 +89,10 @@ const ReviewPage = () => {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login', { state: { from: `/review/${menuSlug}` } });
-        return;
-      }
-      const res = await fetch(`${API_BASE}/api/reviews`, {
+      const res = await apiFetch(`${API_BASE}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           mealId: meal.id,
@@ -110,7 +105,7 @@ const ReviewPage = () => {
       setReviewText('');
       setRating(5);
       // Refresh list
-      const reviewsRes = await fetch(`${API_BASE}/api/reviews?mealId=${encodeURIComponent(meal.id)}&limit=50`);
+      const reviewsRes = await apiFetch(`${API_BASE}/api/reviews?mealId=${encodeURIComponent(meal.id)}&limit=50`);
       const reviewsData = await reviewsRes.json().catch(() => ({}));
       if (reviewsRes.ok) setComments(reviewsData.items || []);
       alert('Review submitted!');

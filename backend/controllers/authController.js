@@ -22,6 +22,11 @@ const {
 } = require('../utils/emailService');
 const { warn } = require('../utils/logger');
 const {
+  clearAuthCookie,
+  setAuthCookie,
+  tokenExpiresIn,
+} = require('../utils/authCookies');
+const {
   findStaffByLogin,
   findCustomerByLogin,
   resolvePrincipalFromToken,
@@ -385,11 +390,11 @@ const login = async (req, res) => {
       const token = jwt.sign(
         { id: staffAccount._id, accountType: 'staff' },
         process.env.JWT_SECRET,
-        { expiresIn: '30d' },
+        { expiresIn: tokenExpiresIn() },
       );
       const principal = await resolvePrincipalById(staffAccount._id, 'staff');
+      setAuthCookie(res, token);
       return res.json({
-        token,
         user: {
           id: principal._id,
           username: principal.username,
@@ -438,12 +443,12 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: customer._id, accountType: 'customer' },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' },
+      { expiresIn: tokenExpiresIn() },
     );
     console.log('Login successful, token generated for:', customer._id);
 
+    setAuthCookie(res, token);
     res.json({
-      token,
       user: {
         id: customer._id,
         username: customer.username,
@@ -469,33 +474,20 @@ const login = async (req, res) => {
   }
 };
 
+const logout = (req, res) => {
+  clearAuthCookie(res);
+  return res.json({ success: true });
+};
+
 // Authentication middleware - attaches req.user when token is valid
 const authMiddleware = async (req, res, next) => {
   try {
-    let token = null;
-
-    // Prefer Authorization header if present and well-formed
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      try {
-        const [tokenType, tokenVal] = authHeader.split(' ');
-        if (tokenType.toLowerCase() === 'bearer' && tokenVal) {
-          token = tokenVal;
-        }
-      } catch (error) {
-        // Invalid format, continue to check cookies
-      }
-    }
-
-    // Fallback to cookies
-    if (!token) {
-      token = req.cookies?.access_token;
-    }
+    const token = req.cookies?.access_token;
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Authorization token missing',
+        message: 'Authentication required',
       });
     }
 
@@ -578,6 +570,7 @@ const rolesRequired = (...allowedRoles) => {
 module.exports = {
   register,
   login,
+  logout,
   verifyEmail,
   resendVerification,
   forgotPassword,

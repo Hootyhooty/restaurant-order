@@ -455,7 +455,6 @@ module.exports = {
   validateKitchenOrdersQuery,
   validateKitchenPatchLinesBody,
   validateAdminUserRoleBody,
-  validateAdminUserRoleBody,
   validatePaginationQuery,
   isUuid,
 };

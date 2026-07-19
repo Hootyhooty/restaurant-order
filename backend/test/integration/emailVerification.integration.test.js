@@ -112,7 +112,8 @@ describe('Email verification integration', () => {
       password: 'password12',
     });
     assert.equal(loginRes.status, 200);
-    assert.ok(loginRes.body.token);
+    assert.equal(loginRes.body.token, undefined);
+    assert.match(loginRes.headers['set-cookie']?.[0] || '', /^access_token=/);
     assert.equal(loginRes.body.user.email_verified, true);
   });
 

@@ -123,7 +123,7 @@ describe('Kitchen reservations API', () => {
   test('kitchen lists upcoming reservation pre-orders before show up', async () => {
     const res = await request(app)
       .get(`/api/kitchen/reservations?date=${today}`)
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 1);
@@ -136,7 +136,7 @@ describe('Kitchen reservations API', () => {
   test('admin can list kitchen reservations', async () => {
     const res = await request(app)
       .get(`/api/admin/kitchen/reservations?date=${today}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 1);
@@ -145,7 +145,7 @@ describe('Kitchen reservations API', () => {
   test('customer cannot access kitchen reservations', async () => {
     const res = await request(app)
       .get(`/api/kitchen/reservations?date=${today}`)
-      .set('Authorization', `Bearer ${userToken}`);
+      .set('Cookie', `access_token=${userToken}`);
 
     assert.equal(res.status, 403);
   });
@@ -153,7 +153,7 @@ describe('Kitchen reservations API', () => {
   test('show up assigns reserved ticket number independent of walk-in sequence', async () => {
     const checkInRes = await request(app)
       .post(`/api/staff/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
     assert.equal(checkInRes.status, 200);
 
     const kitchenOrder = await KitchenOrder.findOne({ bookingId: booking._id.toString() }).lean();
@@ -167,12 +167,12 @@ describe('Kitchen reservations API', () => {
 
     const reservationsRes = await request(app)
       .get(`/api/kitchen/reservations?date=${today}`)
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
     assert.equal(reservationsRes.body.items.length, 0);
 
     const ordersRes = await request(app)
       .get(`/api/kitchen/orders?date=${today}`)
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
     assert.equal(ordersRes.status, 200);
     assert.equal(ordersRes.body.items.length, 2);
 
@@ -186,11 +186,11 @@ describe('Kitchen reservations API', () => {
   test('kitchen orders are sorted by createdAt ascending', async () => {
     await request(app)
       .post(`/api/staff/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
 
     const res = await request(app)
       .get(`/api/kitchen/orders?date=${today}`)
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 2);

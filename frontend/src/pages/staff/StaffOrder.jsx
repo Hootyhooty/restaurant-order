@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../apiConfig';
+import { apiFetch } from '../../apiClient';
 import './StaffOrder.css';
-
-let cartKeySeq = 0;
 
 const StaffOrder = () => {
   const navigate = useNavigate();
+  const cartKeySeq = useRef(0);
   const [tableId, setTableId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [meals, setMeals] = useState([]);
@@ -21,10 +21,7 @@ const StaffOrder = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/api/staff/menu`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiFetch(`${API_BASE}/api/staff/menu`);
         if (!res.ok) throw new Error('Failed to load menu');
         const data = await res.json();
         setMeals(data.items || []);
@@ -42,11 +39,11 @@ const StaffOrder = () => {
     activeCategory === 'all' ? meals : meals.filter((m) => m.category === activeCategory);
 
   const addToCart = (meal) => {
-    cartKeySeq += 1;
+    cartKeySeq.current += 1;
     setCart((prev) => [
       ...prev,
       {
-        cartKey: cartKeySeq,
+        cartKey: cartKeySeq.current,
         mealId: meal.id,
         name: meal.name,
         unitPrice: meal.price,
@@ -91,11 +88,9 @@ const StaffOrder = () => {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/api/staff/orders`, {
+      const res = await apiFetch(`${API_BASE}/api/staff/orders`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

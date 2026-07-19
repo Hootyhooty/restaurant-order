@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { API_BASE, DEFAULT_AVATAR } from '../apiConfig';
+import { apiFetch } from '../apiClient';
 import { userHasAddress } from '../utils/profileUtils';
 import AddressRequiredModal from './AddressRequiredModal';
 import './Header.css';
@@ -68,10 +69,10 @@ const Header = () => {
     .filter(Boolean)
     .join(' ');
 
-  const handleAuthAction = () => {
+  const handleAuthAction = async () => {
     if (isLoggedIn) {
       clearCart();
-      logout();
+      await logout();
       navigate('/');
     } else {
       navigate('/login', { state: { from: window.location.pathname } });
@@ -92,22 +93,15 @@ const Header = () => {
         setShowAddressModal(true);
         return;
       }
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login', { state: { from: window.location.pathname } });
-        return;
-      }
-
       setIsPaying(true);
       const payload = {
         items: items.map(({ meal, quantity }) => ({ id: meal.id, quantity })),
       };
 
-      const res = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
+      const res = await apiFetch(`${API_BASE}/api/stripe/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });

@@ -1,20 +1,18 @@
 import { useEffect } from 'react';
-import { API_BASE } from '../apiConfig';
+import { apiStream } from '../apiClient';
 
 /**
  * Subscribe to kitchen SSE stream; calls onEvent when queue/stock changes.
  */
-export function useKitchenStream(token, onEvent) {
+export function useKitchenStream(onEvent) {
   useEffect(() => {
-    if (!token || typeof onEvent !== 'function') return undefined;
+    if (typeof onEvent !== 'function') return undefined;
 
-    const url = `${API_BASE}/api/kitchen/stream`;
     const controller = new AbortController();
 
     const connect = async () => {
       try {
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await apiStream('/api/kitchen/stream', {
           signal: controller.signal,
         });
         if (!res.ok || !res.body) return;
@@ -44,12 +42,12 @@ export function useKitchenStream(token, onEvent) {
         }
       } catch (err) {
         if (err.name !== 'AbortError') {
-          /* stream will reconnect on next mount / token change */
+          /* stream reconnects when the subscribing component mounts again */
         }
       }
     };
 
     connect();
     return () => controller.abort();
-  }, [token, onEvent]);
+  }, [onEvent]);
 }

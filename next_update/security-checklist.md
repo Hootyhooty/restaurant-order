@@ -4,7 +4,9 @@ Use this before production deploy. All items below are implemented in code unles
 
 ## Authentication & authorization
 
-- [x] JWT required on protected routes (`authMiddleware`)
+- [x] JWT required on protected routes via host-only HttpOnly cookie (`authMiddleware`)
+- [x] Login responses do not expose JWTs; logout clears the session cookie
+- [x] Authenticated writes require an exact allow-listed browser origin (CSRF protection)
 - [x] Admin routes require `ADMIN` role (`rolesRequired`)
 - [x] Production requires `JWT_SECRET` length ≥ 32 characters
 - [x] Auth endpoints rate-limited (`RATE_LIMIT_AUTH_*`, default 20 / 15 min)
@@ -16,6 +18,7 @@ Use this before production deploy. All items below are implemented in code unles
 - [x] Booking writes: `/api/bookings/create-checkout-session`, cancel (`RATE_LIMIT_BOOKING_*`)
 - [x] General writes: messages, reviews, Stripe checkout (`RATE_LIMIT_WRITE_*`)
 - [x] Public reads: meals, souvenirs, booking availability (`RATE_LIMIT_PUBLIC_*`)
+- [x] Staff/kitchen operational traffic (`RATE_LIMIT_OPERATIONAL_*`)
 - [x] Stripe webhook: dedicated limiter (`RATE_LIMIT_WEBHOOK_*`)
 
 ## Input validation

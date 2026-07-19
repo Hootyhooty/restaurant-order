@@ -1,30 +1,27 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE } from '../apiConfig';
+import { apiClient } from '../apiClient';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
     const restoreUser = async () => {
       try {
-        const response = await axios.get(`${API_BASE}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await apiClient.get('/api/users/me');
         if (response.data?.user) {
           setUser(response.data.user);
           setIsLoggedIn(true);
         }
-      } catch (err) {
-        localStorage.removeItem('token');
+      } catch {
         setUser(null);
         setIsLoggedIn(false);
+      } finally {
+        setIsAuthLoading(false);
       }
     };
     restoreUser();
@@ -32,8 +29,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password, phone) => {
     try {
-      const response = await axios.post(
-        `${API_BASE}/api/auth/register`,
+      const response = await apiClient.post(
+        '/api/auth/register',
         {
           username,
           email,
@@ -60,8 +57,8 @@ export const AuthProvider = ({ children }) => {
 
   const resendVerification = async (email) => {
     try {
-      const response = await axios.post(
-        `${API_BASE}/api/auth/resend-verification`,
+      const response = await apiClient.post(
+        '/api/auth/resend-verification',
         { email },
         { headers: { 'Content-Type': 'application/json' } },
       );
@@ -76,8 +73,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post(
-        `${API_BASE}/api/auth/login`,
+      const response = await apiClient.post(
+        '/api/auth/login',
         {
           username,
           password
@@ -86,7 +83,6 @@ export const AuthProvider = ({ children }) => {
           headers: { 'Content-Type': 'application/json' }
         }
       );
-      localStorage.setItem('token', response.data.token);
       setIsLoggedIn(true);
       setUser(response.data.user);
       return { success: true, user: response.data.user };
@@ -101,10 +97,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      await apiClient.post('/api/auth/logout');
+    } catch {
+      // Local logout must still complete when the server is unavailable.
+    } finally {
+      setIsLoggedIn(false);
+      setUser(null);
+    }
   };
 
   const updateUser = (userData) => {
@@ -112,7 +113,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, register, login, logout, updateUser, resendVerification }}>
+    <AuthContext.Provider value={{
+      isLoggedIn,
+      isAuthLoading,
+      user,
+      register,
+      login,
+      logout,
+      updateUser,
+      resendVerification,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../apiClient';
 import { API_BASE } from '../apiConfig';
 import './ForgotPassword.css';
 
@@ -16,7 +16,7 @@ const ForgotPassword = () => {
     setStatus('');
 
     try {
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE}/api/auth/forgot-password`,
         { email: email.trim() },
         { headers: { 'Content-Type': 'application/json' } },

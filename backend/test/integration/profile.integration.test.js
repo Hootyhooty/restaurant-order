@@ -50,7 +50,7 @@ describe('Profile API', () => {
 
     const res = await request(app)
       .put('/api/users/profile')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', `access_token=${token}`)
       .send({ first_name: 'New', photo: 'https://cdn.example/photo.jpg' });
 
     assert.equal(res.status, 200);
@@ -88,7 +88,7 @@ describe('Profile API', () => {
 
     const res = await request(app)
       .put('/api/users/profile')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', `access_token=${token}`)
       .send({ first_name: 'After', photo: 'https://cdn.example/new.jpg' });
 
     assert.equal(res.status, 200);
@@ -115,7 +115,7 @@ describe('Profile API', () => {
 
     const res = await request(app)
       .put('/api/users/profile')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', `access_token=${token}`)
       .send({ photo: 'https://cdn.example/kitchen.jpg' });
 
     assert.equal(res.status, 200);

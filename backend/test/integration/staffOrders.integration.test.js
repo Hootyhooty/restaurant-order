@@ -63,7 +63,7 @@ describe('Staff orders API', () => {
   test('staff can load menu', async () => {
     const res = await request(app)
       .get('/api/staff/menu')
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
@@ -74,7 +74,7 @@ describe('Staff orders API', () => {
   test('POST /api/staff/orders creates staff_table ticket with expanded lines', async () => {
     const res = await request(app)
       .post('/api/staff/orders')
-      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', `access_token=${staffToken}`)
       .send({
         tableId: 4,
         customerName: 'Walk-in Guest',
@@ -96,12 +96,12 @@ describe('Staff orders API', () => {
   test('GET /api/staff/orders lists tickets for today', async () => {
     await request(app)
       .post('/api/staff/orders')
-      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', `access_token=${staffToken}`)
       .send({ tableId: 2, items: [{ mealId: 1, quantity: 1 }] });
 
     const res = await request(app)
       .get(`/api/staff/orders?date=${today}&tableId=2`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 1);
@@ -111,12 +111,12 @@ describe('Staff orders API', () => {
   test('USER role gets 403 on staff order routes', async () => {
     const listRes = await request(app)
       .get('/api/staff/orders')
-      .set('Authorization', `Bearer ${userToken}`);
+      .set('Cookie', `access_token=${userToken}`);
     assert.equal(listRes.status, 403);
 
     const createRes = await request(app)
       .post('/api/staff/orders')
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Cookie', `access_token=${userToken}`)
       .send({ tableId: 1, items: [{ mealId: 1, quantity: 1 }] });
     assert.equal(createRes.status, 403);
   });

@@ -11,6 +11,7 @@ const { info, warn } = require('./utils/logger');
 });
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/userRoutes');
@@ -26,6 +27,7 @@ const staffRoutes = require('./routes/staff');
 const kitchenRoutes = require('./routes/kitchen');
 const promotionRoutes = require('./routes/promotions');
 const { webhookHandler } = require('./controllers/stripeController');
+const { createCsrfProtection } = require('./utils/csrfProtection');
 const {
   helmetMiddleware,
   authLimiter,
@@ -152,7 +154,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  allowedHeaders: ['Content-Type', 'X-Request-Id'],
   exposedHeaders: ['X-Request-Id'],
   maxAge: isProduction ? 600 : 0,
   optionsSuccessStatus: 204,
@@ -165,6 +167,8 @@ app.options('*', cors(corsOptions));
 app.post('/api/stripe/webhook', webhookLimiter, express.raw({ type: 'application/json' }), webhookHandler);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+app.use(createCsrfProtection({ allowedOrigins, isProduction }));
 
 // Enhanced MongoDB connection logging
 // Force database name to be restaurant_db

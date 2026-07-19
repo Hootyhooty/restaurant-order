@@ -9,6 +9,8 @@
 
 const baseUrl = String(process.env.STAGING_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 const frontendOrigin = process.env.STAGING_FRONTEND_ORIGIN || process.env.FRONTEND_ORIGIN || '';
+const smokeUsername = process.env.STAGING_SMOKE_USERNAME || '';
+const smokePassword = process.env.STAGING_SMOKE_PASSWORD || '';
 
 const FIXTURE_DATE = process.env.STAGING_BOOKING_DATE || '2099-12-01';
 const FIXTURE_SLOT = '17:00-19:00';
@@ -22,13 +24,13 @@ async function fetchJson(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-  let body = null;
+  let body;
   try {
     body = await res.json();
   } catch {
     body = null;
   }
-  return { url, status: res.status, body };
+  return { url, status: res.status, body, headers: res.headers };
 }
 
 function pass(label) {
@@ -77,6 +79,38 @@ async function run() {
     }
   } else {
     console.log('  ○ CORS probe skipped (set STAGING_FRONTEND_ORIGIN or FRONTEND_ORIGIN)');
+  }
+
+  if (frontendOrigin && smokeUsername && smokePassword) {
+    const login = await fetchJson('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: frontendOrigin },
+      body: JSON.stringify({ username: smokeUsername, password: smokePassword }),
+    });
+    const setCookie = login.headers.get('set-cookie') || '';
+    if (
+      login.status === 200
+      && !login.body?.token
+      && /^access_token=/i.test(setCookie)
+      && /HttpOnly/i.test(setCookie)
+      && /Secure/i.test(setCookie)
+      && /SameSite=Lax/i.test(setCookie)
+    ) {
+      pass('Login issues a secure HttpOnly session cookie');
+      const cookie = setCookie.split(';')[0];
+      const me = await fetchJson('/api/users/me', {
+        headers: { Origin: frontendOrigin, Cookie: cookie },
+      });
+      if (me.status === 200 && me.body?.user) {
+        pass('Credentialed GET /api/users/me');
+      } else {
+        fail('Credentialed GET /api/users/me', `status ${me.status}`);
+      }
+    } else {
+      fail('Cookie login probe', `status ${login.status}; verify cookie flags and smoke credentials`);
+    }
+  } else {
+    console.log('  ○ Cookie login probe skipped (set frontend origin and STAGING_SMOKE_USERNAME/PASSWORD)');
   }
 
   const checkout = await fetchJson('/api/bookings/create-checkout-session', {

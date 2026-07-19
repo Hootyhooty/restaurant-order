@@ -89,7 +89,7 @@ describe('Kitchen queue API', () => {
   test('kitchen can list orders for today', async () => {
     const res = await request(app)
       .get(`/api/kitchen/orders?date=${today}`)
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 1);
@@ -99,7 +99,7 @@ describe('Kitchen queue API', () => {
   test('kitchen PATCH lines marks served and derives ticket status', async () => {
     const res = await request(app)
       .patch(`/api/kitchen/orders/${orderId}/lines`)
-      .set('Authorization', `Bearer ${kitchenToken}`)
+      .set('Cookie', `access_token=${kitchenToken}`)
       .send({ lineIndexes: [0], lineStatus: 'served' });
 
     assert.equal(res.status, 200);
@@ -108,7 +108,7 @@ describe('Kitchen queue API', () => {
 
     const complete = await request(app)
       .patch(`/api/kitchen/orders/${orderId}/lines`)
-      .set('Authorization', `Bearer ${kitchenToken}`)
+      .set('Cookie', `access_token=${kitchenToken}`)
       .send({ lineIndexes: [1], lineStatus: 'served' });
 
     assert.equal(complete.status, 200);
@@ -118,7 +118,7 @@ describe('Kitchen queue API', () => {
   test('STAFF cannot PATCH kitchen lines', async () => {
     const res = await request(app)
       .patch(`/api/kitchen/orders/${orderId}/lines`)
-      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Cookie', `access_token=${staffToken}`)
       .send({ lineIndexes: [0], lineStatus: 'served' });
 
     assert.equal(res.status, 403);
@@ -127,7 +127,7 @@ describe('Kitchen queue API', () => {
   test('USER cannot access kitchen routes', async () => {
     const res = await request(app)
       .get('/api/kitchen/orders')
-      .set('Authorization', `Bearer ${userToken}`);
+      .set('Cookie', `access_token=${userToken}`);
 
     assert.equal(res.status, 403);
   });

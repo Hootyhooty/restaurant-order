@@ -59,7 +59,7 @@ describe('Kitchen stock and promotions', () => {
   test('GET /api/kitchen/stock seeds rows from menu', async () => {
     const res = await request(app)
       .get('/api/kitchen/stock')
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
     assert.equal(res.status, 200);
     assert.ok(res.body.items.length > 0);
     const count = await MealStock.countDocuments();
@@ -69,12 +69,12 @@ describe('Kitchen stock and promotions', () => {
   test('PATCH /api/kitchen/stock/:mealFileId updates stock', async () => {
     const listRes = await request(app)
       .get('/api/kitchen/stock')
-      .set('Authorization', `Bearer ${kitchenToken}`);
+      .set('Cookie', `access_token=${kitchenToken}`);
     const mealFileId = listRes.body.items[0].mealFileId;
 
     const patchRes = await request(app)
       .patch(`/api/kitchen/stock/${mealFileId}`)
-      .set('Authorization', `Bearer ${kitchenToken}`)
+      .set('Cookie', `access_token=${kitchenToken}`)
       .send({ stock: 3, lowStockThreshold: 5 });
     assert.equal(patchRes.status, 200);
     assert.equal(patchRes.body.item.stock, 3);
@@ -84,7 +84,7 @@ describe('Kitchen stock and promotions', () => {
   test('admin can create promotion and public list returns it', async () => {
     const createRes = await request(app)
       .post('/api/admin/promotions')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({
         title: 'Lunch deal',
         description: '10% off weekdays',
@@ -101,7 +101,7 @@ describe('Kitchen stock and promotions', () => {
 
     const adminList = await request(app)
       .get('/api/admin/promotions')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
     assert.equal(adminList.body.items.length, 1);
     await Promotion.findByIdAndDelete(adminList.body.items[0].id);
   });

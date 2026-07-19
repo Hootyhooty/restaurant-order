@@ -1,151 +1,132 @@
-# Restaurant Application
+# Picha Restaurant
 
-A React restaurant application with a modern, responsive design.
+Full-stack restaurant ordering and reservation application. The frontend is React 18 with Vite; the API is Express with MongoDB/Mongoose. Stripe supports store and booking checkout, while role-based workspaces cover restaurant operations.
 
-## Features
+## Capabilities
 
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **Interactive Menu**: Category filtering and meal selection
-- **Modern UI**: Clean, professional design
-- **Quantity Controls**: Add/remove items with quantity controls
-- **Shopping Cart**: Add items to cart functionality
-- **Thai Language Support**: Full Thai language interface
+- **Customers:** browse meals and souvenirs, manage a cart, pay through Stripe, reserve tables with optional pre-orders, manage bookings and profiles, verify/reset accounts, submit reviews, and use account messages.
+- **Admins:** manage users and roles, menu and souvenir items, reviews, transactions, bookings, kitchen views, promotions, operational analysis, and audit logs.
+- **Staff:** find bookings, inspect booking details, check guests in, create table orders, and track orders.
+- **Kitchen:** work the live order queue, view upcoming reservation pre-orders, update order lines/statuses, and manage meal stock.
 
-## Technologies Used
+## Routes
 
-- React 18
-- CSS3 with Flexbox and Grid
-- Responsive design principles
-- Modern JavaScript (ES6+)
+Frontend routes include:
 
-## Getting Started
+- Public/customer: `/`, `/menu`, `/store`, `/about`, `/contact`, `/login`, `/register`, `/verify-email`, `/verify-pending`, `/forgot-password`, `/reset-password`, `/profile`, `/profile/edit`, `/review/:menuSlug`, `/booking`, and payment result pages.
+- Admin: `/admin`.
+- Staff: `/staff/bookings`, `/staff/order`, and `/staff/status`.
+- Kitchen: `/kitchen/queue`, `/kitchen/reservations`, and `/kitchen/stock`.
 
-### Prerequisites
+The backend exposes `/api/health` and `/api/ready`, plus API groups under `/api/auth`, `/api/users`, `/api/admin`, `/api/meals`, `/api/souvenirs`, `/api/stripe`, `/api/reviews`, `/api/messages`, `/api/bookings`, `/api/staff`, `/api/kitchen`, `/api/promotions`, and `/api/contact`. The Stripe webhook is `POST /api/stripe/webhook`.
 
-- Node.js (version 14 or higher)
-- npm or yarn
+## Local setup
 
-## Project Structure
+Prerequisites: **Node.js 20**, npm, and MongoDB.
 
-```
-src/
-├── backend/                       # New folder for Node.js backend
-│   ├── models/
-│   │   └── Customer.js           # Mongoose schema for customers
-│   ├── routes/
-│   │   └── auth.js              # API routes for register/login
-│   ├── .env                     # Environment variables (MongoDB URI)
-│   ├── index.js                 # Express server entry point
-│   └── package.json             # Backend dependencies
-├── components/
-│   ├── Register.jsx             # New registration page
-│   ├── Register.css             # New styles for registration page
-│   ├── Login.jsx                # Updated for "Create Account" button
-│   ├── Login.css                # Updated for button styling
-│   ├── Header.jsx               # Unchanged
-│   ├── MealCard.jsx             # Unchanged
-│   ├── MealCard.css             # Unchanged
-│   ├── Menu.jsx                 # Unchanged
-│   ├── Home.jsx                 # Unchanged
-│   ├── Footer.jsx               # Unchanged
-├── context/
-│   ├── AuthContext.jsx          # Updated for register and backend login
-├── App.jsx                      # Updated for /register route
-├── App.css                      # Unchanged
-├── index.jsx                    # Unchanged
-├── index.css                    # Unchanged
-public/
-└── food_img/                    # Unchanged
-```
+1. Install frontend dependencies:
 
-## Features Breakdown
+   ```bash
+   npm ci
+   ```
 
-### Header Component
-- Restaurant logo and branding
-- Responsive navigation menu
-- Mobile hamburger menu
-- Login and order buttons
+2. Configure and install the backend:
 
-### Hero Section
-- Eye-catching banner with gradient background
-- Call-to-action buttons
-- Responsive design
+   ```bash
+   cd backend
+   npm ci
+   cp .env.example .env
+   ```
 
-### Meals Section
-- Category filtering (All, Fried Chicken, Burgers, Sides, Drinks, Desserts)
-- Grid layout for meal cards
-- Responsive grid that adapts to screen size
+   On PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
 
-### Meal Cards
-- Product images with hover effects
-- Product information (name, description, price)
-- Quantity controls
-- Add to cart functionality
-- Popular item badges
+3. Set at least `MONGODB_URI` and a long random `JWT_SECRET` in `backend/.env`. Keep `PORT=5000`, `FRONTEND_ORIGIN=http://localhost:3000`, and `FRONTEND_URL=http://localhost:3000` for the default local ports. `AUTH_SESSION_DAYS` controls the authentication cookie lifetime.
 
-### Footer
-- Company information and links
-- Social media links
-- Contact information
-- App download buttons
-- Copyright and legal links
+4. In separate terminals, start the API and frontend:
 
-## Customization
+   ```bash
+   cd backend
+   npm run dev
+   ```
 
-### Colors
-The application uses colors:
-- Primary Red: `#e31837`
-- Dark Red: `#c41230`
-- Background: `#f8f9fa`
+   ```bash
+   npm run dev
+   ```
 
-### Adding New Meals
-To add new meals, edit the `meals` array in `src/components/MealsSection.js`:
+The frontend opens at `http://localhost:3000`; the API defaults to `http://localhost:5000`.
 
-```javascript
-{
-  id: 25,
-  name: 'New Meal Name',
-  description: 'Meal description',
-  price: 299,
-  image: 'image-url',
-  category: 'chicken',
-  isPopular: false
-}
-```
+## Environment configuration
 
-## Operations (staff / kitchen / admin)
+Use [`backend/.env.example`](backend/.env.example) as the backend template. It documents database/JWT settings, allowed frontend origins, email delivery, rate limits, alert thresholds, and staging smoke-test settings.
 
-### Staffs collection migration
+Additional integrations used by the code:
 
-Before using role-based staff login in production, run once against your MongoDB (idempotent):
+- Stripe payments: `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
+- Cloudinary uploads: `CLOUDINARY_URL`, or `CLOUD_NAME`, `CLOUD_KEY`, and `CLOUD_SECRET`.
+- Frontend deployments: `VITE_API_BASE_URL` (defaults locally to `http://localhost:5000`).
 
-```bash
-cd backend
-# Set MONGODB_URI in backend/.env to your target database
-npm run migrate:staffs
+Do not commit `.env` files or real credentials. Production requires `NODE_ENV=production`, an explicit `FRONTEND_ORIGIN`, HTTPS, and a `JWT_SECRET` of at least 32 characters.
+
+## Scripts
+
+Root frontend scripts:
+
+- `npm run dev` — Vite development server on port 3000.
+- `npm run build` — production build in `dist/`.
+- `npm run preview` — preview the production build.
+- `npm run lint` — ESLint.
+- `npm test` — Vitest frontend unit/component tests.
+- `npm run k6:availability` / `k6:availability:burst` / `k6:availability:race` — booking availability load scenarios.
+- `npm run k6:checkout` / `k6:checkout:burst` / `k6:checkout:race` — booking checkout load scenarios.
+
+Checkout load tests authenticate with `K6_USERNAME` and `K6_PASSWORD`, or an `AUTH_COOKIE`; see [`k6/results/README.txt`](k6/results/README.txt).
+
+Backend scripts (run from `backend/`):
+
+- `npm run dev` / `npm start` — start with nodemon / Node.
+- `npm test` — serial Node test runner suite.
+- `npm run lint` — ESLint.
+- `npm run migrate:staffs` — migrate the staff collection.
+- `npm run migrate:kitchen-reserved` — backfill reserved kitchen order data.
+- `npm run refund:reconcile` — retry supported pending refunds.
+- `npm run staging:smoke` — deployed API/CORS smoke checks.
+- `npm run email:test` — test configured email delivery.
+
+## Project structure
+
+```text
+.
+├── frontend/src/       React application, pages, contexts, hooks, and styles
+├── public/             Frontend static files and SPA redirect configuration
+├── backend/
+│   ├── controllers/    HTTP handlers
+│   ├── routes/         Express routers
+│   ├── models/         Mongoose models
+│   ├── services/       Booking, order, stock, and identity workflows
+│   ├── jobs/           Operational jobs
+│   ├── scripts/        Migrations, smoke checks, and maintenance commands
+│   ├── test/           Unit and integration tests
+│   └── index.js        API entry point
+├── k6/                 Booking load tests
+├── next_update/        Deployment, security, verification, and incident docs
+├── index.html          Vite entry document
+└── .github/workflows/  CI configuration
 ```
 
-### Kitchen reserved ticket migration
+## Testing and CI
 
-After deploying Phase 4 kitchen reservation numbering, run once (drops legacy index and backfills `reservedTicketNumber` / `visitTimeSlot` on existing pre-order tickets):
+Run `npm run lint && npm test && npm run build` at the repository root, then `npm run lint && npm test` in `backend/`. Frontend tests use Vitest, React Testing Library, and jsdom. Backend tests use Node's test runner, Supertest, and `mongodb-memory-server`. k6 scenarios are optional and require k6.
 
-```bash
-cd backend
-npm run migrate:kitchen-reserved
-```
+GitHub Actions runs on pushes and pull requests to `main` or `master` with Node 20. It installs both workspaces independently, lints, tests, and builds the frontend, then lints and tests the backend.
 
-### Pre-order kitchen timing
+## Security and operations
 
-Booking pre-orders create a kitchen ticket when the guest is **shown up** (staff or admin), not at payment time. Kitchen staff see upcoming pre-orders under **Kitchen → Reservations** until show up.
+The API uses JWTs in HTTP-only authentication cookies, role checks, origin-based CSRF protection, request validation, Helmet, scoped rate limits, production CORS restrictions, Stripe webhook signature verification, request IDs, structured API/security logging, health/readiness endpoints, admin audit records, and operational alerts. Review the checklist before deployment and keep database migrations and refund reconciliation as deliberate operator actions.
 
-### Kitchen stock
+Operational documentation:
 
-Kitchen staff manage meal stock under **Kitchen → Stock**. Stock decrements automatically when order lines are marked **served**.
-
-## License
-
-This project is for educational purposes only.
-
-## Contributing
-
-Feel free to submit issues and enhancement requests! 
+- [Staging deployment](next_update/staging-deploy.md)
+- [Staging verification checklist](next_update/staging-verification-checklist.md)
+- [Security checklist](next_update/security-checklist.md)
+- [Incident and rollback runbook](next_update/incident-rollback-runbook.md)
+- [Refund reconciliation runbook](next_update/refund-reconciliation-runbook.md)

@@ -60,7 +60,7 @@ describe('User role management', () => {
 
     const patchRes = await request(app)
       .patch(`/api/admin/users/${user._id}/role`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({ role: 'STAFF' });
     assert.equal(patchRes.status, 200);
     assert.equal(patchRes.body.role, 'STAFF');
@@ -75,6 +75,8 @@ describe('User role management', () => {
     assert.equal(loginRes.status, 200);
     assert.equal(loginRes.body.user.role, 'STAFF');
     assert.equal(loginRes.body.user.accountType, 'staff');
+    assert.equal(loginRes.body.token, undefined);
+    assert.match(loginRes.headers['set-cookie']?.[0] || '', /^access_token=/);
   });
 
   test('demote STAFF to USER removes staffs row', async () => {
@@ -87,12 +89,12 @@ describe('User role management', () => {
     });
     await request(app)
       .patch(`/api/admin/users/${user._id}/role`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({ role: 'STAFF' });
 
     const demoteRes = await request(app)
       .patch(`/api/admin/users/${user._id}/role`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({ role: 'USER' });
     assert.equal(demoteRes.status, 200);
 
@@ -101,7 +103,7 @@ describe('User role management', () => {
 
     const staffRoutes = await request(app)
       .get('/api/staff/bookings')
-      .set('Authorization', `Bearer ${makeCustomerToken(jwt, user._id)}`);
+      .set('Cookie', `access_token=${makeCustomerToken(jwt, user._id)}`);
     assert.equal(staffRoutes.status, 403);
   });
 
@@ -134,7 +136,7 @@ describe('User role management', () => {
 
     const customersRes = await request(app)
       .get('/api/admin/users?audience=customers')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
     assert.equal(customersRes.status, 200);
     assert.equal(customersRes.body.audience, 'customers');
     assert.equal(customersRes.body.items.length, 1);
@@ -142,7 +144,7 @@ describe('User role management', () => {
 
     const staffRes = await request(app)
       .get('/api/admin/users?audience=staff')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Cookie', `access_token=${adminToken}`);
     assert.equal(staffRes.status, 200);
     assert.equal(staffRes.body.audience, 'staff');
     assert.ok(staffRes.body.items.some((row) => row.username === 'list_staff'));

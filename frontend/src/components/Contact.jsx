@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../apiClient';
 import { API_BASE } from '../apiConfig';
 import './Contact.css';
 
@@ -24,7 +24,7 @@ const Contact = () => {
 
     setSubmitting(true);
     try {
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE}/api/contact`,
         { name: name.trim(), email: email.trim(), phone: phone.trim(), message: message.trim() },
         { headers: { 'Content-Type': 'application/json' } },

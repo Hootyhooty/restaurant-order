@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../apiClient';
 import { API_BASE } from '../apiConfig';
 import './VerifyPending.css';
 
@@ -26,7 +26,7 @@ const VerifyPending = () => {
 
     setSending(true);
     try {
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE}/api/auth/resend-verification`,
         { email: trimmed },
         { headers: { 'Content-Type': 'application/json' } },

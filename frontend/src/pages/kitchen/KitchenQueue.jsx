@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '../../apiConfig';
+import { apiFetch } from '../../apiClient';
 import { getBangkokDateString } from '../../utils/bangkokDate';
 import { useKitchenStream } from '../../hooks/useKitchenStream';
 import './KitchenQueue.css';
@@ -33,17 +34,16 @@ const KitchenQueue = () => {
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(null);
   const etagRef = useRef(null);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams({ date });
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = {};
       if (etagRef.current) headers['If-None-Match'] = etagRef.current;
 
-      const res = await fetch(`${API_BASE}/api/kitchen/orders?${params}`, { headers });
+      const res = await apiFetch(`${API_BASE}/api/kitchen/orders?${params}`, { headers });
       if (res.status === 304) return;
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -59,7 +59,7 @@ const KitchenQueue = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [date, token]);
+  }, [date]);
 
   useEffect(() => {
     etagRef.current = null;
@@ -71,15 +71,14 @@ const KitchenQueue = () => {
   const onKitchenEvent = useCallback(() => {
     fetchOrders(true);
   }, [fetchOrders]);
-  useKitchenStream(token, onKitchenEvent);
+  useKitchenStream(onKitchenEvent);
 
   const patchLines = async (orderId, lineIndexes, lineStatus) => {
     setUpdating(`${orderId}-${lineIndexes.join(',')}-${lineStatus}`);
     try {
-      const res = await fetch(`${API_BASE}/api/kitchen/orders/${orderId}/lines`, {
+      const res = await apiFetch(`${API_BASE}/api/kitchen/orders/${orderId}/lines`, {
         method: 'PATCH',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ lineIndexes, lineStatus }),
@@ -100,9 +99,8 @@ const KitchenQueue = () => {
   const startPreparing = async (orderId) => {
     setUpdating(`${orderId}-start`);
     try {
-      const res = await fetch(`${API_BASE}/api/kitchen/orders/${orderId}`, {
+      const res = await apiFetch(`${API_BASE}/api/kitchen/orders/${orderId}`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

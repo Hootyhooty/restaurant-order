@@ -103,7 +103,7 @@ describe('Staff bookings API', () => {
 
     const res = await request(app)
       .get('/api/staff/bookings')
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
@@ -141,7 +141,7 @@ describe('Staff bookings API', () => {
 
     const res = await request(app)
       .get(`/api/staff/bookings?date=${today}`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.items.length, 2);
@@ -159,7 +159,7 @@ describe('Staff bookings API', () => {
 
     const checkInRes = await request(app)
       .post(`/api/staff/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
     assert.equal(checkInRes.status, 200);
     assert.equal(checkInRes.body.success, true);
 
@@ -184,12 +184,12 @@ describe('Staff bookings API', () => {
 
     const first = await request(app)
       .post(`/api/staff/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
     assert.equal(first.status, 200);
 
     const second = await request(app)
       .post(`/api/staff/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${staffToken}`);
+      .set('Cookie', `access_token=${staffToken}`);
     assert.equal(second.status, 400);
     assert.match(second.body.message, /confirmed/i);
 
@@ -202,12 +202,12 @@ describe('Staff bookings API', () => {
 
     const listRes = await request(app)
       .get('/api/staff/bookings')
-      .set('Authorization', `Bearer ${userToken}`);
+      .set('Cookie', `access_token=${userToken}`);
     assert.equal(listRes.status, 403);
 
     const checkInRes = await request(app)
       .post(`/api/staff/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${userToken}`);
+      .set('Cookie', `access_token=${userToken}`);
     assert.equal(checkInRes.status, 403);
   });
 });

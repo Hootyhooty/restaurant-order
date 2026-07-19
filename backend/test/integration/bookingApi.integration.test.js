@@ -120,7 +120,7 @@ describe('Booking API integration', () => {
     const { userToken } = await seedAdminAndUser();
     const res = await request(app)
       .post('/api/bookings/create-checkout-session')
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Cookie', `access_token=${userToken}`)
       .send({
         date: 'bad',
         timeSlot: FIXTURE_SLOT,
@@ -155,7 +155,7 @@ describe('Booking API integration', () => {
 
     const res = await request(app)
       .post('/api/bookings/create-checkout-session')
-      .set('Authorization', `Bearer ${secondToken}`)
+      .set('Cookie', `access_token=${secondToken}`)
       .send({
         date: FIXTURE_DATE,
         timeSlot: FIXTURE_SLOT,
@@ -181,7 +181,7 @@ describe('Booking API integration', () => {
     const { userToken } = await seedAdminAndUser();
     const res = await request(app)
       .post('/api/bookings/create-checkout-session')
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Cookie', `access_token=${userToken}`)
       .set('Origin', 'http://localhost:3000')
       .send({
         date: FIXTURE_DATE,
@@ -213,7 +213,7 @@ describe('Booking API integration', () => {
 
     const res = await request(app)
       .post(`/api/bookings/${booking._id}/cancel`)
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Cookie', `access_token=${userToken}`)
       .send({});
     assert.equal(res.status, 400);
   });
@@ -235,7 +235,7 @@ describe('Booking API integration', () => {
 
     const res = await request(app)
       .post(`/api/bookings/${booking._id}/cancel`)
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Cookie', `access_token=${userToken}`)
       .send({ confirm: true });
     assert.equal(res.status, 200);
     const updated = await Booking.findById(booking._id).lean();
@@ -260,7 +260,7 @@ describe('Booking API integration', () => {
 
     const res = await request(app)
       .post(`/api/admin/bookings/${booking._id}/no-show`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({});
     assert.equal(res.status, 200);
     const updated = await Booking.findById(booking._id).lean();
@@ -285,7 +285,7 @@ describe('Booking API integration', () => {
 
     const res = await request(app)
       .post(`/api/admin/bookings/${booking._id}/cancel`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({});
     assert.equal(res.status, 200);
     const updated = await Booking.findById(booking._id).lean();
@@ -317,7 +317,7 @@ describe('Booking API integration', () => {
 
     const res = await request(app)
       .post(`/api/admin/bookings/${booking._id}/check-in`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', `access_token=${adminToken}`)
       .send({});
     assert.equal(res.status, 200);
     const updated = await Booking.findById(booking._id).lean();

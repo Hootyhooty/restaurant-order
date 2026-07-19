@@ -8,10 +8,10 @@ Examples from repo root (adjust BASE_URL if needed):
   k6 run -e K6_SCENARIO=burst k6/booking-availability.js
   k6 run -e K6_SCENARIO=race k6/booking-availability.js
 
-Checkout session (requires login token + Stripe):
+Checkout session (requires a test account + Stripe):
 
-  k6 run -e JWT_TOKEN=your_token -e FRONTEND_ORIGIN=http://localhost:3000 k6/booking-checkout-session.js
-  k6 run -e K6_SCENARIO=race -e JWT_TOKEN=your_token -e FRONTEND_ORIGIN=http://localhost:3000 -e BOOKING_TABLE_ID=5 k6/booking-checkout-session.js
+  k6 run -e K6_USERNAME=user -e K6_PASSWORD=secret -e FRONTEND_ORIGIN=http://localhost:3000 k6/booking-checkout-session.js
+  k6 run -e K6_SCENARIO=race -e AUTH_COOKIE=access_token=your_cookie -e FRONTEND_ORIGIN=http://localhost:3000 -e BOOKING_TABLE_ID=5 k6/booking-checkout-session.js
 
 Shorter smoke tests:
 
