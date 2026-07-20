@@ -1,4 +1,4 @@
-const { ACCESS_TOKEN_COOKIE } = require('./authCookies');
+const { ACCESS_TOKEN_COOKIE, MFA_PENDING_COOKIE } = require('./authCookies');
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -15,7 +15,9 @@ function createCsrfProtection({ allowedOrigins, isProduction }) {
   const allowed = new Set(allowedOrigins);
 
   return (req, res, next) => {
-    if (SAFE_METHODS.has(req.method) || !req.cookies?.[ACCESS_TOKEN_COOKIE]) {
+    const hasSessionCookie = req.cookies?.[ACCESS_TOKEN_COOKIE]
+      || req.cookies?.[MFA_PENDING_COOKIE];
+    if (SAFE_METHODS.has(req.method) || !hasSessionCookie) {
       return next();
     }
 

@@ -10,6 +10,10 @@ const Login = () => {
   const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [backupCode, setBackupCode] = useState('');
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [mfaStep, setMfaStep] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState(
     location.state?.registered
@@ -18,7 +22,17 @@ const Login = () => {
   );
   const [resendEmail, setResendEmail] = useState(location.state?.email || '');
   const [resendStatus, setResendStatus] = useState('');
-  const { login, resendVerification } = useContext(AuthContext);
+  const { login, verifyMfaLogin, resendVerification } = useContext(AuthContext);
+
+  const finishLogin = (user) => {
+    const role = user?.role;
+    const roleHome = getHomeRouteForRole(role);
+    if (role === 'ADMIN' || role === 'STAFF' || role === 'KITCHEN') {
+      navigate(roleHome);
+    } else {
+      navigate(location.state?.from || roleHome);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,17 +40,31 @@ const Login = () => {
     setInfo('');
     setResendStatus('');
     const result = await login(username, password);
+    if (result.mfaRequired) {
+      setMfaStep(true);
+      setInfo('Enter the 6-digit code from Google Authenticator.');
+      return;
+    }
     if (result.success) {
-      const role = result.user?.role;
-      const roleHome = getHomeRouteForRole(role);
-      if (role === 'ADMIN' || role === 'STAFF' || role === 'KITCHEN') {
-        navigate(roleHome);
-      } else {
-        navigate(location.state?.from || roleHome);
-      }
+      finishLogin(result.user);
     } else if (result.code === 'EMAIL_NOT_VERIFIED') {
       setError(result.message);
       if (result.email) setResendEmail(result.email);
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleMfaSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    const result = await verifyMfaLogin(
+      useBackupCode
+        ? { backupCode }
+        : { code: mfaCode },
+    );
+    if (result.success) {
+      finishLogin(result.user);
     } else {
       setError(result.message);
     }
@@ -57,62 +85,127 @@ const Login = () => {
     <section className="login-section">
       <div className="container">
         <div className="login-content">
-          <h2 className="login-title">Login to Picha</h2>
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <label htmlFor="username">Username or Email</label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                placeholder="Enter username or email"
-                className="form-input"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="form-input"
-              />
-              <Link to="/forgot-password" className="forgot-password-link">
-                Forgot password?
-              </Link>
-            </div>
-            {info && <p className="info-message">{info}</p>}
-            {error && <p className="error-message">{error}</p>}
-            {error && error.includes('verify') && (
-              <div className="resend-verification">
+          <h2 className="login-title">{mfaStep ? 'Two-factor authentication' : 'Login to Picha'}</h2>
+          {!mfaStep ? (
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="form-group">
+                <label htmlFor="username">Username or Email</label>
                 <input
-                  type="email"
-                  value={resendEmail}
-                  onChange={(e) => setResendEmail(e.target.value)}
-                  placeholder="Email for verification resend"
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  placeholder="Enter username or email"
                   className="form-input"
                 />
-                <button type="button" className="btn btn-secondary" onClick={handleResend}>
-                  Resend verification email
-                </button>
               </div>
-            )}
-            {resendStatus && <p className="info-message">{resendStatus}</p>}
-            <button type="submit" className="btn btn-primary login-btn">
-              Login
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary create-account-btn"
-              onClick={() => navigate('/register', { state: { from: location.state?.from || '/menu' } })}
-            >
-              Create Account
-            </button>
-          </form>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="form-input"
+                />
+                <Link to="/forgot-password" className="forgot-password-link">
+                  Forgot password?
+                </Link>
+              </div>
+              {info && <p className="info-message">{info}</p>}
+              {error && <p className="error-message">{error}</p>}
+              {error && error.includes('verify') && (
+                <div className="resend-verification">
+                  <input
+                    type="email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="Email for verification resend"
+                    className="form-input"
+                  />
+                  <button type="button" className="btn btn-secondary" onClick={handleResend}>
+                    Resend verification email
+                  </button>
+                </div>
+              )}
+              {resendStatus && <p className="info-message">{resendStatus}</p>}
+              <button type="submit" className="btn btn-primary login-btn">
+                Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary create-account-btn"
+                onClick={() => navigate('/register', { state: { from: location.state?.from || '/menu' } })}
+              >
+                Create Account
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleMfaSubmit} className="login-form">
+              <p className="info-message">{info || 'Enter your authenticator code to continue.'}</p>
+              {!useBackupCode ? (
+                <div className="form-group">
+                  <label htmlFor="mfaCode">Authenticator code</label>
+                  <input
+                    type="text"
+                    id="mfaCode"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    className="form-input"
+                    placeholder="6-digit code"
+                  />
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label htmlFor="backupCode">Backup code</label>
+                  <input
+                    type="text"
+                    id="backupCode"
+                    value={backupCode}
+                    onChange={(e) => setBackupCode(e.target.value.toUpperCase())}
+                    required
+                    className="form-input"
+                    placeholder="Backup code"
+                  />
+                </div>
+              )}
+              {error && <p className="error-message">{error}</p>}
+              <button type="submit" className="btn btn-primary login-btn">
+                Verify
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setUseBackupCode((prev) => !prev);
+                  setMfaCode('');
+                  setBackupCode('');
+                  setError('');
+                }}
+              >
+                {useBackupCode ? 'Use authenticator code' : 'Use backup code'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary create-account-btn"
+                onClick={() => {
+                  setMfaStep(false);
+                  setMfaCode('');
+                  setBackupCode('');
+                  setUseBackupCode(false);
+                  setError('');
+                  setInfo('');
+                }}
+              >
+                Back to login
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </section>

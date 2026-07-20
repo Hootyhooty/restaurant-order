@@ -12,18 +12,20 @@ import ReviewsSection from './admin/ReviewsSection';
 import SouvenirSection from './admin/SouvenirSection';
 import TransactionsSection from './admin/TransactionsSection';
 import UsersSection from './admin/UsersSection';
+import MfaSecuritySection from './admin/MfaSecuritySection';
 import { adminJson } from './admin/adminApi';
 import './AdminDashboard.css';
 
 const tabs = [
   ['users', 'Users'], ['menu', 'Menu'], ['souvenir', 'Souvenir'],
   ['transactions', 'Transactions'], ['booking', 'Booking'], ['kitchen', 'Kitchen'],
-  ['promotions', 'Promotions'], ['analysis', 'Analysis'], ['audit', 'Audit'],
+  ['promotions', 'Promotions'], ['analysis', 'Analysis'], ['audit', 'Audit'], ['security', 'Security'],
 ];
 
 const titles = {
   reviews: 'User Reviews', booking: 'Booking', kitchen: 'Kitchen',
   promotions: 'Promotions', analysis: 'Analysis', audit: 'Audit Trail',
+  security: 'Security',
   transactions: 'Transactions',
 };
 
@@ -79,6 +81,7 @@ const AdminDashboard = () => {
     if (activeSection === 'promotions') return <AdminPromotionsSection fetchJSON={adminJson} />;
     if (activeSection === 'analysis') return <AnalysisSection />;
     if (activeSection === 'audit') return <AuditSection />;
+    if (activeSection === 'security') return <MfaSecuritySection />;
     return <TransactionsSection />;
   };
 

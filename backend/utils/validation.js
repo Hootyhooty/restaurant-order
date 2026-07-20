@@ -431,6 +431,66 @@ function validateAdminUserRoleBody(req, res, next) {
   next();
 }
 
+function validateMfaCodeBody(req, res, next) {
+  const code = String(req.body?.code || '').replace(/\s/g, '');
+  if (!/^\d{6}$/.test(code)) {
+    markValidationError(req, 'A 6-digit verification code is required');
+    return badRequest(res, 'A 6-digit verification code is required');
+  }
+  req.body.code = code;
+  next();
+}
+
+function validateMfaVerifyLoginBody(req, res, next) {
+  const code = req.body?.code != null ? String(req.body.code).replace(/\s/g, '') : '';
+  const backupCode = req.body?.backupCode != null
+    ? String(req.body.backupCode).trim().toUpperCase()
+    : '';
+  if (!code && !backupCode) {
+    markValidationError(req, 'Enter a 6-digit code or a backup code');
+    return badRequest(res, 'Enter a 6-digit code or a backup code');
+  }
+  if (code && !/^\d{6}$/.test(code)) {
+    markValidationError(req, 'Verification code must be 6 digits');
+    return badRequest(res, 'Verification code must be 6 digits');
+  }
+  req.body.code = code || undefined;
+  req.body.backupCode = backupCode || undefined;
+  next();
+}
+
+function validateMfaPasswordBody(req, res, next) {
+  const password = req.body?.password;
+  if (!isNonEmptyString(password)) {
+    markValidationError(req, 'Password is required');
+    return badRequest(res, 'Password is required');
+  }
+  next();
+}
+
+function validateMfaDisableBody(req, res, next) {
+  const password = req.body?.password;
+  if (!isNonEmptyString(password)) {
+    markValidationError(req, 'Password is required');
+    return badRequest(res, 'Password is required');
+  }
+  const code = req.body?.code != null ? String(req.body.code).replace(/\s/g, '') : '';
+  const backupCode = req.body?.backupCode != null
+    ? String(req.body.backupCode).trim().toUpperCase()
+    : '';
+  if (!code && !backupCode) {
+    markValidationError(req, 'Enter your current authenticator or backup code');
+    return badRequest(res, 'Enter your current authenticator or backup code');
+  }
+  if (code && !/^\d{6}$/.test(code)) {
+    markValidationError(req, 'Verification code must be 6 digits');
+    return badRequest(res, 'Verification code must be 6 digits');
+  }
+  req.body.code = code || undefined;
+  req.body.backupCode = backupCode || undefined;
+  next();
+}
+
 module.exports = {
   validateRegisterBody,
   validateLoginBody,
@@ -455,6 +515,10 @@ module.exports = {
   validateKitchenOrdersQuery,
   validateKitchenPatchLinesBody,
   validateAdminUserRoleBody,
+  validateMfaCodeBody,
+  validateMfaVerifyLoginBody,
+  validateMfaPasswordBody,
+  validateMfaDisableBody,
   validatePaginationQuery,
   isUuid,
 };

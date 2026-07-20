@@ -65,6 +65,23 @@ const staffSchema = new mongoose.Schema(
     password_changed_at: {
       type: Date,
     },
+    mfa_enabled: {
+      type: Boolean,
+      default: false,
+    },
+    mfa_secret_enc: {
+      type: String,
+      select: false,
+    },
+    mfa_secret_pending_enc: {
+      type: String,
+      select: false,
+    },
+    mfa_backup_codes: {
+      type: [String],
+      select: false,
+      default: [],
+    },
     active: {
       type: Boolean,
       default: true,

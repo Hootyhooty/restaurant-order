@@ -1,0 +1,25 @@
+
+.mfa-security-section .mfa-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.mfa-security-section .mfa-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 420px;
+}
+
+.mfa-security-section .mfa-qr {
+  width: 200px;
+  height: 200px;
+}
+
+.mfa-security-section .mfa-manual-key code,
+.mfa-security-section .mfa-backup-codes code {
+  word-break: break-all;
+}

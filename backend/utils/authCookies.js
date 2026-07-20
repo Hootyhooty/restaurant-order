@@ -1,4 +1,28 @@
 const ACCESS_TOKEN_COOKIE = 'access_token';
+const MFA_PENDING_COOKIE = 'mfa_pending';
+
+function mfaPendingCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 5 * 60 * 1000,
+  };
+}
+
+function clearMfaPendingCookieOptions() {
+  const { maxAge, ...options } = mfaPendingCookieOptions();
+  return options;
+}
+
+function setMfaPendingCookie(res, token) {
+  res.cookie(MFA_PENDING_COOKIE, token, mfaPendingCookieOptions());
+}
+
+function clearMfaPendingCookie(res) {
+  res.clearCookie(MFA_PENDING_COOKIE, clearMfaPendingCookieOptions());
+}
 
 function envNumber(name, fallback) {
   const raw = process.env[name];
@@ -55,11 +79,15 @@ function tokenExpiresIn(role) {
 
 module.exports = {
   ACCESS_TOKEN_COOKIE,
+  MFA_PENDING_COOKIE,
   clearAuthCookie,
+  clearMfaPendingCookie,
   cookieOptions,
   customerSessionDays,
+  mfaPendingCookieOptions,
   opsSessionDays,
   sessionDaysForRole,
   setAuthCookie,
+  setMfaPendingCookie,
   tokenExpiresIn,
 };

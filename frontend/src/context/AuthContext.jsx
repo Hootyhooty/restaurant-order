@@ -83,6 +83,9 @@ export const AuthProvider = ({ children }) => {
           headers: { 'Content-Type': 'application/json' }
         }
       );
+      if (response.data?.mfaRequired) {
+        return { success: false, mfaRequired: true };
+      }
       setIsLoggedIn(true);
       setUser(response.data.user);
       return { success: true, user: response.data.user };
@@ -93,6 +96,26 @@ export const AuthProvider = ({ children }) => {
         message: data.message || 'Login failed',
         code: data.code,
         email: data.email,
+      };
+    }
+  };
+
+  const verifyMfaLogin = async ({ code, backupCode }) => {
+    try {
+      const response = await apiClient.post(
+        '/api/auth/mfa/verify',
+        { code, backupCode },
+        { headers: { 'Content-Type': 'application/json' } },
+      );
+      setIsLoggedIn(true);
+      setUser(response.data.user);
+      return { success: true, user: response.data.user };
+    } catch (error) {
+      const data = error.response?.data || {};
+      return {
+        success: false,
+        message: data.message || 'Verification failed',
+        code: data.code,
       };
     }
   };
@@ -119,6 +142,7 @@ export const AuthProvider = ({ children }) => {
       user,
       register,
       login,
+      verifyMfaLogin,
       logout,
       updateUser,
       resendVerification,

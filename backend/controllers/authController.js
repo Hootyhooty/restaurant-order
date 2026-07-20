@@ -23,7 +23,9 @@ const {
 const { warn } = require('../utils/logger');
 const {
   clearAuthCookie,
+  clearMfaPendingCookie,
   setAuthCookie,
+  setMfaPendingCookie,
   tokenExpiresIn,
 } = require('../utils/authCookies');
 const {
@@ -38,6 +40,8 @@ const {
   resolvePrincipalById,
 } = require('../services/resolvePrincipal');
 const jwt = require('jsonwebtoken');
+const { createMfaPendingToken } = require('./mfaController');
+const { buildAuthUserPayload } = require('../services/authUserPayload');
 
 const RESEND_GENERIC_MESSAGE =
   'If an account with that email exists and is not yet verified, a verification email has been sent.';
@@ -414,6 +418,12 @@ const login = async (req, res) => {
 
       clearFailures(usernameOrEmail);
       const principal = await resolvePrincipalById(staffAccount._id, 'staff');
+
+      if (principal.role === 'ADMIN' && staffAccount.mfa_enabled) {
+        setMfaPendingCookie(res, createMfaPendingToken(staffAccount._id));
+        return res.json({ mfaRequired: true });
+      }
+
       const token = jwt.sign(
         { id: staffAccount._id, accountType: 'staff' },
         process.env.JWT_SECRET,
@@ -421,21 +431,7 @@ const login = async (req, res) => {
       );
       setAuthCookie(res, token, { role: principal.role });
       return res.json({
-        user: {
-          id: principal._id,
-          username: principal.username,
-          email: principal.email,
-          phone: principal.phone,
-          first_name: principal.first_name,
-          last_name: principal.last_name,
-          photo: principal.photo,
-          role: principal.role,
-          email_verified: principal.email_verified,
-          phone_verified: principal.phone_verified,
-          accountType: principal.accountType,
-          customerId: principal.customerId,
-          staffId: principal.staffId,
-        },
+        user: buildAuthUserPayload(principal),
       });
     }
 
@@ -484,8 +480,8 @@ const login = async (req, res) => {
 
     setAuthCookie(res, token, { role: 'USER' });
     res.json({
-      user: {
-        id: customer._id,
+      user: buildAuthUserPayload({
+        _id: customer._id,
         username: customer.username,
         email: customer.email,
         phone: customer.phone,
@@ -501,7 +497,8 @@ const login = async (req, res) => {
         zipcode: customer.zipcode,
         accountType: 'customer',
         customerId: customer._id.toString(),
-      },
+        staffId: null,
+      }),
     });
   } catch (error) {
     console.error('Login error:', error.message);
@@ -511,6 +508,7 @@ const login = async (req, res) => {
 
 const logout = (req, res) => {
   clearAuthCookie(res);
+  clearMfaPendingCookie(res);
   return res.json({ success: true });
 };
 
