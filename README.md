@@ -121,7 +121,7 @@ GitHub Actions runs on pushes and pull requests to `main` or `master` with Node 
 
 ## Security and operations
 
-The API uses JWTs in HTTP-only authentication cookies, role checks, origin-based CSRF protection, request validation, Helmet, scoped rate limits, production CORS restrictions, Stripe webhook signature verification, request IDs, structured API/security logging, health/readiness endpoints, admin audit records, and operational alerts. Review the checklist before deployment and keep database migrations and refund reconciliation as deliberate operator actions.
+The API uses JWTs in HttpOnly authentication cookies (shorter sessions for ops roles), failed-login lockout, password-change session revocation, role checks, origin-based CSRF protection, request validation, Helmet, scoped rate limits, production CORS restrictions, Stripe webhook signature verification, request IDs, structured API/security logging, health/readiness endpoints, admin audit records, and operational alerts. Rate limits, lockout, kitchen SSE, and in-memory metrics assume a **single backend instance** until a shared store is added. Review the checklist before deployment; enable `REFUND_RECONCILE_INTERVAL_MS` or run `npm run refund:reconcile` on a schedule.
 
 Operational documentation:
 

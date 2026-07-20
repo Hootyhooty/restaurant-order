@@ -13,6 +13,10 @@ Use when bookings or payment intents are stuck in `refund_pending` after Stripe 
 
 **Alert threshold env:** `ALERT_REFUND_BACKLOG_MAX` (see `backend/.env.example`)
 
+### Optional in-process schedule (single instance)
+
+Set `REFUND_RECONCILE_INTERVAL_MS` (e.g. `900000` for 15 minutes) on the backend service. The API process runs the reconciler after Mongo connects. Leave unset to rely on this manual script or an external cron. Do **not** enable on multiple instances without a distributed lock.
+
 ---
 
 ## What the job does

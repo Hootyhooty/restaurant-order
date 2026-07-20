@@ -20,6 +20,7 @@ function normalizePrincipal(doc, accountType, linkedCustomer = null) {
       ...payload,
       active: doc.active !== false,
       phone_verified: linkedCustomer?.phone_verified || false,
+      password_changed_at: doc.password_changed_at || null,
     };
   }
 
@@ -48,6 +49,7 @@ function normalizePrincipal(doc, accountType, linkedCustomer = null) {
     accountType: 'customer',
     customerId: doc._id.toString(),
     staffId: null,
+    password_changed_at: doc.password_changed_at || null,
   };
 }
 

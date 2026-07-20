@@ -14,7 +14,7 @@
         "email:test": "node scripts/emailTest.js"
     },
     "dependencies": {
-        "bcrypt": "^5.0.1",
+        "bcryptjs": "^3.0.3",
         "cloudinary": "^2.5.1",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
@@ -25,9 +25,9 @@
         "jsonwebtoken": "^9.0.0",
         "mongoose": "^8.3.2",
         "multer": "^1.4.5-lts.1",
-        "nodemailer": "^8.0.10",
+        "nodemailer": "^9.0.3",
         "stripe": "^20.3.1",
-        "uuid": "^10.0.0"
+        "uuid": "^11.1.1"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

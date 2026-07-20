@@ -118,7 +118,8 @@ User selects table/date/slot
 ## Security (Day 10)
 
 - JWT auth + role checks on admin routes
-- Rate limits on auth, booking, writes, public reads, webhooks
+- Host-only HttpOnly cookies (shorter ops sessions); password-reset session revocation
+- Failed-login lockout (in-memory) + rate limits on auth, booking, writes, public reads, webhooks
 - Helmet + production HTTPS enforcement
 - CORS locked to `FRONTEND_ORIGIN` in production
 - Input validation on booking, auth, admin queries
@@ -131,10 +132,18 @@ See [security-checklist.md](./security-checklist.md) for full list and manual it
 
 GitHub Actions (`.github/workflows/ci.yml`):
 
-- Frontend: lint + build
+- Frontend: lint + test + build
 - Backend: lint + `npm test`
 
 Branch protection should block merge without green CI (see `.github/BRANCH_PROTECTION.md`).
+
+---
+
+## Runtime topology (single instance)
+
+Rate limits, login lockout, Admin Analysis metrics, and kitchen SSE (`kitchenEventHub`) are **in-memory**. They reset on restart and do **not** sync across multiple Render instances.
+
+**Operate with one backend web service** until Redis (or equivalent) backs those concerns. Optional refund reconciler: set `REFUND_RECONCILE_INTERVAL_MS`, or schedule `npm run refund:reconcile` via cron/Render job.
 
 ---
 
@@ -150,8 +159,10 @@ Branch protection should block merge without green CI (see `.github/BRANCH_PROTE
 | MongoDB Atlas IP allowlist | Backend cannot connect | Use `0.0.0.0/0` or Render outbound ranges | Manual ops |
 | Render shared outbound IPs | Atlas allowlist drift | Monitor; use Dedicated IPs if required | Manual ops |
 | No automated DB backup restore runbook | Data loss on bad migration | Atlas continuous backup; manual restore only | Documented caution in incident runbook |
-| Metrics in memory only | Lost on restart | Accept for MVP; export logs/alerts externally later | Known gap |
-| No account lockout | Repeated credential guessing | Auth rate limits; future account lockout | See security checklist |
+| Metrics in memory only | Lost on restart | Accept for MVP; export logs/alerts externally later | Known gap — single instance |
+| Login lockout in memory | Resets on restart | Rate limits + lockout; Redis later for multi-instance | Implemented (process-local) |
+| No account lockout | Repeated credential guessing | Auth rate limits; future account lockout | Mitigated — lockout enabled |
+| Horizontal scale without Redis | Split rate limits / SSE / metrics | Stay on one dyno or add shared store | Documented constraint |
 | Cloudinary / image URL drift | Broken images | Migration scripts in `backend/scripts/` | Ops as needed |
 | `JWT_SECRET` rotation | All users logged out | Plan rotation; communicate downtime | Manual |
 

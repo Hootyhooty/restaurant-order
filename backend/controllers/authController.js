@@ -1,7 +1,7 @@
 // src/backend/controllers/authController.js
 // Authentication handlers (register and login) and auth-related middleware
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Customer = require('../models/Customer');
 const PendingRegistration = require('../models/PendingRegistration');
 const { decodeToken } = require('../utils/jwtUtils');
@@ -26,6 +26,11 @@ const {
   setAuthCookie,
   tokenExpiresIn,
 } = require('../utils/authCookies');
+const {
+  clearFailures,
+  isLocked,
+  recordFailure,
+} = require('../utils/loginLockout');
 const {
   findStaffByLogin,
   findCustomerByLogin,
@@ -352,6 +357,7 @@ const resetPassword = async (req, res) => {
     customer.password_reset_expires = undefined;
     await customer.save();
 
+    clearAuthCookie(res);
     res.json({
       success: true,
       message: 'Password updated successfully. You can now log in.',
@@ -361,6 +367,16 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
+
+function lockoutResponse(res, lockInfo) {
+  res.set('Retry-After', String(lockInfo.retryAfterSec || 60));
+  return res.status(429).json({
+    success: false,
+    message: `Too many failed login attempts. Try again in ${lockInfo.retryAfterSec} seconds.`,
+    code: 'ACCOUNT_LOCKED',
+    retryAfterSec: lockInfo.retryAfterSec,
+  });
+}
 
 // POST /api/auth/login
 // Accepts either username or email for login
@@ -377,23 +393,33 @@ const login = async (req, res) => {
         .json({ message: 'Username/email and password are required' });
     }
 
+    const lockState = isLocked(usernameOrEmail);
+    if (lockState.locked) {
+      return lockoutResponse(res, lockState);
+    }
+
     const staffAccount = await findStaffByLogin(usernameOrEmail);
     if (staffAccount) {
       const isMatch = await staffAccount.comparePassword(password);
       if (!isMatch) {
+        const failure = recordFailure(usernameOrEmail);
+        if (failure.locked) {
+          return lockoutResponse(res, failure);
+        }
         return res.status(401).json({ message: 'Invalid username or password' });
       }
       if (staffAccount.active === false) {
         return res.status(401).json({ message: 'Account is deactivated' });
       }
 
+      clearFailures(usernameOrEmail);
+      const principal = await resolvePrincipalById(staffAccount._id, 'staff');
       const token = jwt.sign(
         { id: staffAccount._id, accountType: 'staff' },
         process.env.JWT_SECRET,
-        { expiresIn: tokenExpiresIn() },
+        { expiresIn: tokenExpiresIn(principal.role) },
       );
-      const principal = await resolvePrincipalById(staffAccount._id, 'staff');
-      setAuthCookie(res, token);
+      setAuthCookie(res, token, { role: principal.role });
       return res.json({
         user: {
           id: principal._id,
@@ -415,6 +441,10 @@ const login = async (req, res) => {
 
     const customer = await findCustomerByLogin(usernameOrEmail);
     if (!customer) {
+      const failure = recordFailure(usernameOrEmail);
+      if (failure.locked) {
+        return lockoutResponse(res, failure);
+      }
       console.log('User not found:', usernameOrEmail);
       return res
         .status(401)
@@ -423,6 +453,10 @@ const login = async (req, res) => {
 
     const isMatch = await customer.comparePassword(password);
     if (!isMatch) {
+      const failure = recordFailure(usernameOrEmail);
+      if (failure.locked) {
+        return lockoutResponse(res, failure);
+      }
       console.log('Password mismatch for user:', usernameOrEmail);
       return res
         .status(401)
@@ -440,14 +474,15 @@ const login = async (req, res) => {
       });
     }
 
+    clearFailures(usernameOrEmail);
     const token = jwt.sign(
       { id: customer._id, accountType: 'customer' },
       process.env.JWT_SECRET,
-      { expiresIn: tokenExpiresIn() },
+      { expiresIn: tokenExpiresIn('USER') },
     );
     console.log('Login successful, token generated for:', customer._id);
 
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, { role: 'USER' });
     res.json({
       user: {
         id: customer._id,
@@ -521,6 +556,19 @@ const authMiddleware = async (req, res, next) => {
         success: false,
         message: 'Account is deactivated',
       });
+    }
+
+    // Invalidate cookies issued before the last password change.
+    if (principal.password_changed_at && decoded.iat) {
+      const changedSec = Math.floor(new Date(principal.password_changed_at).getTime() / 1000);
+      if (decoded.iat < changedSec) {
+        clearAuthCookie(res);
+        return res.status(401).json({
+          success: false,
+          message: 'Session expired. Please log in again.',
+          code: 'SESSION_REVOKED',
+        });
+      }
     }
 
     req.user = principal;

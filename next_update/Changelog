@@ -840,6 +840,21 @@ Quality and documentation
 - [x] Updated security and architecture documentation for HttpOnly cookie authentication
 
 ==================================================
+20 Jul 2026 — Production hardening (sessions, lockout, deps, ops)
+==================================================
+
+Session & login hardening
+- [x] Customer sessions default 7 days; ADMIN/STAFF/KITCHEN default 1 day (`AUTH_SESSION_DAYS` / `AUTH_OPS_SESSION_DAYS`)
+- [x] Password reset / password change invalidates older JWT cookies (`password_changed_at` vs `iat`)
+- [x] Failed-login lockout (`AUTH_LOCKOUT_*`, in-memory; resets on restart)
+
+Dependencies & ops
+- [x] Replaced native `bcrypt` with `bcryptjs`; upgraded `nodemailer` and `uuid` (production audit clean)
+- [x] Optional scheduled refund reconciler via `REFUND_RECONCILE_INTERVAL_MS`
+- [x] Documented single-instance constraint for rate limits / SSE / metrics / lockout
+- [x] Corrected release-readiness email (Resend HTTP API) and k6 path references
+
+==================================================
 Known Issues / Ops Notes
 ==================================================
 
@@ -847,4 +862,6 @@ Known Issues / Ops Notes
 - Resend DKIM/return-path CNAME records must be DNS-only (grey cloud) in Cloudflare — not proxied
 - Cloudflare proxy on API is optional; does not affect outbound email; use SSL Full (strict) if proxied
 - Render: set `RESEND_API_KEY` on redeploy; remove unused `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`
+- Operate a single backend instance until Redis backs rate limits / lockout / kitchen SSE / metrics
+- Production go-live still requires staging sign-off + live Stripe smoke (see `release-readiness.md`)
 

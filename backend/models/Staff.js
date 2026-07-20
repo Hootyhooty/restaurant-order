@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { generateUUID } = require('../utils/uuid');
 
 const OPS_ROLES = ['ADMIN', 'STAFF', 'KITCHEN'];
@@ -62,6 +62,9 @@ const staffSchema = new mongoose.Schema(
       required: true,
       minlength: 8,
     },
+    password_changed_at: {
+      type: Date,
+    },
     active: {
       type: Boolean,
       default: true,
@@ -83,6 +86,7 @@ staffSchema.pre('save', async function preSave(next) {
   }
   if (this.isModified('password') && !this.$locals.skipPasswordHash) {
     this.password = await bcrypt.hash(this.password, 10);
+    this.password_changed_at = new Date();
   }
   next();
 });

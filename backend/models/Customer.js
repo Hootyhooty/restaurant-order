@@ -1,6 +1,6 @@
 // src/backend/models/Customer.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { generateUUID } = require('../utils/uuid');
 
 const customerSchema = new mongoose.Schema(
@@ -180,6 +180,7 @@ customerSchema.pre('save', async function (next) {
   // PendingRegistration) by setting doc.$locals.skipPasswordHash = true.
   if (this.isModified('password') && !this.$locals.skipPasswordHash) {
     this.password = await bcrypt.hash(this.password, 10);
+    this.password_changed_at = new Date();
   }
   next();
 });

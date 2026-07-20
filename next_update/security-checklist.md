@@ -7,6 +7,9 @@ Use this before production deploy. All items below are implemented in code unles
 - [x] JWT required on protected routes via host-only HttpOnly cookie (`authMiddleware`)
 - [x] Login responses do not expose JWTs; logout clears the session cookie
 - [x] Authenticated writes require an exact allow-listed browser origin (CSRF protection)
+- [x] Customer sessions default 7 days; ops roles default 1 day (`AUTH_SESSION_DAYS` / `AUTH_OPS_SESSION_DAYS`)
+- [x] Sessions issued before password change are rejected (`password_changed_at` vs JWT `iat`)
+- [x] Failed-login lockout (`AUTH_LOCKOUT_MAX_ATTEMPTS` / `AUTH_LOCKOUT_DURATION_MS`; in-memory)
 - [x] Admin routes require `ADMIN` role (`rolesRequired`)
 - [x] Production requires `JWT_SECRET` length ≥ 32 characters
 - [x] Auth endpoints rate-limited (`RATE_LIMIT_AUTH_*`, default 20 / 15 min)
@@ -63,8 +66,10 @@ Use this before production deploy. All items below are implemented in code unles
 
 ## Remaining high-risk gaps (manual / future)
 
-- [ ] Account lockout after repeated failed logins
+- [x] Account lockout after repeated failed logins (in-memory; Redis needed for multi-instance)
 - [x] Email verification (register → verify link → login)
 - [x] Password reset (forgot → reset link → new password)
 - [ ] WAF or edge rate limiting in front of API (Cloudflare, etc.)
+- [ ] Shared store (Redis) for rate limits / lockout / kitchen SSE when scaling beyond one instance
+- [ ] Admin MFA
 - [ ] Automated dependency vulnerability scanning in CI (optional: add `npm audit --audit-level=high` to workflow later)

@@ -174,6 +174,7 @@ app.use(createCsrfProtection({ allowedOrigins, isProduction }));
 // Force database name to be restaurant_db
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_db';
 const { syncSouvenirsDbToFile } = require('./utils/syncSouvenirs');
+const { startRefundReconciliationScheduler } = require('./jobs/refundReconciliationScheduler');
 
 app.use('/food_img', express.static(path.join(__dirname, 'public', 'food_img')));
 app.use('/display', express.static(path.join(__dirname, 'public', 'display')));
@@ -233,6 +234,7 @@ if (require.main === module) {
     .then(async () => {
       console.log('Connected to MongoDB database: restaurant_db');
       await syncSouvenirsDbToFile();
+      startRefundReconciliationScheduler();
     })
     .catch((err) => {
       console.error('MongoDB connection error:', err.message);

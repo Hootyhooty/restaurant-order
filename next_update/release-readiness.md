@@ -25,7 +25,7 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | API integration tests | ☐ | `backend/test/integration/` |
 | Webhook idempotency tests | ☐ | `backend/test/stripeWebhookDedupe.test.js` |
 | Refund reconciliation job | ☐ | `backend/jobs/refundReconciliationJob.js` |
-| k6 load baseline | ☐ | `backend/k6/` + `k6/results/` |
+| k6 load baseline | ☐ | `k6/` + `k6/results/` (repo root) |
 | Performance tuning pass | ☐ | Day 7 notes / second k6 run |
 
 ---
@@ -76,10 +76,12 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | `FRONTEND_URL` | ☐ | `https://picha-restaurant.com` (used in verification/reset email links) |
 | `STRIPE_SECRET_KEY` | ☐ | `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | ☐ | Live webhook endpoint (`api.picha-restaurant.com`) |
-| `EMAIL_MODE=production` | ☐ | Switches to Resend SMTP |
+| `EMAIL_MODE=production` | ☐ | Switches to Resend **HTTP API** (not SMTP) |
 | `EMAIL_FROM` | ☐ | `Picha <noreply@picha-restaurant.com>` (verified domain) |
-| `SMTP_HOST/PORT/USER/PASS` | ☐ | Resend: `smtp.resend.com` / `587` / `resend` / `<API key>` |
+| `RESEND_API_KEY` | ☐ | Resend `re_…` key (HTTP API over port 443) |
+| `AUTH_SESSION_DAYS` / `AUTH_OPS_SESSION_DAYS` | ☐ | Defaults 7 / 1; cookie session lifetimes |
 | Alert thresholds | ☐ | Optional; defaults in `.env.example` |
+| `REFUND_RECONCILE_INTERVAL_MS` | ☐ | Optional in-process reconciler; or cron `npm run refund:reconcile` |
 
 **Health check path:** `/api/health`  
 **Root directory:** `backend`  
