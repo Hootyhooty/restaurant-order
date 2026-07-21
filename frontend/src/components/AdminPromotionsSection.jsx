@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { adminForm, adminJson } from './adminApi';
+import { adminForm, adminJson } from './admin/adminApi';
 import './Promotions.css';
 
 const emptyForm = {
