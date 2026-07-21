@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { API_BASE } from '../apiConfig';
+import { useEffect, useState } from 'react';
+import { adminForm, adminJson } from './adminApi';
+import './Promotions.css';
 
 const emptyForm = {
   title: '',
@@ -9,18 +10,21 @@ const emptyForm = {
   active: true,
   startsAt: '',
   endsAt: '',
+  coverFile: null,
+  coverPreview: '',
 };
 
-const AdminPromotionsSection = ({ fetchJSON }) => {
+const AdminPromotionsSection = () => {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [coverUploadId, setCoverUploadId] = useState(null);
 
   const loadPromotions = async () => {
     setLoading(true);
     try {
-      const data = await fetchJSON('/api/admin/promotions');
+      const data = await adminJson('/api/admin/promotions');
       setItems(data.items || []);
     } catch (err) {
       alert(err.message || 'Failed to load promotions');
@@ -33,26 +37,55 @@ const AdminPromotionsSection = ({ fetchJSON }) => {
     loadPromotions();
   }, []);
 
+  const onCoverSelect = (event, { forPromoId } = {}) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    if (forPromoId) {
+      setCoverUploadId(forPromoId);
+      uploadCover(forPromoId, file);
+      event.target.value = '';
+      return;
+    }
+    setForm((prev) => ({ ...prev, coverFile: file, coverPreview: preview }));
+  };
+
+  const uploadCover = async (promoId, file) => {
+    try {
+      const data = new FormData();
+      data.append('cover', file);
+      await adminForm(`/api/admin/promotions/${promoId}`, data, { method: 'PATCH' });
+      await loadPromotions();
+    } catch (err) {
+      alert(err.message || 'Failed to update cover');
+    } finally {
+      setCoverUploadId(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) {
       alert('Title is required.');
       return;
     }
+    if (!form.coverFile) {
+      alert('Please select a cover image.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await fetchJSON('/api/admin/promotions', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: form.title.trim(),
-          description: form.description.trim(),
-          code: form.code.trim() || undefined,
-          discountPercent: form.discountPercent ? Number(form.discountPercent) : undefined,
-          active: form.active,
-          startsAt: form.startsAt || undefined,
-          endsAt: form.endsAt || undefined,
-        }),
-      });
+      const data = new FormData();
+      data.append('cover', form.coverFile);
+      data.append('title', form.title.trim());
+      data.append('description', form.description.trim());
+      if (form.code.trim()) data.append('code', form.code.trim());
+      if (form.discountPercent !== '') data.append('discountPercent', String(form.discountPercent));
+      data.append('active', String(form.active));
+      if (form.startsAt) data.append('startsAt', form.startsAt);
+      if (form.endsAt) data.append('endsAt', form.endsAt);
+      await adminForm('/api/admin/promotions', data, { method: 'POST' });
+      if (form.coverPreview) URL.revokeObjectURL(form.coverPreview);
       setForm(emptyForm);
       await loadPromotions();
     } catch (err) {
@@ -64,7 +97,7 @@ const AdminPromotionsSection = ({ fetchJSON }) => {
 
   const toggleActive = async (promo) => {
     try {
-      await fetchJSON(`/api/admin/promotions/${promo.id}`, {
+      await adminJson(`/api/admin/promotions/${promo.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ active: !promo.active }),
       });
@@ -77,7 +110,7 @@ const AdminPromotionsSection = ({ fetchJSON }) => {
   const deletePromo = async (promo) => {
     if (!window.confirm(`Delete promotion "${promo.title}"?`)) return;
     try {
-      await fetchJSON(`/api/admin/promotions/${promo.id}`, { method: 'DELETE' });
+      await adminJson(`/api/admin/promotions/${promo.id}`, { method: 'DELETE' });
       await loadPromotions();
     } catch (err) {
       alert(err.message || 'Delete failed');
@@ -122,6 +155,36 @@ const AdminPromotionsSection = ({ fetchJSON }) => {
               {submitting ? 'Saving…' : 'Add'}
             </button>
           </div>
+          <div className="col-md-4">
+            <input
+              type="date"
+              className="form-control"
+              value={form.startsAt}
+              onChange={(e) => setForm((p) => ({ ...p, startsAt: e.target.value }))}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="date"
+              className="form-control"
+              value={form.endsAt}
+              onChange={(e) => setForm((p) => ({ ...p, endsAt: e.target.value }))}
+            />
+          </div>
+          <div className="col-md-4">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="form-control"
+              onChange={onCoverSelect}
+              required={!form.coverFile}
+            />
+          </div>
+          {form.coverPreview && (
+            <div className="col-12">
+              <img src={form.coverPreview} alt="Cover preview" className="admin-promo-cover-preview" />
+            </div>
+          )}
           <div className="col-12">
             <textarea
               className="form-control"
@@ -141,6 +204,7 @@ const AdminPromotionsSection = ({ fetchJSON }) => {
           <table className="table table-bordered table-hover admin-table">
             <thead className="table-dark">
               <tr>
+                <th>Cover</th>
                 <th>Title</th>
                 <th>Code</th>
                 <th>Discount</th>
@@ -151,11 +215,28 @@ const AdminPromotionsSection = ({ fetchJSON }) => {
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>No promotions yet.</td>
+                  <td colSpan={6}>No promotions yet.</td>
                 </tr>
               ) : (
                 items.map((promo) => (
                   <tr key={promo.id}>
+                    <td className="admin-promo-cover-cell">
+                      {promo.coverImage ? (
+                        <img src={promo.coverImage} alt={promo.title} className="admin-promo-cover-thumb" />
+                      ) : (
+                        <span className="text-muted small">No cover</span>
+                      )}
+                      <label className="btn btn-outline-secondary btn-sm mt-1 mb-0">
+                        {coverUploadId === promo.id ? 'Uploading…' : 'Change cover'}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          hidden
+                          disabled={coverUploadId === promo.id}
+                          onChange={(e) => onCoverSelect(e, { forPromoId: promo.id })}
+                        />
+                      </label>
+                    </td>
                     <td>
                       <strong>{promo.title}</strong>
                       {promo.description && <div className="small text-muted">{promo.description}</div>}

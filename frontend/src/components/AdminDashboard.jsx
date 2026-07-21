@@ -78,7 +78,7 @@ const AdminDashboard = () => {
     if (activeSection === 'reviews') return <ReviewsSection initialMealId={reviewMealId} />;
     if (activeSection === 'booking') return <BookingsSection />;
     if (activeSection === 'kitchen') return <AdminKitchenSection />;
-    if (activeSection === 'promotions') return <AdminPromotionsSection fetchJSON={adminJson} />;
+    if (activeSection === 'promotions') return <AdminPromotionsSection />;
     if (activeSection === 'analysis') return <AnalysisSection />;
     if (activeSection === 'audit') return <AuditSection />;
     if (activeSection === 'security') return <MfaSecuritySection />;

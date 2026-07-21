@@ -20,6 +20,7 @@ import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
 import Contact from './components/Contact';
 import About from './components/About';
+import Promotions from './components/Promotions';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import ScrollToTop from './components/ScrollToTop';
@@ -49,6 +50,7 @@ function App() {
             <Route path="/menu" element={<Menu />} />
             <Route path="/store" element={<Store />} />
             <Route path="/about" element={<About />} />
+            <Route path="/promotions" element={<Promotions />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

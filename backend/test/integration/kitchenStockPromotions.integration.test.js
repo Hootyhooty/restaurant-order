@@ -91,6 +91,7 @@ describe('Kitchen stock and promotions', () => {
         code: 'LUNCH10',
         discountPercent: 10,
         active: true,
+        coverImage: 'https://example.com/promo-cover.jpg',
       });
     assert.equal(createRes.status, 201);
 

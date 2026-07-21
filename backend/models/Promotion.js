@@ -8,6 +8,7 @@ const promotionSchema = new mongoose.Schema(
     description: { type: String, default: '', trim: true, maxlength: 2000 },
     code: { type: String, trim: true, uppercase: true, sparse: true },
     discountPercent: { type: Number, min: 0, max: 100 },
+    coverImage: { type: String, trim: true, default: '' },
     active: { type: Boolean, default: true, index: true },
     startsAt: { type: Date },
     endsAt: { type: Date },

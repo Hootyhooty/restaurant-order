@@ -1,4 +1,5 @@
 const Promotion = require('../models/Promotion');
+const { uploadImageBuffer } = require('../utils/cloudinary');
 
 const mapPromotion = (doc) => ({
   id: doc._id,
@@ -6,6 +7,7 @@ const mapPromotion = (doc) => ({
   description: doc.description,
   code: doc.code || null,
   discountPercent: doc.discountPercent ?? null,
+  coverImage: doc.coverImage || '',
   active: doc.active !== false,
   startsAt: doc.startsAt || null,
   endsAt: doc.endsAt || null,
@@ -20,6 +22,34 @@ function isPromotionVisible(promo, now = new Date()) {
   return true;
 }
 
+function parseOptionalNumber(value) {
+  if (value == null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalBoolean(value, fallback = undefined) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === 'true') return true;
+  if (normalized === 'false') return false;
+  return fallback;
+}
+
+function parseOptionalDate(value) {
+  if (value == null || value === '') return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+async function uploadPromotionCover(file) {
+  const uploadResult = await uploadImageBuffer(file.buffer, {
+    folder: 'picha/promotions',
+  });
+  return uploadResult.secure_url;
+}
+
 const listAdminPromotions = async (req, res) => {
   try {
     const items = await Promotion.find().sort({ createdAt: -1 }).lean();
@@ -32,18 +62,36 @@ const listAdminPromotions = async (req, res) => {
 
 const createPromotion = async (req, res) => {
   try {
-    const { title, description, code, discountPercent, active, startsAt, endsAt } = req.body || {};
+    const {
+      title,
+      description,
+      code,
+      discountPercent,
+      active,
+      startsAt,
+      endsAt,
+    } = req.body || {};
+
     if (!title?.trim()) {
       return res.status(400).json({ success: false, message: 'Title is required.' });
+    }
+
+    let coverImage = String(req.body?.coverImage || '').trim();
+    if (req.file) {
+      coverImage = await uploadPromotionCover(req.file);
+    }
+    if (!coverImage) {
+      return res.status(400).json({ success: false, message: 'Cover image is required.' });
     }
     const promo = await Promotion.create({
       title: title.trim(),
       description: String(description || '').trim(),
       code: code ? String(code).trim().toUpperCase() : undefined,
-      discountPercent: discountPercent != null ? Number(discountPercent) : undefined,
-      active: active !== false,
-      startsAt: startsAt ? new Date(startsAt) : undefined,
-      endsAt: endsAt ? new Date(endsAt) : undefined,
+      discountPercent: parseOptionalNumber(discountPercent),
+      coverImage,
+      active: parseOptionalBoolean(active, true),
+      startsAt: parseOptionalDate(startsAt),
+      endsAt: parseOptionalDate(endsAt),
     });
     return res.status(201).json({ success: true, item: mapPromotion(promo.toObject()) });
   } catch (error) {
@@ -58,14 +106,29 @@ const updatePromotion = async (req, res) => {
     if (!promo) {
       return res.status(404).json({ success: false, message: 'Promotion not found.' });
     }
-    const { title, description, code, discountPercent, active, startsAt, endsAt } = req.body || {};
+
+    const {
+      title,
+      description,
+      code,
+      discountPercent,
+      active,
+      startsAt,
+      endsAt,
+    } = req.body || {};
+
     if (title !== undefined) promo.title = String(title).trim();
     if (description !== undefined) promo.description = String(description).trim();
     if (code !== undefined) promo.code = code ? String(code).trim().toUpperCase() : undefined;
-    if (discountPercent !== undefined) promo.discountPercent = Number(discountPercent);
-    if (active !== undefined) promo.active = Boolean(active);
-    if (startsAt !== undefined) promo.startsAt = startsAt ? new Date(startsAt) : undefined;
-    if (endsAt !== undefined) promo.endsAt = endsAt ? new Date(endsAt) : undefined;
+    if (discountPercent !== undefined) promo.discountPercent = parseOptionalNumber(discountPercent);
+    if (active !== undefined) promo.active = parseOptionalBoolean(active, promo.active);
+    if (startsAt !== undefined) promo.startsAt = parseOptionalDate(startsAt);
+    if (endsAt !== undefined) promo.endsAt = parseOptionalDate(endsAt);
+
+    if (req.file) {
+      promo.coverImage = await uploadPromotionCover(req.file);
+    }
+
     await promo.save();
     return res.json({ success: true, item: mapPromotion(promo.toObject()) });
   } catch (error) {
