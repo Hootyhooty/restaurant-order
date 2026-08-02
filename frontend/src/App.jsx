@@ -35,6 +35,7 @@ import KitchenLayout from './pages/kitchen/KitchenLayout';
 import KitchenQueue from './pages/kitchen/KitchenQueue';
 import KitchenReservations from './pages/kitchen/KitchenReservations';
 import KitchenStock from './pages/kitchen/KitchenStock';
+import NotFound from './components/NotFound';
 
 function App() {
   return (
@@ -80,6 +81,7 @@ function App() {
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/payment/success" element={<BookingPaymentSuccess />} />
             <Route path="/booking/payment/cancel" element={<BookingPaymentCancel />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           </main>
           <Footer />

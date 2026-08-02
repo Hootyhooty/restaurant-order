@@ -19,5 +19,8 @@ Thumbs.db
 # Changelog.txt
 Changelog.txt
 
+# Local-only developer README (do not push)
+README.internal.md
+
 # k6 generated summaries (keep results/README.txt via explicit paths if needed)
 k6/results/*.json
