@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'backend/**', 'k6/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'backend/**', 'k6/**', 'scripts/**'] },
   js.configs.recommended,
   {
     files: ['frontend/src/**/*.{js,jsx}', 'src/**/*.{js,jsx}'],
