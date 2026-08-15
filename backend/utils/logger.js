@@ -9,8 +9,14 @@ const write = (level, payload) => {
     ...payload,
   };
   const out = JSON.stringify(line);
-  if (level === 'error') console.error(out);
-  else if (level === 'warn') console.warn(out);
+  if (level === 'error') {
+    console.error(out);
+    try {
+      require('./sentry').captureLogError(payload);
+    } catch {
+      /* Sentry is optional */
+    }
+  } else if (level === 'warn') console.warn(out);
   else console.log(out);
 };
 

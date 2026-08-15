@@ -13,9 +13,11 @@ Use when bookings or payment intents are stuck in `refund_pending` after Stripe 
 
 **Alert threshold env:** `ALERT_REFUND_BACKLOG_MAX` (see `backend/.env.example`)
 
-### Optional in-process schedule (single instance)
+### Optional in-process schedule (fallback only)
 
-Set `REFUND_RECONCILE_INTERVAL_MS` (e.g. `900000` for 15 minutes) on the backend service. The API process runs the reconciler after Mongo connects. Leave unset to rely on this manual script or an external cron. Do **not** enable on multiple instances without a distributed lock.
+**Default:** leave `REFUND_RECONCILE_INTERVAL_MS` **unset** on the Render web service so the API process does not run the job.
+
+Set `REFUND_RECONCILE_INTERVAL_MS` (e.g. `900000` for 15 minutes) only if Cron is unavailable. The API process then runs the reconciler after Mongo connects. Do **not** enable this on more than one instance without a distributed lock.
 
 ---
 
@@ -106,17 +108,24 @@ JSON summary:
 
 ---
 
-## Scheduled / automated runs (optional)
+## Scheduled runs (Render Cron — default)
 
-The job is **manual by default** (`npm run refund:reconcile`). For production automation:
+Production refunds should retry on a **Render Cron Job**, not inside the web service.
 
-| Option | Notes |
-|--------|-------|
-| Render Cron Job | Run `npm run refund:reconcile` every 15–60 min |
-| GitHub Actions scheduled workflow | Run against prod with secrets (use with care) |
-| External scheduler | Same command, same env vars |
+| Setting | Value |
+|---------|--------|
+| Service type | Cron Job |
+| Root directory | `backend` |
+| Build command | `npm install` |
+| Command | `npm run refund:reconcile` |
+| Schedule | every 15–30 minutes |
+| Env | **same** `MONGODB_URI` and `STRIPE_SECRET_KEY` as the matching web service |
 
-Recommended: cron every **30 minutes** if you see occasional Stripe transient failures.
+Optional: a second Cron Job for staging with Stripe **test** keys and the staging Mongo URI.
+
+Keep `REFUND_RECONCILE_INTERVAL_MS` unset on the web service so the job does not double-run.
+
+Do **not** use a GitHub Actions `schedule` workflow against production for this — Render Cron holds the same secrets as the API.
 
 ---
 

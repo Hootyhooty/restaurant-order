@@ -128,14 +128,17 @@ See [security-checklist.md](./security-checklist.md) for full list and manual it
 
 ---
 
-## CI/CD (Day 12)
+## CI/CD
 
 GitHub Actions (`.github/workflows/ci.yml`):
 
-- Frontend: lint + test + build
-- Backend: lint + `npm test`
+- Frontend: lint + test + build + audit
+- Backend: lint + `npm test` + audit
+- Push to `main`: deploy **staging** via Render hooks → wait `/api/ready` → `staging:smoke` → **production** job (GitHub Environment approval)
 
-Branch protection should block merge without green CI (see `.github/BRANCH_PROTECTION.md`).
+Branch protection should block merge without green CI (see `.github/BRANCH_PROTECTION.md`). **Disable Render auto-deploy** on production so smoke + approval gate go-live.
+
+Observability: structured JSON logs; optional Sentry (`SENTRY_DSN` / `VITE_SENTRY_DSN`) with `requestId` and `release` (`RENDER_GIT_COMMIT`).
 
 ---
 
@@ -143,7 +146,7 @@ Branch protection should block merge without green CI (see `.github/BRANCH_PROTE
 
 Rate limits, login lockout, Admin Analysis metrics, and kitchen SSE (`kitchenEventHub`) are **in-memory**. They reset on restart and do **not** sync across multiple Render instances.
 
-**Operate with one backend web service** until Redis (or equivalent) backs those concerns. Optional refund reconciler: set `REFUND_RECONCILE_INTERVAL_MS`, or schedule `npm run refund:reconcile` via cron/Render job.
+**Operate with one backend web service** until Redis (or equivalent) backs those concerns. Refunds: Render Cron Job (`npm run refund:reconcile`); leave `REFUND_RECONCILE_INTERVAL_MS` unset on the web service.
 
 ---
 
@@ -153,12 +156,12 @@ Rate limits, login lockout, Admin Analysis metrics, and kitchen SSE (`kitchenEve
 |------|--------|------------|--------|
 | Simultaneous booking payments for same table | Double charge / double book | Unique index + webhook conflict handler + refund path | Implemented |
 | Stripe webhook duplicate delivery | Duplicate bookings/refunds | `ProcessedStripeEvent` claim-before-process | Implemented |
-| Stripe refund API transient failure | User charged, status `refund_pending` | Manual/scheduled `npm run refund:reconcile` | Implemented; schedule optional |
+| Stripe refund API transient failure | User charged, status `refund_pending` | Render Cron `npm run refund:reconcile` | Implemented; Cron is default |
 | Browser session theft through XSS | Compromised account actions | Host-only HttpOnly cookie, CSP, input validation | Mitigated; continue XSS review |
 | CORS misconfiguration | Frontend blocked | Require `FRONTEND_ORIGIN` in production | Implemented |
 | MongoDB Atlas IP allowlist | Backend cannot connect | Use `0.0.0.0/0` or Render outbound ranges | Manual ops |
 | Render shared outbound IPs | Atlas allowlist drift | Monitor; use Dedicated IPs if required | Manual ops |
-| No automated DB backup restore runbook | Data loss on bad migration | Atlas continuous backup; manual restore only | Documented caution in incident runbook |
+| DB loss / bad migration | Data loss | Atlas backup; restore to **new** cluster | [atlas-restore-playbook.md](./atlas-restore-playbook.md) — run a drill |
 | Metrics in memory only | Lost on restart | Accept for MVP; export logs/alerts externally later | Known gap — single instance |
 | Login lockout in memory | Resets on restart | Rate limits + lockout; Redis later for multi-instance | Implemented (process-local) |
 | No account lockout | Repeated credential guessing | Auth rate limits; future account lockout | Mitigated — lockout enabled |
@@ -171,11 +174,11 @@ Rate limits, login lockout, Admin Analysis metrics, and kitchen SSE (`kitchenEve
 ## Production deploy checklist (summary)
 
 1. CI green on release commit
-2. Staging sign-off complete ([staging-signoff.md](./staging-signoff.md))
+2. Staging deploy + smoke on `main`, then GitHub production approval
 3. Backend env: `MONGODB_URI`, `JWT_SECRET` (≥32), `FRONTEND_ORIGIN`, Stripe **live** keys + webhook secret
 4. Frontend env: `VITE_API_BASE_URL` → production backend
 5. Stripe webhook URL → production backend `/api/stripe/webhook`
-6. Post-deploy: `npm run staging:smoke` with production URLs
+6. Post-deploy: `npm run staging:smoke` with production URLs (CD does this)
 7. One manual happy-path booking in live mode (small amount) before announcing
 
 Full deploy steps: [staging-deploy.md](./staging-deploy.md) (same layout for prod with live keys).
@@ -187,4 +190,5 @@ Full deploy steps: [staging-deploy.md](./staging-deploy.md) (same layout for pro
 - [release-readiness.md](./release-readiness.md)
 - [incident-rollback-runbook.md](./incident-rollback-runbook.md)
 - [refund-reconciliation-runbook.md](./refund-reconciliation-runbook.md)
+- [atlas-restore-playbook.md](./atlas-restore-playbook.md)
 - [review.md](./review.md)

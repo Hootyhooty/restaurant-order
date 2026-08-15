@@ -39,6 +39,7 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | Security hardening | ☐ | [security-checklist.md](./security-checklist.md) |
 | Admin audit trail | ☐ | `/api/admin/audit-logs` |
 | CI quality gates | ☐ | `.github/workflows/ci.yml` green |
+| CD through staging | ☐ | Deploy staging → smoke → production environment approval |
 
 ---
 
@@ -59,6 +60,7 @@ Release candidate checklist tying together the 2-week production-grade plan.
 |----------|---------|
 | [incident-rollback-runbook.md](./incident-rollback-runbook.md) | Deploy failures, rollback, triage |
 | [refund-reconciliation-runbook.md](./refund-reconciliation-runbook.md) | Stuck `refund_pending` recovery |
+| [atlas-restore-playbook.md](./atlas-restore-playbook.md) | Atlas restore drill / disaster recovery |
 | [architecture-risks.md](./architecture-risks.md) | System map + known risks |
 
 ---
@@ -80,8 +82,10 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | `EMAIL_FROM` | ☐ | `Picha <noreply@picha-restaurant.com>` (verified domain) |
 | `RESEND_API_KEY` | ☐ | Resend `re_…` key (HTTP API over port 443) |
 | `AUTH_SESSION_DAYS` / `AUTH_OPS_SESSION_DAYS` | ☐ | Defaults 7 / 1; cookie session lifetimes |
-| Alert thresholds | ☐ | Optional; defaults in `.env.example` |
-| `REFUND_RECONCILE_INTERVAL_MS` | ☐ | Optional in-process reconciler; or cron `npm run refund:reconcile` |
+| `ALERT_*` thresholds | ☐ | Optional; defaults in `.env.example` |
+| `APP_ENV` | ☐ | `production` |
+| `SENTRY_DSN` | ☐ | Sentry `picha-api`; omit to disable |
+| `REFUND_RECONCILE_INTERVAL_MS` | ☐ | **Leave unset** on the web service; use Render Cron |
 
 **Health check path:** `/api/health`  
 **Root directory:** `backend`  
@@ -92,6 +96,8 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | Variable | Set? | Notes |
 |----------|------|-------|
 | `VITE_API_BASE_URL` | ☐ | `https://api.picha-restaurant.com` (rebuild frontend after changing) |
+| `VITE_APP_ENV` | ☐ | `production` |
+| `VITE_SENTRY_DSN` | ☐ | Sentry `picha-web`; restrict allowed domains |
 
 **Build:** `npm install && npm run build`  
 **Publish:** `dist`
@@ -111,6 +117,7 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | Production database / cluster | ☐ |
 | Network access allows Render | ☐ |
 | Backup enabled | ☐ |
+| Restore drill | ☐ | [atlas-restore-playbook.md](./atlas-restore-playbook.md) |
 
 ---
 
@@ -119,11 +126,14 @@ Release candidate checklist tying together the 2-week production-grade plan.
 **Go-live criteria (all must be true):**
 
 - [ ] CI green on release commit
+- [ ] Staging deploy + smoke green on `main`
+- [ ] Production GitHub Environment approved
 - [ ] Staging sign-off complete with no blocking defects
 - [ ] Production env vars verified (live Stripe, correct URLs)
 - [ ] Smoke + one manual booking path verified on production
 - [ ] Runbooks accessible to operator
 - [ ] Rollback procedure understood (previous Render deploy)
+- [ ] Auto-deploy **off** on production Render services
 
 **Decision:**
 
@@ -143,8 +153,9 @@ Release candidate checklist tying together the 2-week production-grade plan.
 ## 7. Post-release (first 24 hours)
 
 - [ ] Monitor Admin Analysis alerts
+- [ ] Check Sentry for new issues (API + web)
 - [ ] Check Stripe webhook delivery success rate
-- [ ] Run `refund_pending` count check; reconcile if needed
+- [ ] Run `refund_pending` count check; Cron should retry (see refund runbook)
 - [ ] Review Render logs for 5xx spikes
 - [ ] Confirm no open SEV-1/SEV-2 issues
 
@@ -161,5 +172,6 @@ Release candidate checklist tying together the 2-week production-grade plan.
 | [security-checklist.md](./security-checklist.md) | 10 |
 | [incident-rollback-runbook.md](./incident-rollback-runbook.md) | 14 |
 | [refund-reconciliation-runbook.md](./refund-reconciliation-runbook.md) | 14 |
+| [atlas-restore-playbook.md](./atlas-restore-playbook.md) | Ops |
 | [architecture-risks.md](./architecture-risks.md) | 14 |
 | [release-readiness.md](./release-readiness.md) | 14 |

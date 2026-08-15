@@ -14,6 +14,7 @@
         "email:test": "node scripts/emailTest.js"
     },
     "dependencies": {
+        "@sentry/node": "^10.70.0",
         "bcryptjs": "^3.0.3",
         "cloudinary": "^2.5.1",
         "cookie-parser": "^1.4.7",

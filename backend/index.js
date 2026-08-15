@@ -1,4 +1,8 @@
 // backend/index.js
+require('dotenv').config();
+const { initSentry, setupSentryExpress, appEnvironment, appRelease } = require('./utils/sentry');
+initSentry();
+
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -12,7 +16,6 @@ const { info, warn } = require('./utils/logger');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -185,6 +188,8 @@ app.get('/api/health', (req, res) => {
     success: true,
     status: 'ok',
     service: 'restaurant-backend',
+    environment: appEnvironment(),
+    release: appRelease() || undefined,
     timestamp: new Date().toISOString(),
   });
 });
@@ -219,6 +224,8 @@ app.use('/api/staff', operationalLimiter, staffRoutes);
 app.use('/api/kitchen', operationalLimiter, kitchenRoutes);
 app.use('/api/promotions', publicLimiter, promotionRoutes);
 app.use('/api/contact', publicLimiter, contactRoutes);
+
+setupSentryExpress(app);
 
 const PORT = process.env.PORT || 5000;
 

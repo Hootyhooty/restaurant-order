@@ -224,3 +224,4 @@ Pick **booking race** or **Render email** — both show system thinking, not jus
 | [`architecture-risks.md`](architecture-risks.md) | Risks and single-instance constraints |
 | [`security-checklist.md`](security-checklist.md) | Security posture |
 | [`release-readiness.md`](release-readiness.md) | Deploy and env guide |
+| [`atlas-restore-playbook.md`](atlas-restore-playbook.md) | Atlas backup restore drill |

@@ -12,8 +12,9 @@ function envNumber(name, fallback) {
 }
 
 /**
- * Optional in-process refund reconciler for a single backend instance.
- * Enable with REFUND_RECONCILE_INTERVAL_MS (e.g. 900000 = 15 minutes).
+ * Fallback in-process refund reconciler for a single backend instance.
+ * Prefer a Render Cron Job (`npm run refund:reconcile`) and leave this unset
+ * on the web service. Enable with REFUND_RECONCILE_INTERVAL_MS (e.g. 900000).
  */
 function startRefundReconciliationScheduler() {
   const intervalMs = envNumber('REFUND_RECONCILE_INTERVAL_MS', 0);

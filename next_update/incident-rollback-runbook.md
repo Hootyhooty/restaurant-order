@@ -11,7 +11,8 @@ Use this when production or staging is broken, degraded, or a bad deploy must be
 | Login/booking fails, DB errors | `GET /api/ready` returns 503 | MongoDB URI, Atlas network access, connection limit |
 | Payments succeed but no booking | Stripe webhook logs, backend logs | Wrong `STRIPE_WEBHOOK_SECRET` or webhook URL |
 | CORS errors in browser | Backend env `FRONTEND_ORIGIN` | Origin mismatch with deployed frontend URL |
-| Refunds stuck | Admin Analysis tab, `refund_pending` count | Stripe API error; run refund reconcile (see refund runbook) |
+| Refunds stuck | Admin Analysis tab, `refund_pending` count | Stripe API error; Render Cron / refund runbook |
+| New 5xx / blank UI | Sentry (`picha-api` / `picha-web`), `requestId` | Uncaught exception after deploy |
 
 ### Health checks
 
@@ -65,9 +66,10 @@ npm run staging:smoke
 
 ### Database rollback
 
-**There is no automatic DB rollback.** MongoDB changes are forward-only.
+**There is no automatic DB rollback with a code deploy.** MongoDB changes are forward-only.
 
-- Do **not** restore a snapshot unless you understand data loss since snapshot time
+- Do **not** restore a snapshot onto live production unless you accept data loss since snapshot time
+- Restore **into a new cluster** and verify first — [atlas-restore-playbook.md](./atlas-restore-playbook.md)
 - For bad migration/data fix: use admin tools + manual MongoDB Compass edits with audit trail
 - Booking unique index `{ tableId, date, timeSlot }` must remain — do not drop without incident review
 
@@ -142,7 +144,7 @@ Structured JSON logs include `requestId`. Trace path:
 - **Analysis** tab — metrics and active alerts
 - **Audit logs** — `GET /api/admin/audit-logs` (admin booking/refund actions)
 
-Search Render logs for:
+Search Render logs or Sentry for:
 - `requestId`
 - `bookingId`
 - `stripeEventId`
@@ -170,6 +172,7 @@ Search Render logs for:
 | Stripe Dashboard | https://dashboard.stripe.com |
 | MongoDB Atlas | |
 | Render Dashboard | https://dashboard.render.com |
+| Sentry | API `picha-api`, web `picha-web` |
 | On-call / owner | |
 
 ---
@@ -177,6 +180,7 @@ Search Render logs for:
 ## Related docs
 
 - [refund-reconciliation-runbook.md](./refund-reconciliation-runbook.md)
+- [atlas-restore-playbook.md](./atlas-restore-playbook.md)
 - [architecture-risks.md](./architecture-risks.md)
 - [staging-deploy.md](./staging-deploy.md)
 - [security-checklist.md](./security-checklist.md)
